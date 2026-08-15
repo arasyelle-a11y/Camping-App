@@ -35,7 +35,7 @@ button,input,select{font:inherit}
 .cathead{width:100%;border:0;background:linear-gradient(135deg,var(--green),#485925);color:white;padding:14px 15px;display:flex;align-items:center;gap:10px;text-align:left}
 .cathead .emoji{font-size:21px} .cathead strong{font-size:17px;flex:1} .cathead small{opacity:.85;font-weight:700}
 .catbody{display:block} .category.closed .catbody{display:none}
-.row{padding:10px 10px;border-top:1px solid #eee4d2}
+.row{padding:10px 10px;border-top:1px solid #eee4d2;position:relative;transition:transform .18s ease;touch-action:pan-y;background:var(--paper);z-index:1}.row.swiped{transform:translateX(-92px)}.swipeWrap{position:relative;overflow:hidden;border-top:1px solid #eee4d2}.swipeWrap .row{border-top:0}.swipeDelete{position:absolute;right:0;top:0;bottom:0;width:92px;border:0;background:#B43A32;color:white;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:0}
 .row:nth-child(even){background:var(--cream2)}
 .nameLine{display:flex;align-items:center;gap:9px}
 .name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
@@ -142,12 +142,12 @@ const MASTER = [{"id": "cat-0", "name": "Zelt & Aufbau", "icon": "⛺", "items":
 const STORAGE = "bosbach-camping-app-v1";
 let db = JSON.parse(localStorage.getItem(STORAGE) || "null") || {
   currentTrip:"urlaub-1",
-  trips:{"urlaub-1":{name:"Soulac / Frankreich",states:{},custom:[]}}
+  trips:{"urlaub-1":{name:"Le Gurp · Frankreich",states:{},custom:[],hidden:[]}}
 };
 let filter="all";
 
 function save(){ localStorage.setItem(STORAGE,JSON.stringify(db)); }
-function trip(){ return db.trips[db.currentTrip]; }
+function trip(){ const t=db.trips[db.currentTrip]; if(!t.hidden)t.hidden=[]; if(!t.custom)t.custom=[]; return t; }
 function state(id){
   const t=trip();
   if(!t.states[id]) t.states[id]={take:false,seen:false,box:false,car:false,need:false};
@@ -158,7 +158,7 @@ function allCategories(){
   for(const x of trip().custom){
     (extra[x.category] ||= []).push(x);
   }
-  return MASTER.map(c=>({...c,items:[...c.items,...(extra[c.name]||[])]}))
+  return MASTER.map(c=>({...c,items:[...c.items.filter(i=>!trip().hidden.includes(i.id)),...(extra[c.name]||[])]}))
     .concat(Object.entries(extra).filter(([k])=>!MASTER.some(c=>c.name===k)).map(([name,items],i)=>({id:"custom-cat-"+i,name,icon:"✨",items})));
 }
 function allItems(){
@@ -209,7 +209,14 @@ function render(){
         if(k!=="need" && st[k]) st.take=true;
         save();render();
       });
-      body.appendChild(row);
+      const wrap=document.createElement("div"); wrap.className="swipeWrap";
+      const del=document.createElement("button"); del.className="swipeDelete"; del.textContent="🗑 Entfernen";
+      wrap.appendChild(del); wrap.appendChild(row); body.appendChild(wrap);
+      let startX=0,startY=0,dx=0,dragging=false;
+      row.addEventListener("touchstart",e=>{const t=e.touches[0];startX=t.clientX;startY=t.clientY;dx=0;dragging=true;},{passive:true});
+      row.addEventListener("touchmove",e=>{if(!dragging)return;const t=e.touches[0];dx=t.clientX-startX;const dy=t.clientY-startY;if(Math.abs(dx)>Math.abs(dy)&&dx<0)row.style.transform=`translateX(${Math.max(dx,-92)}px)`;},{passive:true});
+      row.addEventListener("touchend",()=>{dragging=false;row.style.transform="";row.classList.toggle("swiped",dx<-45);});
+      del.onclick=()=>{const ci=trip().custom.findIndex(x=>x.id===item.id);if(ci>=0){trip().custom.splice(ci,1);delete trip().states[item.id];}else if(!trip().hidden.includes(item.id)){trip().hidden.push(item.id);}save();render();};
     }
     root.appendChild(sec);
   }
@@ -246,7 +253,7 @@ newTripBtn.onclick=()=>tripModal.classList.add("open");
 tripCancel.onclick=()=>tripModal.classList.remove("open");
 tripSave.onclick=()=>{
   const name=tripName.value.trim();if(!name)return;
-  const id="trip-"+Date.now();db.trips[id]={name,states:{},custom:[]};db.currentTrip=id;tripName.value="";tripModal.classList.remove("open");save();render();
+  const id="trip-"+Date.now();db.trips[id]={name,states:{},custom:[],hidden:[]};db.currentTrip=id;tripName.value="";tripModal.classList.remove("open");save();render();
 };
 quickAdd.onclick=()=>{
   const name=quickName.value.trim(); if(!name)return;
