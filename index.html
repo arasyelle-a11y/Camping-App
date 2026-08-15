@@ -67,7 +67,7 @@ button{cursor:pointer}
 .modal.open{display:flex}.sheet{width:100%;max-width:760px;margin:0 auto;background:var(--paper);border-radius:20px 20px 0 0;padding:18px}
 .sheet h3{margin:0 0 12px}.sheet input,.sheet select{width:100%;margin-bottom:9px}
 .sheetActions,.addChoice{display:flex;gap:8px}.sheetActions button,.addChoice button{flex:1;border:0;border-radius:11px;padding:11px;font-weight:800}
-.cancel{background:var(--cream2);color:var(--brown)}.save{background:var(--green);color:white}
+.cancel{background:var(--cream2);color:var(--brown)}.save{background:var(--green);color:white}.save:disabled{opacity:.55;cursor:default}
 .addChoice{margin:3px 0 12px}.addChoice button{border:1px solid var(--line);background:white;color:var(--brown)}
 .addChoice button.active{background:var(--green);color:white;border-color:var(--green)}
 .toast{position:fixed;left:50%;bottom:83px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;z-index:90;background:var(--navy);color:white;border-radius:12px;padding:11px 14px;box-shadow:var(--shadow);font-size:12px;font-weight:800;transition:.2s;display:flex;gap:13px;align-items:center;max-width:92vw}
@@ -175,7 +175,7 @@ const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 let masterItems=[], places=[], states=new Map(), currentTrip=null, currentPlace=null;
-let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null;
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false;
 const el=id=>document.getElementById(id);
 
 function toast(msg,undo=false){
@@ -321,11 +321,63 @@ el("quickName").onkeydown=e=>{if(e.key==="Enter")el("quickAdd").click()};
 document.querySelectorAll(".addChoice button").forEach(b=>b.onclick=()=>{addScope=b.dataset.scope;document.querySelectorAll(".addChoice button").forEach(x=>x.classList.toggle("active",x===b))});
 el("addCancel").onclick=()=>el("addModal").classList.remove("open");
 el("addSave").onclick=async()=>{
-  const name=el("addName").value.trim(),category=el("addCat").value;if(!name||!category)return;
-  setSync("Speichert …");
-  const {data,error}=await sb.from("camping_items").insert({name,category,icon:iconForCategory(category),is_master:addScope==="master"}).select().single();
-  if(error){console.error(error);toast(error.code==="23505"?"Artikel steht schon in der Masterliste":"Artikel konnte nicht gespeichert werden");setSync("Fehler");return}
-  masterItems.push(data);await dbUpsert(data.id,{selected:true});el("quickName").value="";el("addName").value="";el("addModal").classList.remove("open");render();toast(addScope==="master"?"Zur Masterliste hinzugefügt":"Für diesen Urlaub hinzugefügt");
+  if(addingItem)return;
+  const name=el("addName").value.trim(),category=el("addCat").value;
+  if(!name||!category)return;
+  addingItem=true;el("addSave").disabled=true;setSync("Speichert …");
+  try{
+    let item=null;
+
+    // Existiert der Artikel bereits, wird er für diesen Urlaub aktiviert
+    // statt einen doppelten Datensatz anzulegen.
+    const {data:existing,error:findError}=await sb
+      .from("camping_items")
+      .select("*")
+      .eq("name",name)
+      .eq("category",category)
+      .maybeSingle();
+    if(findError)throw findError;
+
+    if(existing){
+      item=existing;
+      // Ein bisher nur urlaubsspezifischer Artikel kann später zur Masterliste werden.
+      if(addScope==="master" && !existing.is_master){
+        const {data:promoted,error:promoteError}=await sb
+          .from("camping_items")
+          .update({is_master:true})
+          .eq("id",existing.id)
+          .select("*")
+          .single();
+        if(promoteError)throw promoteError;
+        item=promoted;
+      }
+    }else{
+      const {data:created,error:createError}=await sb
+        .from("camping_items")
+        .insert({name,category,icon:iconForCategory(category),is_master:addScope==="master"})
+        .select("*")
+        .single();
+      if(createError)throw createError;
+      item=created;
+    }
+
+    await dbUpsert(item.id,{selected:true});
+    await loadItems();
+    el("quickName").value="";
+    el("addName").value="";
+    el("addModal").classList.remove("open");
+    render();
+    toast(existing
+      ? (addScope==="master" ? "Artikel ist jetzt in der Masterliste" : "Artikel für diesen Urlaub hinzugefügt")
+      : (addScope==="master" ? "Zur Masterliste hinzugefügt" : "Für diesen Urlaub hinzugefügt"));
+    setSync("Synchronisiert");
+  }catch(error){
+    console.error(error);
+    toast("Artikel konnte nicht gespeichert werden");
+    setSync("Fehler");
+  }finally{
+    addingItem=false;el("addSave").disabled=false;
+  }
 };
 el("loginBtn").onclick=async()=>{
   el("loginErr").textContent="";el("loginBtn").disabled=true;
