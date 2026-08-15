@@ -329,8 +329,14 @@ el("addSave").onclick=async()=>{
 };
 el("loginBtn").onclick=async()=>{
   el("loginErr").textContent="";el("loginBtn").disabled=true;
-  const {error}=await sb.auth.signInWithPassword({email:el("loginEmail").value.trim(),password:el("loginPassword").value});
-  el("loginBtn").disabled=false;if(error)el("loginErr").textContent="Anmeldung fehlgeschlagen: "+error.message;
+  const {data,error}=await sb.auth.signInWithPassword({email:el("loginEmail").value.trim(),password:el("loginPassword").value});
+  el("loginBtn").disabled=false;
+  if(error){
+    el("loginErr").textContent="Anmeldung fehlgeschlagen: "+error.message;
+  }else if(data?.session){
+    el("login").classList.add("hidden");
+    setTimeout(()=>boot(),0);
+  }
 };
 async function boot(){
   const {data:{session}}=await sb.auth.getSession();
@@ -338,7 +344,14 @@ async function boot(){
   el("login").classList.add("hidden");
   try{setSync("Lädt …");await Promise.all([loadItems(),loadPlaces()]);if(currentPlace)await switchPlace(currentPlace.id);render();setSync("Synchronisiert")}catch(e){console.error(e);toast("Daten konnten nicht geladen werden");setSync("Fehler")}
 }
-sb.auth.onAuthStateChange((_event,session)=>{if(session)boot();else el("login").classList.remove("hidden")});
+sb.auth.onAuthStateChange((_event,session)=>{
+  if(session){
+    el("login").classList.add("hidden");
+    setTimeout(()=>boot(),0);
+  }else{
+    el("login").classList.remove("hidden");
+  }
+});
 boot();
 </script>
 </body></html>
