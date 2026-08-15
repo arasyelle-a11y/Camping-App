@@ -5,93 +5,99 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#55692F">
 <title>Familie Bosbach – Camping</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root {
-  --cream:#FDF7EE; --cream2:#F6EEDF; --paper:#FFFEFB; --green:#55692F;
-  --green2:#7C8F55; --navy:#1A364A; --teal:#3F717C; --brown:#6B4E31;
-  --orange:#C4562A; --line:#E4DAC5; --muted:#7A756A; --shadow:0 8px 28px rgba(26,54,74,.08);
+:root{
+  --cream:#FDF7EE;--cream2:#F6EEDF;--paper:#FFFEFB;--green:#55692F;--green2:#7C8F55;
+  --navy:#1A364A;--teal:#3F717C;--brown:#6B4E31;--orange:#C4562A;--red:#B43A32;
+  --line:#E4DAC5;--muted:#7A756A;--shadow:0 8px 28px rgba(26,54,74,.08)
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--cream);color:var(--navy);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
 button,input,select{font:inherit}
+button{cursor:pointer}
 .app{max-width:760px;margin:auto;min-height:100vh;padding-bottom:88px}
 .banner{width:100%;display:block;border-bottom:3px solid var(--green);max-height:190px;object-fit:cover}
-.top{padding:16px 16px 8px;position:sticky;top:0;z-index:10;background:linear-gradient(var(--cream) 85%,rgba(253,247,238,0));backdrop-filter:blur(8px)}
+.top{padding:14px 14px 8px;position:sticky;top:0;z-index:10;background:rgba(253,247,238,.96);backdrop-filter:blur(10px)}
 .tripbar{display:flex;gap:8px;align-items:center}
-.tripbar select{flex:1;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--paper);color:var(--navy);font-weight:700}
-.iconbtn{border:0;border-radius:12px;background:var(--green);color:white;padding:11px 14px;font-weight:800}
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
-.stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center}
-.stat b{display:block;font-size:17px}
-.stat span{font-size:9px;text-transform:uppercase;font-weight:800;color:var(--muted)}
-.quickadd{display:grid;grid-template-columns:1fr 130px auto;gap:7px;padding:10px 16px 4px}
-.quickadd input,.quickadd select{min-width:0;border:1px solid var(--line);background:white;border-radius:11px;padding:11px}
+.tripbar select{flex:1;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--paper);color:var(--navy);font-weight:800}
+.iconbtn{border:0;border-radius:12px;background:var(--green);color:white;padding:11px 13px;font-weight:800}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:9px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 3px;text-align:center}
+.stat b{display:block;font-size:17px}.stat span{font-size:8px;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.quickadd{display:grid;grid-template-columns:1fr 120px auto;gap:7px;padding:10px 14px 4px}
+.quickadd input,.quickadd select,.sheet input,.sheet select,.loginCard input{min-width:0;border:1px solid var(--line);background:white;border-radius:11px;padding:11px}
 .quickadd button{border:0;border-radius:11px;background:var(--navy);color:white;padding:0 14px;font-weight:800}
-.filters{display:flex;gap:7px;padding:8px 16px;overflow:auto}
-.filter{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;white-space:nowrap;color:var(--brown)}
-.filter.active{background:var(--green);color:white;border-color:var(--green)}
-.content{padding:0 14px}
-.category{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin:12px 0;box-shadow:var(--shadow)}
-.cathead{width:100%;border:0;background:linear-gradient(135deg,var(--green),#485925);color:white;padding:14px 15px;display:flex;align-items:center;gap:10px;text-align:left}
-.cathead .emoji{font-size:21px} .cathead strong{font-size:17px;flex:1} .cathead small{opacity:.85;font-weight:700}
-.catbody{display:block} .category.closed .catbody{display:none}
-.row{padding:10px 10px;border-top:1px solid #eee4d2;position:relative;transition:transform .18s ease;touch-action:pan-y;background:var(--paper);z-index:1}.row.swiped{transform:translateX(-92px)}.swipeWrap{position:relative;overflow:hidden;border-top:1px solid #eee4d2}.swipeWrap .row{border-top:0}.swipeDelete{position:absolute;right:0;top:0;bottom:0;width:92px;border:0;background:#B43A32;color:white;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:0}
-.row:nth-child(even){background:var(--cream2)}
-.nameLine{display:flex;align-items:center;gap:9px}
-.name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
+.filters,.masterToolbar{display:flex;gap:7px;padding:8px 14px;overflow:auto}
+.filter,.masterToolbar button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 11px;font-size:11px;font-weight:800;white-space:nowrap;color:var(--brown)}
+.filter.active,.masterToolbar button.active{background:var(--green);color:white;border-color:var(--green)}
+.content{padding:0 12px}
+.category{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin:11px 0;box-shadow:var(--shadow)}
+.cathead{width:100%;border:0;background:linear-gradient(135deg,var(--green),#485925);color:white;padding:13px 14px;display:flex;align-items:center;gap:10px;text-align:left}
+.cathead .emoji{font-size:20px}.cathead strong{font-size:16px;flex:1}.cathead small{opacity:.85;font-weight:700}
+.category.closed .catbody{display:none}
+.swipeWrap{position:relative;overflow:hidden;border-top:1px solid #eee4d2}
+.swipeDelete{position:absolute;right:0;top:0;bottom:0;width:92px;border:0;background:var(--red);color:white;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center}
+.row{padding:10px;position:relative;transition:transform .18s ease;touch-action:pan-y;background:var(--paper);z-index:1}
+.row:nth-child(even){background:var(--cream2)}.row.swiped{transform:translateX(-92px)}
+.nameLine{display:flex;align-items:center;gap:9px}.name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
+.tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}
 .take{appearance:none;width:24px;height:24px;border:2px solid var(--green);border-radius:7px;background:white;display:grid;place-content:center;flex:0 0 auto}
-.take:checked{background:var(--green)} .take:checked:after{content:"✓";color:white;font-weight:900}
-.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
-.stage{border:1.5px solid var(--line);border-radius:9px;background:white;padding:7px 3px;font-size:10px;font-weight:800;color:var(--muted)}
+.take:checked{background:var(--green)}.take:checked:after{content:"✓";color:white;font-weight:900}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}
+.stage{border:1.5px solid var(--line);border-radius:9px;background:white;padding:7px 2px;font-size:9px;font-weight:800;color:var(--muted)}
 .stage.on[data-stage="seen"]{background:#E5EDD4;border-color:var(--green);color:var(--green)}
 .stage.on[data-stage="box"]{background:#DDECF0;border-color:var(--teal);color:var(--teal)}
 .stage.on[data-stage="car"]{background:#DFE6EC;border-color:var(--navy);color:var(--navy)}
 .stage.on[data-stage="need"]{background:#F8E3D7;border-color:var(--orange);color:var(--orange)}
-.row:not(.selected) .actions{opacity:.34;pointer-events:none}
-.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,254,251,.97);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+.row:not(.selected) .actions{opacity:.35;pointer-events:none}
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,254,251,.98);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
 .nav{width:min(760px,100%);display:grid;grid-template-columns:repeat(4,1fr)}
-.nav button{border:0;background:transparent;padding:12px 6px 10px;color:var(--muted);font-weight:800;font-size:11px}
-.nav button.active{color:var(--green)} .nav .nicon{display:block;font-size:20px;margin-bottom:2px}
-.view{display:none} .view.active{display:block}
-.needCard{margin:10px 14px;background:white;border:1px solid var(--line);border-radius:14px;padding:12px}
-.needItem{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #eee}
-.needItem:last-child{border-bottom:0} .needItem b{flex:1} .badge{font-size:10px;background:#F8E3D7;color:var(--orange);padding:5px 8px;border-radius:999px;font-weight:800}
-.empty{padding:34px 20px;text-align:center;color:var(--muted)}
-.personCard{margin:10px 14px;background:white;border:1px solid var(--line);border-radius:14px;padding:15px}
-.personCard h3{margin:0 0 6px}
-.personCard p{margin:0;color:var(--muted);font-size:13px}
-.masterToolbar{display:flex;gap:7px;padding:10px 14px;overflow:auto}
-.masterToolbar button{border:1px solid var(--line);background:white;border-radius:999px;padding:8px 11px;font-size:11px;font-weight:800;white-space:nowrap}
-.masterToolbar button.active{background:var(--green);color:white}
-.masterRow{display:flex;align-items:center;gap:8px;padding:10px;border-top:1px solid #eee4d2}
-.masterRow .masterName{flex:1;font-weight:700;font-size:14px}
-.masterRow button{border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:white;font-weight:800;font-size:10px}
+.nav button{border:0;background:transparent;padding:11px 4px 9px;color:var(--muted);font-weight:800;font-size:10px}
+.nav button.active{color:var(--green)}.nav .nicon{display:block;font-size:19px;margin-bottom:2px}
+.view{display:none}.view.active{display:block}
+.needCard,.personCard{margin:10px 12px;background:white;border:1px solid var(--line);border-radius:14px;padding:12px}
+.needItem,.masterRow{display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid #eee}
+.needItem:last-child,.masterRow:last-child{border-bottom:0}.needItem b,.masterName{flex:1}.masterName{font-weight:700;font-size:14px}
+.badge{font-size:9px;background:#F8E3D7;color:var(--orange);padding:5px 7px;border-radius:999px;font-weight:800}
+.masterRow button{border:1px solid var(--line);border-radius:9px;padding:7px 8px;background:white;font-weight:800;font-size:10px}
 .masterRow button.addBack{background:#E5EDD4;color:var(--green);border-color:var(--green)}
-.toast{position:fixed;left:50%;bottom:82px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;z-index:80;background:var(--navy);color:white;border-radius:12px;padding:11px 14px;box-shadow:var(--shadow);font-size:12px;font-weight:800;transition:.2s;display:flex;gap:14px;align-items:center;max-width:92vw}
-.toast.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
-.toast button{border:0;background:transparent;color:#F6D88A;font-weight:900;padding:0}
-.addChoice{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 12px}
-.addChoice button{border:1px solid var(--line);border-radius:11px;padding:11px;background:white;font-weight:800;color:var(--brown)}
-.addChoice button.active{background:var(--green);color:white;border-color:var(--green)}
-.sheet select{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:white}
+.empty{padding:34px 20px;text-align:center;color:var(--muted)}
 .modal{position:fixed;inset:0;background:rgba(15,30,40,.42);display:none;align-items:flex-end;z-index:50}
-.modal.open{display:flex} .sheet{width:100%;max-width:760px;margin:0 auto;background:var(--paper);border-radius:20px 20px 0 0;padding:18px}
-.sheet h3{margin:0 0 12px} .sheet input{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
-.sheetActions{display:flex;gap:8px} .sheetActions button{flex:1;border:0;border-radius:11px;padding:11px;font-weight:800}
-.cancel{background:var(--cream2);color:var(--brown)} .save{background:var(--green);color:white}
-@media(max-width:520px){
-  .stats{grid-template-columns:repeat(5,1fr)} .stat b{font-size:15px} .stat span{font-size:8px}
-  .quickadd{grid-template-columns:1fr 105px auto} .actions{gap:4px} .stage{font-size:9px}
-}
+.modal.open{display:flex}.sheet{width:100%;max-width:760px;margin:0 auto;background:var(--paper);border-radius:20px 20px 0 0;padding:18px}
+.sheet h3{margin:0 0 12px}.sheet input,.sheet select{width:100%;margin-bottom:9px}
+.sheetActions,.addChoice{display:flex;gap:8px}.sheetActions button,.addChoice button{flex:1;border:0;border-radius:11px;padding:11px;font-weight:800}
+.cancel{background:var(--cream2);color:var(--brown)}.save{background:var(--green);color:white}
+.addChoice{margin:3px 0 12px}.addChoice button{border:1px solid var(--line);background:white;color:var(--brown)}
+.addChoice button.active{background:var(--green);color:white;border-color:var(--green)}
+.toast{position:fixed;left:50%;bottom:83px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;z-index:90;background:var(--navy);color:white;border-radius:12px;padding:11px 14px;box-shadow:var(--shadow);font-size:12px;font-weight:800;transition:.2s;display:flex;gap:13px;align-items:center;max-width:92vw}
+.toast.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}.toast button{border:0;background:transparent;color:#F6D88A;font-weight:900;padding:0}
+.login{position:fixed;inset:0;z-index:100;background:linear-gradient(180deg,#DCE6D2,var(--cream));display:flex;align-items:center;justify-content:center;padding:18px}
+.login.hidden{display:none}.loginCard{width:min(430px,100%);background:white;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+.loginCard h1{margin:0 0 4px;color:var(--green);font-size:24px}.loginCard p{margin:0 0 15px;color:var(--muted);font-size:13px}
+.loginCard input{width:100%;margin-bottom:9px}.loginCard button{width:100%;border:0;border-radius:11px;padding:12px;background:var(--green);color:white;font-weight:900}.loginErr{font-size:11px;color:var(--red);min-height:18px;margin-top:8px}
+.sync{font-size:10px;color:var(--muted);padding:4px 14px 0;text-align:right}
+@media(max-width:520px){.stat b{font-size:14px}.stat span{font-size:7px}.quickadd{grid-template-columns:1fr 102px auto}.actions{gap:4px}.stage{font-size:8px}}
 </style>
 </head>
 <body>
+<div id="login" class="login">
+  <div class="loginCard">
+    <h1>🏕️ Camping</h1>
+    <p>Mit eurem Familienzugang anmelden. Die Packliste wird danach mit Supabase synchronisiert.</p>
+    <input id="loginEmail" type="email" autocomplete="username" placeholder="E-Mail">
+    <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Passwort">
+    <button id="loginBtn">Anmelden</button>
+    <div id="loginErr" class="loginErr"></div>
+  </div>
+</div>
+
 <div class="app">
-  <img class="banner" src="camping-header.png" alt="Camping">
+  <img class="banner" src="camping-header.png" alt="Camping im Pinienwald">
   <section class="view active" id="view-pack">
     <div class="top">
       <div class="tripbar">
-        <select id="tripSelect"></select>
+        <select id="placeSelect"></select>
         <button class="iconbtn" id="newTripBtn">＋ Urlaub</button>
       </div>
       <div class="stats">
@@ -99,11 +105,12 @@ button,input,select{font:inherit}
         <div class="stat"><b id="sSeen">0</b><span>Gesichtet</span></div>
         <div class="stat"><b id="sBox">0</b><span>In Kiste</span></div>
         <div class="stat"><b id="sCar">0</b><span>Im Auto</span></div>
-        <div class="stat"><b id="sNeed">0</b><span>Suchen/Kaufen</span></div>
+        <div class="stat"><b id="sNeed">0</b><span>Suchen</span></div>
       </div>
+      <div class="sync" id="syncText">Synchronisiert</div>
     </div>
     <div class="quickadd">
-      <input id="quickName" placeholder="Was fällt dir gerade noch ein?">
+      <input id="quickName" placeholder="Was fällt dir noch ein?">
       <select id="quickCat"></select>
       <button id="quickAdd">＋</button>
     </div>
@@ -117,12 +124,12 @@ button,input,select{font:inherit}
   </section>
 
   <section class="view" id="view-need">
-    <div class="top"><h2 style="margin:5px 0 8px">🔎 Suchen & Kaufen</h2></div>
+    <div class="top"><h2 style="margin:5px 0">🔎 Suchen & Kaufen</h2></div>
     <div id="needList"></div>
   </section>
 
   <section class="view" id="view-master">
-    <div class="top"><h2 style="margin:5px 0 8px">📚 Masterliste</h2><div style="font-size:12px;color:var(--muted)">Alle Campingartikel – unabhängig vom aktuellen Urlaub.</div></div>
+    <div class="top"><h2 style="margin:5px 0">📚 Masterliste</h2><div style="font-size:12px;color:var(--muted)">Zentrale Campingliste in Supabase.</div></div>
     <div class="masterToolbar">
       <button class="active" data-mf="all">Alle</button>
       <button data-mf="in">Dabei</button>
@@ -132,21 +139,14 @@ button,input,select{font:inherit}
   </section>
 
   <section class="view" id="view-person">
-    <div class="top"><h2 style="margin:5px 0 8px">👤 Persönliche Listen</h2></div>
-    <div class="personCard">
-      <h3>👩 Anika</h3>
-      <p>Persönliche Packliste ist für die nächste Version vorbereitet. Die Familien-Packliste funktioniert bereits vollständig.</p>
-    </div>
-    <div class="personCard">
-      <h3>Emil · Frieda · Anton · Erik · Sarah</h3>
-      <p>Diese Listen verbinden wir anschließend mit demselben Urlaub und denselben Zählern.</p>
-    </div>
+    <div class="top"><h2 style="margin:5px 0">👤 Persönliche Listen</h2></div>
+    <div class="personCard"><b>Als Nächstes:</b> Anika, Emil, Frieda, Anton, Erik und Sarah – ebenfalls Supabase-synchronisiert.</div>
   </section>
 
   <nav class="bottom"><div class="nav">
     <button class="active" data-view="pack"><span class="nicon">🏕️</span>Packliste</button>
-    <button data-view="need"><span class="nicon">🔎</span>Suchen/Kaufen</button>
-    <button data-view="master"><span class="nicon">📚</span>Masterliste</button>
+    <button data-view="need"><span class="nicon">🔎</span>Suchen</button>
+    <button data-view="master"><span class="nicon">📚</span>Master</button>
     <button data-view="person"><span class="nicon">👤</span>Personen</button>
   </div></nav>
 </div>
@@ -169,225 +169,176 @@ button,input,select{font:inherit}
   </div>
 </div>
 
-<div class="modal" id="tripModal">
-  <div class="sheet">
-    <h3>Neuen Urlaub anlegen</h3>
-    <input id="tripName" placeholder="z. B. Soulac / Frankreich 2027">
-    <div class="sheetActions">
-      <button class="cancel" id="tripCancel">Abbrechen</button>
-      <button class="save" id="tripSave">Anlegen</button>
-    </div>
-  </div>
-</div>
-
 <script>
-const MASTER = [{"id": "cat-0", "name": "Zelt & Aufbau", "icon": "⛺", "items": [{"id": "c0-0-familienzelt", "name": "Familienzelt"}, {"id": "c0-1-wurfzelt", "name": "Wurfzelt"}, {"id": "c0-2-hammer", "name": "Hammer"}, {"id": "c0-3-teppiche", "name": "Teppiche"}, {"id": "c0-4-reparaturset", "name": "Reparaturset"}, {"id": "c0-5-tarp", "name": "Tarp"}]}, {"id": "cat-1", "name": "Campingmöbel", "icon": "🪑", "items": [{"id": "c1-0-2-grosse-stuehle", "name": "2 große Stühle"}, {"id": "c1-1-1-grosser-schwarzer-stuhl", "name": "1 großer schwarzer Stuhl"}, {"id": "c1-2-2-blaue-klappstuehle", "name": "2 blaue Klappstühle"}, {"id": "c1-3-2-stoffklappstuehle", "name": "2 Stoffklappstühle"}, {"id": "c1-4-grosser-tisch", "name": "Großer Tisch"}, {"id": "c1-5-kleiner-tisch", "name": "Kleiner Tisch"}, {"id": "c1-6-muellstaender", "name": "Müllständer"}, {"id": "c1-7-2-schraenke-gross", "name": "2 Schränke groß"}, {"id": "c1-8-2-kuechenmoebel", "name": "2 Küchenmöbel"}]}, {"id": "cat-2", "name": "Strom & Licht", "icon": "💡", "items": [{"id": "c2-0-2-grosse-kugelleuchten", "name": "2 große Kugelleuchten"}, {"id": "c2-1-2-ausklappbare-led-lampen", "name": "2 ausklappbare LED-Lampen"}, {"id": "c2-2-tischlampe", "name": "Tischlampe"}, {"id": "c2-3-taschenlampen", "name": "Taschenlampen"}, {"id": "c2-4-stirnlampen", "name": "Stirnlampen"}, {"id": "c2-5-kleine-birnenlampen", "name": "Kleine Birnenlampen"}, {"id": "c2-6-lichterketten", "name": "Lichterketten"}, {"id": "c2-7-ambienteleuchten", "name": "Ambienteleuchten"}, {"id": "c2-8-mehrfachsteckdosen", "name": "Mehrfachsteckdosen"}, {"id": "c2-9-verlaengerungskabel", "name": "Verlängerungskabel"}, {"id": "c2-10-ladekiste", "name": "Ladekiste"}, {"id": "c2-11-handy-ladegeraete", "name": "Handy-Ladegeräte"}, {"id": "c2-12-sarahs-tablet", "name": "Sarahs Tablet"}, {"id": "c2-13-sarahs-airpods", "name": "Sarahs AirPods"}, {"id": "c2-14-sarahs-uhr-ladekabel", "name": "Sarahs Uhr + Ladekabel"}, {"id": "c2-15-anikas-airpods", "name": "Anikas AirPods"}, {"id": "c2-16-eriks-airpods", "name": "Eriks AirPods"}, {"id": "c2-17-usb-kabel", "name": "USB-Kabel"}, {"id": "c2-18-lightning-kabel", "name": "Lightning-Kabel"}, {"id": "c2-19-2-elektrische-luftpumpen", "name": "2 elektrische Luftpumpen"}, {"id": "c2-20-fahrradluftpumpe", "name": "Fahrradluftpumpe"}]}, {"id": "cat-3", "name": "Schlafen", "icon": "🛌", "items": [{"id": "c3-0-dicke-luftmatratze", "name": "Dicke Luftmatratze"}, {"id": "c3-1-mind-4-duenne-luftmatratzen-137-cm", "name": "mind. 4 dünne Luftmatratzen (137 cm)"}, {"id": "c3-2-schlafsack-emil", "name": "Schlafsack Emil"}, {"id": "c3-3-schlafsack-frieda", "name": "Schlafsack Frieda"}, {"id": "c3-4-schlafsack-anton", "name": "Schlafsack Anton"}, {"id": "c3-5-plumeau-erik", "name": "Plumeau Erik"}, {"id": "c3-6-plumeau-anika", "name": "Plumeau Anika"}, {"id": "c3-7-plumeau-sarah", "name": "Plumeau Sarah"}, {"id": "c3-8-kopfkissen-anika", "name": "Kopfkissen Anika"}, {"id": "c3-9-heidi-kopfkissen", "name": "Heidi-Kopfkissen"}]}, {"id": "cat-4", "name": "Küche & Gas", "icon": "🍳", "items": [{"id": "c4-0-gaskocher", "name": "Gaskocher"}, {"id": "c4-1-gasschlaeuche", "name": "Gasschläuche"}, {"id": "c4-2-t-stueck", "name": "T-Stück"}, {"id": "c4-3-druckminderer", "name": "Druckminderer"}, {"id": "c4-4-kuehlschrank", "name": "Kühlschrank"}, {"id": "c4-5-2-gasflaschen", "name": "2 Gasflaschen"}, {"id": "c4-6-franzoesische-gasflasche", "name": "Französische Gasflasche"}, {"id": "c4-7-gas-adapter", "name": "Gas-Adapter"}, {"id": "c4-8-feuerzeug", "name": "Feuerzeug"}, {"id": "c4-9-topfgriff", "name": "Topfgriff"}, {"id": "c4-10-topfset", "name": "Topfset"}, {"id": "c4-11-pfanne", "name": "Pfanne"}, {"id": "c4-12-topfuntersetzer", "name": "Topfuntersetzer"}, {"id": "c4-13-geschirr", "name": "Geschirr"}, {"id": "c4-14-besteck", "name": "Besteck"}, {"id": "c4-15-kochutensilien", "name": "Kochutensilien"}, {"id": "c4-16-grillrost", "name": "Grillrost"}, {"id": "c4-17-grillzange", "name": "Grillzange"}, {"id": "c4-18-kaffeedrueckmaschine", "name": "Kaffeedrückmaschine"}, {"id": "c4-19-becher", "name": "Becher"}, {"id": "c4-20-kaffeebecher", "name": "Kaffeebecher"}, {"id": "c4-21-weinglaeser", "name": "Weingläser"}, {"id": "c4-22-tupperdosen", "name": "Tupperdosen"}, {"id": "c4-23-zip-beutel", "name": "Zip-Beutel"}, {"id": "c4-24-verschlussklemmen", "name": "Verschlussklemmen"}, {"id": "c4-25-weinoeffner", "name": "Weinöffner"}, {"id": "c4-26-bieroeffner", "name": "Bieröffner"}, {"id": "c4-27-obstkorb", "name": "Obstkorb"}, {"id": "c4-28-schere", "name": "Schere"}, {"id": "c4-29-geschirrtuecher", "name": "Geschirrtücher"}, {"id": "c4-30-lappen", "name": "Lappen"}, {"id": "c4-31-salatschleuder", "name": "Salatschleuder"}]}, {"id": "cat-5", "name": "Wasser & Spülen", "icon": "🚰", "items": [{"id": "c5-0-spuelkiste", "name": "Spülkiste"}, {"id": "c5-1-wasserkanister", "name": "Wasserkanister"}, {"id": "c5-2-trinkwasserpumpe", "name": "Trinkwasserpumpe"}, {"id": "c5-3-kiste-fuer-unter-den-wasserkanister", "name": "Kiste für unter den Wasserkanister"}]}, {"id": "cat-6", "name": "Sanitär", "icon": "🚽", "items": [{"id": "c6-0-campingklo", "name": "Campingklo"}, {"id": "c6-1-klochemikalien", "name": "Klochemikalien"}, {"id": "c6-2-klopapier", "name": "Klopapier"}]}, {"id": "cat-7", "name": "Haushalt & Ordnung", "icon": "🧹", "items": [{"id": "c7-0-besen", "name": "Besen"}, {"id": "c7-1-kehrblech", "name": "Kehrblech"}, {"id": "c7-2-handfeger", "name": "Handfeger"}, {"id": "c7-3-schnur", "name": "Schnur"}, {"id": "c7-4-gaffa-tape", "name": "Gaffa-Tape"}, {"id": "c7-5-waescheleine", "name": "Wäscheleine"}, {"id": "c7-6-waeschespinne", "name": "Wäschespinne"}, {"id": "c7-7-schreibzeug", "name": "Schreibzeug"}, {"id": "c7-8-papier", "name": "Papier"}, {"id": "c7-9-collegeblock", "name": "Collegeblock"}]}, {"id": "cat-8", "name": "Werkzeug", "icon": "🔧", "items": [{"id": "c8-0-teleskopleiter", "name": "Teleskopleiter"}]}, {"id": "cat-9", "name": "Strand", "icon": "🏖", "items": [{"id": "c9-0-strandtarp", "name": "Strandtarp"}, {"id": "c9-1-strandpavillon", "name": "Strandpavillon"}, {"id": "c9-2-strandmuschel", "name": "Strandmuschel"}, {"id": "c9-3-sandspielzeug", "name": "Sandspielzeug"}, {"id": "c9-4-spaten", "name": "Spaten"}, {"id": "c9-5-schaufeln", "name": "Schaufeln"}, {"id": "c9-6-neoprenanzuege-fuer-die-kinder", "name": "Neoprenanzüge für die Kinder"}, {"id": "c9-7-uv-shirt-fuer-jeden", "name": "UV-Shirt für jeden"}, {"id": "c9-8-body-boards", "name": "Body-Boards"}, {"id": "c9-9-drachen", "name": "Drachen"}, {"id": "c9-10-frisbee", "name": "Frisbee"}, {"id": "c9-11-schlaeger-spiel", "name": "Schläger-Spiel"}, {"id": "c9-12-volleyball", "name": "Volleyball"}, {"id": "c9-13-kleiner-ball", "name": "Kleiner Ball"}, {"id": "c9-14-schwimmweste-sarah", "name": "Schwimmweste Sarah"}, {"id": "c9-15-schwimmweste-anton", "name": "Schwimmweste Anton"}, {"id": "c9-16-bollerwagen", "name": "Bollerwagen"}, {"id": "c9-17-kuehltuch", "name": "Kühltuch"}]}, {"id": "cat-10", "name": "Fahrräder", "icon": "🚲", "items": [{"id": "c10-0-fahrrad-anton", "name": "Fahrrad Anton"}, {"id": "c10-1-fahrrad-emil", "name": "Fahrrad Emil"}, {"id": "c10-2-fahrrad-frieda", "name": "Fahrrad Frieda"}, {"id": "c10-3-e-bike-ladegeraete", "name": "E-Bike-Ladegeräte"}, {"id": "c10-4-fahrradbeleuchtung", "name": "Fahrradbeleuchtung"}, {"id": "c10-5-helme-fuer-alle-kinder", "name": "Helme für alle Kinder"}, {"id": "c10-6-fahrradwerkzeug", "name": "Fahrradwerkzeug"}, {"id": "c10-7-fahrradschloesser", "name": "Fahrradschlösser"}]}, {"id": "cat-11", "name": "Freizeit & Spiele", "icon": "🎲", "items": [{"id": "c11-0-haengematten", "name": "Hängematten"}, {"id": "c11-1-seile", "name": "Seile"}, {"id": "c11-2-karabiner", "name": "Karabiner"}, {"id": "c11-3-kubb", "name": "Kubb"}, {"id": "c11-4-moelkky", "name": "Mölkky"}, {"id": "c11-5-boule", "name": "Boule"}, {"id": "c11-6-picknickdecke", "name": "Picknickdecke"}, {"id": "c11-7-strandstuhl", "name": "Strandstuhl"}, {"id": "c11-8-festivalstuhl", "name": "Festivalstuhl"}, {"id": "c11-9-uno", "name": "Uno"}, {"id": "c11-10-skip-bo", "name": "Skip-Bo"}, {"id": "c11-11-skyjo", "name": "Skyjo"}, {"id": "c11-12-sea-salt-paper", "name": "Sea Salt & Paper"}, {"id": "c11-13-exit-games", "name": "Exit Games"}, {"id": "c11-14-adventure-games", "name": "Adventure Games"}]}, {"id": "cat-12", "name": "Kreativ & Basteln", "icon": "✂", "items": [{"id": "c12-0-origamipapier", "name": "Origamipapier"}, {"id": "c12-1-stifte", "name": "Stifte"}, {"id": "c12-2-bastelschere", "name": "Bastelschere"}, {"id": "c12-3-material-fuer-armbaender", "name": "Material für Armbänder"}]}, {"id": "cat-13", "name": "Sarah", "icon": "💙", "items": [{"id": "c13-0-rollstuhl", "name": "Rollstuhl"}, {"id": "c13-1-pants", "name": "Pants"}, {"id": "c13-2-feuchttuecher", "name": "Feuchttücher"}, {"id": "c13-3-bettunterlage", "name": "Bettunterlage"}, {"id": "c13-4-windeln", "name": "Windeln"}, {"id": "c13-5-zeitschriften", "name": "Zeitschriften"}, {"id": "c13-6-keyboard", "name": "Keyboard"}, {"id": "c13-7-medikamente", "name": "Medikamente"}, {"id": "c13-8-microklist", "name": "Microklist"}, {"id": "c13-9-abfuehrtropfen", "name": "Abführtropfen"}]}, {"id": "cat-14", "name": "Hygiene & Gesundheit", "icon": "🧴", "items": [{"id": "c14-0-duschgel", "name": "Duschgel"}, {"id": "c14-1-shampoo", "name": "Shampoo"}, {"id": "c14-2-sonnencreme", "name": "Sonnencreme"}, {"id": "c14-3-lippenpflegestift", "name": "Lippenpflegestift"}, {"id": "c14-4-after-sun", "name": "After Sun"}, {"id": "c14-5-nivea-creme", "name": "Nivea Creme"}, {"id": "c14-6-mueckenspray", "name": "Mückenspray"}, {"id": "c14-7-insektenstichgel", "name": "Insektenstichgel"}, {"id": "c14-8-pflaster", "name": "Pflaster"}, {"id": "c14-9-schere", "name": "Schere"}, {"id": "c14-10-pinzette", "name": "Pinzette"}, {"id": "c14-11-wundsalbe", "name": "Wundsalbe"}, {"id": "c14-12-hygienewaschspray", "name": "Hygienewaschspray"}, {"id": "c14-13-zahnbuerste", "name": "Zahnbürste"}, {"id": "c14-14-zahnpasta", "name": "Zahnpasta"}, {"id": "c14-15-haarbuerste", "name": "Haarbürste"}, {"id": "c14-16-haargummis", "name": "Haargummis"}]}, {"id": "cat-15", "name": "Katzen-Sitting", "icon": "🐱", "items": [{"id": "c15-0-katzen", "name": "Katzen"}, {"id": "c15-1-katzenfutter", "name": "Katzenfutter"}, {"id": "c15-2-trockenfutter", "name": "Trockenfutter"}, {"id": "c15-3-tracker", "name": "Tracker"}, {"id": "c15-4-ladekabel-tracker", "name": "Ladekabel Tracker"}, {"id": "c15-5-katzenstreu", "name": "Katzenstreu"}, {"id": "c15-6-katzenklo", "name": "Katzenklo"}, {"id": "c15-7-schaelchen", "name": "Schälchen"}, {"id": "c15-8-transportbox", "name": "Transportbox"}, {"id": "c15-9-futterautomat", "name": "Futterautomat"}]}, {"id": "cat-16", "name": "Camping allgemein", "icon": "🏕️", "items": [{"id": "c16-0-nackenventilator", "name": "Nackenventilator"}]}];
-const STORAGE = "bosbach-camping-app-v1";
-let db = JSON.parse(localStorage.getItem(STORAGE) || "null") || {
-  currentTrip:"urlaub-1",
-  trips:{"urlaub-1":{name:"Le Gurp · Frankreich",states:{},custom:[],hidden:[]}}
-};
-let filter="all";
-let masterFilter="all";
-let addScope="trip";
-let lastRemoved=null;
-if(!db.masterCustom) db.masterCustom=[];
+const SUPABASE_URL="https://muujfgwspkoogjxtvcrp.supabase.co";
+const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
-function save(){ localStorage.setItem(STORAGE,JSON.stringify(db)); }
-function trip(){ const t=db.trips[db.currentTrip]; if(!t.hidden)t.hidden=[]; if(!t.custom)t.custom=[]; return t; }
-function state(id){
-  const t=trip();
-  if(!t.states[id]) t.states[id]={take:false,seen:false,box:false,car:false,need:false};
-  return t.states[id];
+let masterItems=[], places=[], states=new Map(), currentTrip=null, currentPlace=null;
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null;
+const el=id=>document.getElementById(id);
+
+function toast(msg,undo=false){
+  el("undoText").textContent=msg;el("undoBtn").style.display=undo?"block":"none";el("undoToast").classList.add("show");
+  clearTimeout(toast.t);toast.t=setTimeout(()=>el("undoToast").classList.remove("show"),4500);
 }
-function masterCategories(){
-  const extra={};
-  for(const x of db.masterCustom){ (extra[x.category] ||= []).push(x); }
-  return MASTER.map(c=>({...c,items:[...c.items,...(extra[c.name]||[])]}))
-    .concat(Object.entries(extra).filter(([k])=>!MASTER.some(c=>c.name===k)).map(([name,items],i)=>({id:"master-extra-"+i,name,icon:"✨",items})));
+function setSync(msg){el("syncText").textContent=msg}
+function iconForCategory(cat){const x=masterItems.find(i=>i.category===cat&&i.icon);return x?.icon||"🏕️"}
+function state(id){return states.get(id)||{selected:false,seen:false,in_box:false,in_car:false,need:false}}
+function currentItems(){
+  return masterItems.filter(i=>i.is_master || states.has(i.id));
 }
-function allCategories(){
-  const extra = {};
-  for(const x of trip().custom){ (extra[x.category] ||= []).push(x); }
-  return masterCategories().map(c=>({...c,items:[...c.items.filter(i=>!trip().hidden.includes(i.id)),...(extra[c.name]||[])]}))
-    .concat(Object.entries(extra).filter(([k])=>!masterCategories().some(c=>c.name===k)).map(([name,items],i)=>({id:"custom-cat-"+i,name,icon:"✨",items})));
+function grouped(items){
+  const map=new Map();
+  for(const i of items){if(!map.has(i.category))map.set(i.category,[]);map.get(i.category).push(i)}
+  return [...map.entries()].map(([name,items])=>({name,icon:iconForCategory(name),items}));
 }
-function allItems(){
-  return allCategories().flatMap(c=>c.items.map(i=>({...i,category:c.name})));
+async function dbUpsert(itemId,patch){
+  if(!currentTrip)return;
+  const old=state(itemId);
+  const row={trip_id:currentTrip.id,item_id:itemId,selected:old.selected,seen:old.seen,in_box:old.in_box,in_car:old.in_car,need:old.need,...patch,updated_at:new Date().toISOString()};
+  states.set(itemId,row);render();setSync("Speichert …");
+  const {error}=await sb.from("camping_trip_items").upsert(row,{onConflict:"trip_id,item_id"});
+  if(error){toast("Speichern fehlgeschlagen");console.error(error)}else setSync("Synchronisiert");
 }
-function renderTrips(){
-  const s=document.getElementById("tripSelect"); s.innerHTML="";
-  Object.entries(db.trips).forEach(([id,t])=>{
-    const o=document.createElement("option"); o.value=id;o.textContent=t.name;o.selected=id===db.currentTrip;s.appendChild(o);
-  });
+async function loadItems(){
+  const {data,error}=await sb.from("camping_items").select("id,name,category,icon,is_master,is_active,household_item_id").eq("is_active",true).order("category").order("name");
+  if(error)throw error;masterItems=data||[];
 }
-function renderCats(){
-  const q=document.getElementById("quickCat"); q.innerHTML="";
-  const ac=document.getElementById("addCat"); ac.innerHTML="";
-  masterCategories().forEach(c=>{
-    const o=document.createElement("option");o.value=c.name;o.textContent=c.name;q.appendChild(o);
-    const a=o.cloneNode(true);ac.appendChild(a);
-  });
+async function loadPlaces(){
+  const {data,error}=await sb.from("camping_places").select("*").order("name");
+  if(error)throw error;places=data||[];
+  el("placeSelect").innerHTML="";
+  for(const p of places){const o=document.createElement("option");o.value=p.id;o.textContent=p.name;el("placeSelect").appendChild(o)}
+  const saved=localStorage.getItem("camping-place-id");
+  currentPlace=places.find(p=>p.id===saved)||places.find(p=>p.name==="Le Gurp")||places[0];
+  if(currentPlace)el("placeSelect").value=currentPlace.id;
 }
-function visibleItem(item){
-  const st=state(item.id);
-  if(filter==="selected") return st.take;
-  if(filter==="open") return st.take && !st.car;
-  if(filter==="need") return st.need;
+async function ensureTrip(place){
+  const {data,error}=await sb.from("camping_trips").select("*").eq("place_id",place.id).eq("archived",false).order("created_at",{ascending:false}).limit(1);
+  if(error)throw error;
+  if(data?.length){currentTrip=data[0];return}
+  const {data:newTrip,error:e}=await sb.from("camping_trips").insert({name:place.name+" – aktuell",place_id:place.id}).select().single();
+  if(e)throw e;currentTrip=newTrip;
+}
+async function loadStates(){
+  states=new Map();
+  if(!currentTrip)return;
+  const {data,error}=await sb.from("camping_trip_items").select("*").eq("trip_id",currentTrip.id);
+  if(error)throw error;(data||[]).forEach(x=>states.set(x.item_id,x));
+}
+async function switchPlace(id){
+  currentPlace=places.find(p=>p.id===id);if(!currentPlace)return;
+  localStorage.setItem("camping-place-id",id);setSync("Lädt …");
+  await ensureTrip(currentPlace);await loadStates();subscribeTrip();render();setSync("Synchronisiert");
+}
+function subscribeTrip(){
+  if(channel)sb.removeChannel(channel);
+  if(!currentTrip)return;
+  channel=sb.channel("camping-"+currentTrip.id)
+   .on("postgres_changes",{event:"*",schema:"public",table:"camping_trip_items",filter:"trip_id=eq."+currentTrip.id},async()=>{await loadStates();render();setSync("Synchronisiert")})
+   .subscribe();
+}
+function visible(i){
+  const s=state(i.id);
+  if(filter==="selected")return s.selected;
+  if(filter==="open")return s.selected&&!s.in_car;
+  if(filter==="need")return s.need;
   return true;
 }
+function attachSwipe(row,item){
+  let startX=0,startY=0,dx=0,drag=false;
+  row.addEventListener("touchstart",e=>{const t=e.touches[0];startX=t.clientX;startY=t.clientY;dx=0;drag=true},{passive:true});
+  row.addEventListener("touchmove",e=>{if(!drag)return;const t=e.touches[0];dx=t.clientX-startX;const dy=t.clientY-startY;if(Math.abs(dx)>Math.abs(dy)&&dx<0)row.style.transform=`translateX(${Math.max(dx,-92)}px)`},{passive:true});
+  row.addEventListener("touchend",()=>{drag=false;row.style.transform="";row.classList.toggle("swiped",dx<-45)});
+}
 function render(){
-  renderTrips();renderCats();
-  const root=document.getElementById("list");root.innerHTML="";
-  for(const cat of allCategories()){
-    const vis=cat.items.filter(visibleItem); if(!vis.length) continue;
+  const items=currentItems();el("list").innerHTML="";
+  for(const cat of grouped(items.filter(visible))){
     const sec=document.createElement("section");sec.className="category";
-    sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${vis.length} Artikel</small></button><div class="catbody"></div>`;
+    sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;
     sec.querySelector(".cathead").onclick=()=>sec.classList.toggle("closed");
     const body=sec.querySelector(".catbody");
-    for(const item of vis){
-      const st=state(item.id);
-      const row=document.createElement("div");row.className="row"+(st.take?" selected":"");
-      row.innerHTML=`<div class="nameLine">
-        <input class="take" type="checkbox" ${st.take?"checked":""} aria-label="Mitnehmen">
-        <div class="name">${item.name}</div>
-      </div>
-      <div class="actions">
-        <button class="stage ${st.seen?"on":""}" data-stage="seen">✓ Gesichtet</button>
-        <button class="stage ${st.box?"on":""}" data-stage="box">📦 Kiste</button>
-        <button class="stage ${st.car?"on":""}" data-stage="car">🚗 Auto</button>
-        <button class="stage ${st.need?"on":""}" data-stage="need">🔎 Suchen</button>
-      </div>`;
-      row.querySelector(".take").onchange=e=>{st.take=e.target.checked;if(!st.take){st.seen=false;st.box=false;st.car=false;}save();render();};
+    for(const item of cat.items){
+      const s=state(item.id),wrap=document.createElement("div"),del=document.createElement("button"),row=document.createElement("div");
+      wrap.className="swipeWrap";del.className="swipeDelete";del.textContent="🗑 Entfernen";row.className="row"+(s.selected?" selected":"");
+      row.innerHTML=`<div class="nameLine"><input class="take" type="checkbox" ${s.selected?"checked":""}><div class="name">${item.name}</div>${item.is_master?"":'<span class="tripOnly">nur Urlaub</span>'}</div>
+      <div class="actions"><button class="stage ${s.seen?"on":""}" data-stage="seen">✓ Gesichtet</button><button class="stage ${s.in_box?"on":""}" data-stage="box">📦 Kiste</button><button class="stage ${s.in_car?"on":""}" data-stage="car">🚗 Auto</button><button class="stage ${s.need?"on":""}" data-stage="need">🔎 Suchen</button></div>`;
+      row.querySelector(".take").onchange=e=>dbUpsert(item.id,{selected:e.target.checked,...(!e.target.checked?{seen:false,in_box:false,in_car:false}:{})});
       row.querySelectorAll(".stage").forEach(b=>b.onclick=()=>{
-        const k=b.dataset.stage; st[k]=!st[k];
-        if(k!=="need" && st[k]) st.take=true;
-        save();render();
+        const k=b.dataset.stage,ss=state(item.id);
+        const key=k==="box"?"in_box":k==="car"?"in_car":k;
+        dbUpsert(item.id,{[key]:!ss[key],...(key!=="need"&&!ss[key]?{selected:true}:{})});
       });
-      const wrap=document.createElement("div"); wrap.className="swipeWrap";
-      const del=document.createElement("button"); del.className="swipeDelete"; del.textContent="🗑 Entfernen";
-      wrap.appendChild(del); wrap.appendChild(row); body.appendChild(wrap);
-      let startX=0,startY=0,dx=0,dragging=false;
-      row.addEventListener("touchstart",e=>{const t=e.touches[0];startX=t.clientX;startY=t.clientY;dx=0;dragging=true;},{passive:true});
-      row.addEventListener("touchmove",e=>{if(!dragging)return;const t=e.touches[0];dx=t.clientX-startX;const dy=t.clientY-startY;if(Math.abs(dx)>Math.abs(dy)&&dx<0)row.style.transform=`translateX(${Math.max(dx,-92)}px)`;},{passive:true});
-      row.addEventListener("touchend",()=>{dragging=false;row.style.transform="";row.classList.toggle("swiped",dx<-45);});
-      del.onclick=()=>removeFromTrip(item);
+      del.onclick=async()=>{lastRemoved={itemId:item.id,old:{...state(item.id)}};await dbUpsert(item.id,{selected:false,seen:false,in_box:false,in_car:false});toast(item.name+" entfernt",true)};
+      wrap.appendChild(del);wrap.appendChild(row);body.appendChild(wrap);attachSwipe(row,item);
     }
-    root.appendChild(sec);
+    el("list").appendChild(sec);
   }
-  updateStats(); renderNeed(); renderMaster();
-}
-function showUndo(message){
-  undoText.textContent=message; undoToast.classList.add("show");
-  clearTimeout(showUndo.timer); showUndo.timer=setTimeout(()=>undoToast.classList.remove("show"),5000);
-}
-function removeFromTrip(item){
-  const ci=trip().custom.findIndex(x=>x.id===item.id);
-  if(ci>=0){
-    const removed=trip().custom[ci];
-    lastRemoved={type:"tripCustom",item:removed,index:ci,state:{...state(item.id)}};
-    trip().custom.splice(ci,1); delete trip().states[item.id];
-  } else {
-    if(!trip().hidden.includes(item.id)) trip().hidden.push(item.id);
-    lastRemoved={type:"hidden",id:item.id};
-  }
-  save();render();showUndo(item.name+" entfernt");
-}
-undoBtn.onclick=()=>{
-  if(!lastRemoved)return;
-  if(lastRemoved.type==="hidden"){
-    trip().hidden=trip().hidden.filter(id=>id!==lastRemoved.id);
-  } else {
-    trip().custom.splice(lastRemoved.index,0,lastRemoved.item);
-    trip().states[lastRemoved.item.id]=lastRemoved.state;
-  }
-  lastRemoved=null;save();render();undoToast.classList.remove("show");
-};
-function renderMaster(){
-  const root=document.getElementById("masterList"); root.innerHTML="";
-  for(const cat of masterCategories()){
-    const vis=cat.items.filter(i=>{
-      const hidden=trip().hidden.includes(i.id);
-      return masterFilter==="in"?!hidden:masterFilter==="out"?hidden:true;
-    });
-    if(!vis.length)continue;
-    const sec=document.createElement("section");sec.className="category";
-    sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${vis.length}</small></button><div class="catbody"></div>`;
-    sec.querySelector(".cathead").onclick=()=>sec.classList.toggle("closed");
-    const body=sec.querySelector(".catbody");
-    vis.forEach(i=>{
-      const hidden=trip().hidden.includes(i.id);
-      const r=document.createElement("div");r.className="masterRow";
-      r.innerHTML=`<div class="masterName">${i.name}</div><button class="${hidden?"addBack":""}">${hidden?"＋ Zurückholen":"✓ Dabei"}</button>`;
-      r.querySelector("button").onclick=()=>{
-        if(hidden) trip().hidden=trip().hidden.filter(id=>id!==i.id);
-        else if(!trip().hidden.includes(i.id)) trip().hidden.push(i.id);
-        save();render();
-      };
-      body.appendChild(r);
-    });
-    root.appendChild(sec);
-  }
+  updateStats();renderNeed();renderMaster();renderCats();
 }
 function updateStats(){
-  const sts=allItems().map(i=>state(i.id));
-  const count=k=>sts.filter(s=>s[k]).length;
-  sTake.textContent=count("take"); sSeen.textContent=count("seen"); sBox.textContent=count("box"); sCar.textContent=count("car"); sNeed.textContent=count("need");
+  const ss=currentItems().map(i=>state(i.id)),cnt=k=>ss.filter(s=>s[k]).length;
+  el("sTake").textContent=cnt("selected");el("sSeen").textContent=cnt("seen");el("sBox").textContent=cnt("in_box");el("sCar").textContent=cnt("in_car");el("sNeed").textContent=cnt("need");
 }
 function renderNeed(){
-  const n=document.getElementById("needList");n.innerHTML="";
-  const items=allItems().filter(i=>state(i.id).need);
-  if(!items.length){n.innerHTML='<div class="empty">Noch nichts auf der Such-/Kaufliste 🎉</div>';return;}
+  const root=el("needList");root.innerHTML="";const items=currentItems().filter(i=>state(i.id).need);
+  if(!items.length){root.innerHTML='<div class="empty">Noch nichts auf der Such-/Kaufliste 🎉</div>';return}
   const card=document.createElement("div");card.className="needCard";
-  items.forEach(i=>{
-    const d=document.createElement("div");d.className="needItem";
-    d.innerHTML=`<b>${i.name}</b><span class="badge">${i.category}</span><button class="stage on" data-stage="need">✓ erledigt</button>`;
-    d.querySelector("button").onclick=()=>{state(i.id).need=false;save();render();};
-    card.appendChild(d);
-  });
-  n.appendChild(card);
+  items.forEach(i=>{const d=document.createElement("div");d.className="needItem";d.innerHTML=`<b>${i.name}</b><span class="badge">${i.category}</span><button class="stage on" data-stage="need">✓ erledigt</button>`;d.querySelector("button").onclick=()=>dbUpsert(i.id,{need:false});card.appendChild(d)});
+  root.appendChild(card);
 }
-document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render();
-});
-document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster();
-});
-document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster();
-});
-document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");
-  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  document.getElementById("view-"+b.dataset.view).classList.add("active");
-});
-tripSelect.onchange=e=>{db.currentTrip=e.target.value;save();render();};
-newTripBtn.onclick=()=>tripModal.classList.add("open");
-tripCancel.onclick=()=>tripModal.classList.remove("open");
-tripSave.onclick=()=>{
-  const name=tripName.value.trim();if(!name)return;
-  const id="trip-"+Date.now();db.trips[id]={name,states:{},custom:[],hidden:[]};db.currentTrip=id;tripName.value="";tripModal.classList.remove("open");save();render();
+function renderMaster(){
+  const root=el("masterList");root.innerHTML="";
+  let items=masterItems.filter(i=>i.is_master);
+  if(masterFilter==="in")items=items.filter(i=>state(i.id).selected);
+  if(masterFilter==="out")items=items.filter(i=>!state(i.id).selected);
+  for(const cat of grouped(items)){
+    const sec=document.createElement("section");sec.className="category";
+    sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;
+    sec.querySelector(".cathead").onclick=()=>sec.classList.toggle("closed");
+    const body=sec.querySelector(".catbody");
+    cat.items.forEach(i=>{const on=state(i.id).selected,r=document.createElement("div");r.className="masterRow";r.innerHTML=`<div class="masterName">${i.name}</div><button class="${on?"":"addBack"}">${on?"✓ Dabei":"＋ Mitnehmen"}</button>`;r.querySelector("button").onclick=()=>dbUpsert(i.id,{selected:!on,...(on?{seen:false,in_box:false,in_car:false}:{})});body.appendChild(r)});
+    root.appendChild(sec);
+  }
+}
+function renderCats(){
+  const cats=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category))].sort();
+  [el("quickCat"),el("addCat")].forEach(sel=>{const old=sel.value;sel.innerHTML="";cats.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)});if(cats.includes(old))sel.value=old});
+}
+el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastRemoved=null;await dbUpsert(x.itemId,x.old);el("undoToast").classList.remove("show")};
+document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render()});
+document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster()});
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));el("view-"+b.dataset.view).classList.add("active")});
+el("placeSelect").onchange=e=>switchPlace(e.target.value);
+el("newTripBtn").onclick=async()=>{
+  if(!currentPlace)return;const name=prompt("Name des neuen Urlaubs",currentPlace.name+" "+new Date().getFullYear());if(!name)return;
+  const {data,error}=await sb.from("camping_trips").insert({name,place_id:currentPlace.id}).select().single();
+  if(error)return toast("Urlaub konnte nicht angelegt werden");currentTrip=data;await loadStates();subscribeTrip();render();toast("Neuer Urlaub angelegt");
 };
-quickAdd.onclick=()=>{
-  const name=quickName.value.trim(); if(!name)return;
-  addName.value=name; addCat.value=quickCat.value; addScope="trip";
-  document.querySelectorAll(".addChoice button").forEach(b=>b.classList.toggle("active",b.dataset.scope==="trip"));
-  addModal.classList.add("open");
+el("quickAdd").onclick=()=>{const n=el("quickName").value.trim();if(!n)return;el("addName").value=n;el("addCat").value=el("quickCat").value;addScope="trip";document.querySelectorAll(".addChoice button").forEach(b=>b.classList.toggle("active",b.dataset.scope==="trip"));el("addModal").classList.add("open")};
+el("quickName").onkeydown=e=>{if(e.key==="Enter")el("quickAdd").click()};
+document.querySelectorAll(".addChoice button").forEach(b=>b.onclick=()=>{addScope=b.dataset.scope;document.querySelectorAll(".addChoice button").forEach(x=>x.classList.toggle("active",x===b))});
+el("addCancel").onclick=()=>el("addModal").classList.remove("open");
+el("addSave").onclick=async()=>{
+  const name=el("addName").value.trim(),category=el("addCat").value;if(!name||!category)return;
+  setSync("Speichert …");
+  const {data,error}=await sb.from("camping_items").insert({name,category,icon:iconForCategory(category),is_master:addScope==="master"}).select().single();
+  if(error){console.error(error);toast(error.code==="23505"?"Artikel steht schon in der Masterliste":"Artikel konnte nicht gespeichert werden");setSync("Fehler");return}
+  masterItems.push(data);await dbUpsert(data.id,{selected:true});el("quickName").value="";el("addName").value="";el("addModal").classList.remove("open");render();toast(addScope==="master"?"Zur Masterliste hinzugefügt":"Für diesen Urlaub hinzugefügt");
 };
-quickName.addEventListener("keydown",e=>{if(e.key==="Enter")quickAdd.click()});
-document.querySelectorAll(".addChoice button").forEach(b=>b.onclick=()=>{
-  addScope=b.dataset.scope;document.querySelectorAll(".addChoice button").forEach(x=>x.classList.toggle("active",x===b));
-});
-addCancel.onclick=()=>addModal.classList.remove("open");
-addSave.onclick=()=>{
-  const name=addName.value.trim(); if(!name)return;
-  const id=(addScope==="master"?"master-":"custom-")+Date.now();
-  const obj={id,name,category:addCat.value};
-  if(addScope==="master") db.masterCustom.push(obj); else trip().custom.push(obj);
-  state(id).take=true;
-  quickName.value=""; addName.value=""; addModal.classList.remove("open");save();render();
+el("loginBtn").onclick=async()=>{
+  el("loginErr").textContent="";el("loginBtn").disabled=true;
+  const {error}=await sb.auth.signInWithPassword({email:el("loginEmail").value.trim(),password:el("loginPassword").value});
+  el("loginBtn").disabled=false;if(error)el("loginErr").textContent="Anmeldung fehlgeschlagen: "+error.message;
 };
-render();
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){el("login").classList.remove("hidden");return}
+  el("login").classList.add("hidden");
+  try{setSync("Lädt …");await Promise.all([loadItems(),loadPlaces()]);if(currentPlace)await switchPlace(currentPlace.id);render();setSync("Synchronisiert")}catch(e){console.error(e);toast("Daten konnten nicht geladen werden");setSync("Fehler")}
+}
+sb.auth.onAuthStateChange((_event,session)=>{if(session)boot();else el("login").classList.remove("hidden")});
+boot();
 </script>
-</body>
-</html>
+</body></html>
