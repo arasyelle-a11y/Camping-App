@@ -202,7 +202,7 @@ async function dbUpsert(itemId,patch){
   if(error){toast("Speichern fehlgeschlagen");console.error(error)}else setSync("Synchronisiert");
 }
 async function loadItems(){
-  const {data,error}=await sb.from("camping_items").select("id,name,category,icon,is_master,is_active,household_item_id").eq("is_active",true).order("category").order("name");
+  const {data,error}=await sb.from("camping_items").select("id,name,category,icon,is_master,is_active,household_item_id,category_order,item_order").eq("is_active",true).order("category_order",{ascending:true}).order("item_order",{ascending:true});
   if(error)throw error;masterItems=data||[];
 }
 async function loadPlaces(){
@@ -303,7 +303,7 @@ function renderMaster(){
   }
 }
 function renderCats(){
-  const cats=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category))].sort();
+  const cats=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category))];
   [el("quickCat"),el("addCat")].forEach(sel=>{const old=sel.value;sel.innerHTML="";cats.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)});if(cats.includes(old))sel.value=old});
 }
 el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastRemoved=null;await dbUpsert(x.itemId,x.old);el("undoToast").classList.remove("show")};
