@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#55692F">
+<title>Familie Bosbach – Camping</title>
+<style>
+:root {
+  --cream:#FDF7EE; --cream2:#F6EEDF; --paper:#FFFEFB; --green:#55692F;
+  --green2:#7C8F55; --navy:#1A364A; --teal:#3F717C; --brown:#6B4E31;
+  --orange:#C4562A; --line:#E4DAC5; --muted:#7A756A; --shadow:0 8px 28px rgba(26,54,74,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--navy);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select{font:inherit}
+.app{max-width:760px;margin:auto;min-height:100vh;padding-bottom:88px}
+.banner{width:100%;display:block;border-bottom:3px solid var(--green)}
+.hero{background:linear-gradient(180deg,#dfe9d4 0%,#f4ead9 100%);padding:20px 16px 18px;text-align:center}.hero-pines{font-size:34px;letter-spacing:5px}.hero-title{font-weight:900;font-size:23px;color:var(--green);margin-top:4px}.hero-sub{font-size:12px;font-weight:800;color:var(--brown);margin-top:3px}
+.top{padding:16px 16px 8px;position:sticky;top:0;z-index:10;background:linear-gradient(var(--cream) 85%,rgba(253,247,238,0));backdrop-filter:blur(8px)}
+.tripbar{display:flex;gap:8px;align-items:center}
+.tripbar select{flex:1;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--paper);color:var(--navy);font-weight:700}
+.iconbtn{border:0;border-radius:12px;background:var(--green);color:white;padding:11px 14px;font-weight:800}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center}
+.stat b{display:block;font-size:17px}
+.stat span{font-size:9px;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.quickadd{display:grid;grid-template-columns:1fr 130px auto;gap:7px;padding:10px 16px 4px}
+.quickadd input,.quickadd select{min-width:0;border:1px solid var(--line);background:white;border-radius:11px;padding:11px}
+.quickadd button{border:0;border-radius:11px;background:var(--navy);color:white;padding:0 14px;font-weight:800}
+.filters{display:flex;gap:7px;padding:8px 16px;overflow:auto}
+.filter{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;white-space:nowrap;color:var(--brown)}
+.filter.active{background:var(--green);color:white;border-color:var(--green)}
+.content{padding:0 14px}
+.category{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin:12px 0;box-shadow:var(--shadow)}
+.cathead{width:100%;border:0;background:linear-gradient(135deg,var(--green),#485925);color:white;padding:14px 15px;display:flex;align-items:center;gap:10px;text-align:left}
+.cathead .emoji{font-size:21px} .cathead strong{font-size:17px;flex:1} .cathead small{opacity:.85;font-weight:700}
+.catbody{display:block} .category.closed .catbody{display:none}
+.row{padding:10px 10px;border-top:1px solid #eee4d2}
+.row:nth-child(even){background:var(--cream2)}
+.nameLine{display:flex;align-items:center;gap:9px}
+.name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
+.take{appearance:none;width:24px;height:24px;border:2px solid var(--green);border-radius:7px;background:white;display:grid;place-content:center;flex:0 0 auto}
+.take:checked{background:var(--green)} .take:checked:after{content:"✓";color:white;font-weight:900}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.stage{border:1.5px solid var(--line);border-radius:9px;background:white;padding:7px 3px;font-size:10px;font-weight:800;color:var(--muted)}
+.stage.on[data-stage="seen"]{background:#E5EDD4;border-color:var(--green);color:var(--green)}
+.stage.on[data-stage="box"]{background:#DDECF0;border-color:var(--teal);color:var(--teal)}
+.stage.on[data-stage="car"]{background:#DFE6EC;border-color:var(--navy);color:var(--navy)}
+.stage.on[data-stage="need"]{background:#F8E3D7;border-color:var(--orange);color:var(--orange)}
+.row:not(.selected) .actions{opacity:.34;pointer-events:none}
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,254,251,.97);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+.nav{width:min(760px,100%);display:grid;grid-template-columns:repeat(3,1fr)}
+.nav button{border:0;background:transparent;padding:12px 6px 10px;color:var(--muted);font-weight:800;font-size:11px}
+.nav button.active{color:var(--green)} .nav .nicon{display:block;font-size:20px;margin-bottom:2px}
+.view{display:none} .view.active{display:block}
+.needCard{margin:10px 14px;background:white;border:1px solid var(--line);border-radius:14px;padding:12px}
+.needItem{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #eee}
+.needItem:last-child{border-bottom:0} .needItem b{flex:1} .badge{font-size:10px;background:#F8E3D7;color:var(--orange);padding:5px 8px;border-radius:999px;font-weight:800}
+.empty{padding:34px 20px;text-align:center;color:var(--muted)}
+.personCard{margin:10px 14px;background:white;border:1px solid var(--line);border-radius:14px;padding:15px}
+.personCard h3{margin:0 0 6px}
+.personCard p{margin:0;color:var(--muted);font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(15,30,40,.42);display:none;align-items:flex-end;z-index:50}
+.modal.open{display:flex} .sheet{width:100%;max-width:760px;margin:0 auto;background:var(--paper);border-radius:20px 20px 0 0;padding:18px}
+.sheet h3{margin:0 0 12px} .sheet input{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.sheetActions{display:flex;gap:8px} .sheetActions button{flex:1;border:0;border-radius:11px;padding:11px;font-weight:800}
+.cancel{background:var(--cream2);color:var(--brown)} .save{background:var(--green);color:white}
+@media(max-width:520px){
+  .stats{grid-template-columns:repeat(5,1fr)} .stat b{font-size:15px} .stat span{font-size:8px}
+  .quickadd{grid-template-columns:1fr 105px auto} .actions{gap:4px} .stage{font-size:9px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="banner hero"><div class="hero-inner"><div class="hero-pines">🌲 ⛺ 🌲</div><div class="hero-title">Familie Bosbach · Camping</div><div class="hero-sub">Packen • Kontrollieren • Losfahren</div></div></div>
+  <section class="view active" id="view-pack">
+    <div class="top">
+      <div class="tripbar">
+        <select id="tripSelect"></select>
+        <button class="iconbtn" id="newTripBtn">＋ Urlaub</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="sTake">0</b><span>Mitnehmen</span></div>
+        <div class="stat"><b id="sSeen">0</b><span>Gesichtet</span></div>
+        <div class="stat"><b id="sBox">0</b><span>In Kiste</span></div>
+        <div class="stat"><b id="sCar">0</b><span>Im Auto</span></div>
+        <div class="stat"><b id="sNeed">0</b><span>Suchen/Kaufen</span></div>
+      </div>
+    </div>
+    <div class="quickadd">
+      <input id="quickName" placeholder="Was fällt dir gerade noch ein?">
+      <select id="quickCat"></select>
+      <button id="quickAdd">＋</button>
+    </div>
+    <div class="filters">
+      <button class="filter active" data-filter="all">Alle</button>
+      <button class="filter" data-filter="selected">Mitnehmen</button>
+      <button class="filter" data-filter="open">Noch offen</button>
+      <button class="filter" data-filter="need">Suchen/Kaufen</button>
+    </div>
+    <main class="content" id="list"></main>
+  </section>
+
+  <section class="view" id="view-need">
+    <div class="top"><h2 style="margin:5px 0 8px">🔎 Suchen & Kaufen</h2></div>
+    <div id="needList"></div>
+  </section>
+
+  <section class="view" id="view-person">
+    <div class="top"><h2 style="margin:5px 0 8px">👤 Persönliche Listen</h2></div>
+    <div class="personCard">
+      <h3>👩 Anika</h3>
+      <p>Persönliche Packliste ist für die nächste Version vorbereitet. Die Familien-Packliste funktioniert bereits vollständig.</p>
+    </div>
+    <div class="personCard">
+      <h3>Emil · Frieda · Anton · Erik · Sarah</h3>
+      <p>Diese Listen verbinden wir anschließend mit demselben Urlaub und denselben Zählern.</p>
+    </div>
+  </section>
+
+  <nav class="bottom"><div class="nav">
+    <button class="active" data-view="pack"><span class="nicon">🏕️</span>Packliste</button>
+    <button data-view="need"><span class="nicon">🔎</span>Suchen/Kaufen</button>
+    <button data-view="person"><span class="nicon">👤</span>Personen</button>
+  </div></nav>
+</div>
+
+<div class="modal" id="tripModal">
+  <div class="sheet">
+    <h3>Neuen Urlaub anlegen</h3>
+    <input id="tripName" placeholder="z. B. Soulac / Frankreich 2027">
+    <div class="sheetActions">
+      <button class="cancel" id="tripCancel">Abbrechen</button>
+      <button class="save" id="tripSave">Anlegen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MASTER = [{"id": "cat-0", "name": "Zelt & Aufbau", "icon": "⛺", "items": [{"id": "c0-0-familienzelt", "name": "Familienzelt"}, {"id": "c0-1-wurfzelt", "name": "Wurfzelt"}, {"id": "c0-2-hammer", "name": "Hammer"}, {"id": "c0-3-teppiche", "name": "Teppiche"}, {"id": "c0-4-reparaturset", "name": "Reparaturset"}, {"id": "c0-5-tarp", "name": "Tarp"}]}, {"id": "cat-1", "name": "Campingmöbel", "icon": "🪑", "items": [{"id": "c1-0-2-grosse-stuehle", "name": "2 große Stühle"}, {"id": "c1-1-1-grosser-schwarzer-stuhl", "name": "1 großer schwarzer Stuhl"}, {"id": "c1-2-2-blaue-klappstuehle", "name": "2 blaue Klappstühle"}, {"id": "c1-3-2-stoffklappstuehle", "name": "2 Stoffklappstühle"}, {"id": "c1-4-grosser-tisch", "name": "Großer Tisch"}, {"id": "c1-5-kleiner-tisch", "name": "Kleiner Tisch"}, {"id": "c1-6-muellstaender", "name": "Müllständer"}, {"id": "c1-7-2-schraenke-gross", "name": "2 Schränke groß"}, {"id": "c1-8-2-kuechenmoebel", "name": "2 Küchenmöbel"}]}, {"id": "cat-2", "name": "Strom & Licht", "icon": "💡", "items": [{"id": "c2-0-2-grosse-kugelleuchten", "name": "2 große Kugelleuchten"}, {"id": "c2-1-2-ausklappbare-led-lampen", "name": "2 ausklappbare LED-Lampen"}, {"id": "c2-2-tischlampe", "name": "Tischlampe"}, {"id": "c2-3-taschenlampen", "name": "Taschenlampen"}, {"id": "c2-4-stirnlampen", "name": "Stirnlampen"}, {"id": "c2-5-kleine-birnenlampen", "name": "Kleine Birnenlampen"}, {"id": "c2-6-lichterketten", "name": "Lichterketten"}, {"id": "c2-7-ambienteleuchten", "name": "Ambienteleuchten"}, {"id": "c2-8-mehrfachsteckdosen", "name": "Mehrfachsteckdosen"}, {"id": "c2-9-verlaengerungskabel", "name": "Verlängerungskabel"}, {"id": "c2-10-ladekiste", "name": "Ladekiste"}, {"id": "c2-11-handy-ladegeraete", "name": "Handy-Ladegeräte"}, {"id": "c2-12-sarahs-tablet", "name": "Sarahs Tablet"}, {"id": "c2-13-sarahs-airpods", "name": "Sarahs AirPods"}, {"id": "c2-14-sarahs-uhr-ladekabel", "name": "Sarahs Uhr + Ladekabel"}, {"id": "c2-15-anikas-airpods", "name": "Anikas AirPods"}, {"id": "c2-16-eriks-airpods", "name": "Eriks AirPods"}, {"id": "c2-17-usb-kabel", "name": "USB-Kabel"}, {"id": "c2-18-lightning-kabel", "name": "Lightning-Kabel"}, {"id": "c2-19-2-elektrische-luftpumpen", "name": "2 elektrische Luftpumpen"}, {"id": "c2-20-fahrradluftpumpe", "name": "Fahrradluftpumpe"}]}, {"id": "cat-3", "name": "Schlafen", "icon": "🛌", "items": [{"id": "c3-0-dicke-luftmatratze", "name": "Dicke Luftmatratze"}, {"id": "c3-1-mind-4-duenne-luftmatratzen-137-cm", "name": "mind. 4 dünne Luftmatratzen (137 cm)"}, {"id": "c3-2-schlafsack-emil", "name": "Schlafsack Emil"}, {"id": "c3-3-schlafsack-frieda", "name": "Schlafsack Frieda"}, {"id": "c3-4-schlafsack-anton", "name": "Schlafsack Anton"}, {"id": "c3-5-plumeau-erik", "name": "Plumeau Erik"}, {"id": "c3-6-plumeau-anika", "name": "Plumeau Anika"}, {"id": "c3-7-plumeau-sarah", "name": "Plumeau Sarah"}, {"id": "c3-8-kopfkissen-anika", "name": "Kopfkissen Anika"}, {"id": "c3-9-heidi-kopfkissen", "name": "Heidi-Kopfkissen"}]}, {"id": "cat-4", "name": "Küche & Gas", "icon": "🍳", "items": [{"id": "c4-0-gaskocher", "name": "Gaskocher"}, {"id": "c4-1-gasschlaeuche", "name": "Gasschläuche"}, {"id": "c4-2-t-stueck", "name": "T-Stück"}, {"id": "c4-3-druckminderer", "name": "Druckminderer"}, {"id": "c4-4-kuehlschrank", "name": "Kühlschrank"}, {"id": "c4-5-2-gasflaschen", "name": "2 Gasflaschen"}, {"id": "c4-6-franzoesische-gasflasche", "name": "Französische Gasflasche"}, {"id": "c4-7-gas-adapter", "name": "Gas-Adapter"}, {"id": "c4-8-feuerzeug", "name": "Feuerzeug"}, {"id": "c4-9-topfgriff", "name": "Topfgriff"}, {"id": "c4-10-topfset", "name": "Topfset"}, {"id": "c4-11-pfanne", "name": "Pfanne"}, {"id": "c4-12-topfuntersetzer", "name": "Topfuntersetzer"}, {"id": "c4-13-geschirr", "name": "Geschirr"}, {"id": "c4-14-besteck", "name": "Besteck"}, {"id": "c4-15-kochutensilien", "name": "Kochutensilien"}, {"id": "c4-16-grillrost", "name": "Grillrost"}, {"id": "c4-17-grillzange", "name": "Grillzange"}, {"id": "c4-18-kaffeedrueckmaschine", "name": "Kaffeedrückmaschine"}, {"id": "c4-19-becher", "name": "Becher"}, {"id": "c4-20-kaffeebecher", "name": "Kaffeebecher"}, {"id": "c4-21-weinglaeser", "name": "Weingläser"}, {"id": "c4-22-tupperdosen", "name": "Tupperdosen"}, {"id": "c4-23-zip-beutel", "name": "Zip-Beutel"}, {"id": "c4-24-verschlussklemmen", "name": "Verschlussklemmen"}, {"id": "c4-25-weinoeffner", "name": "Weinöffner"}, {"id": "c4-26-bieroeffner", "name": "Bieröffner"}, {"id": "c4-27-obstkorb", "name": "Obstkorb"}, {"id": "c4-28-schere", "name": "Schere"}, {"id": "c4-29-geschirrtuecher", "name": "Geschirrtücher"}, {"id": "c4-30-lappen", "name": "Lappen"}, {"id": "c4-31-salatschleuder", "name": "Salatschleuder"}]}, {"id": "cat-5", "name": "Wasser & Spülen", "icon": "🚰", "items": [{"id": "c5-0-spuelkiste", "name": "Spülkiste"}, {"id": "c5-1-wasserkanister", "name": "Wasserkanister"}, {"id": "c5-2-trinkwasserpumpe", "name": "Trinkwasserpumpe"}, {"id": "c5-3-kiste-fuer-unter-den-wasserkanister", "name": "Kiste für unter den Wasserkanister"}]}, {"id": "cat-6", "name": "Sanitär", "icon": "🚽", "items": [{"id": "c6-0-campingklo", "name": "Campingklo"}, {"id": "c6-1-klochemikalien", "name": "Klochemikalien"}, {"id": "c6-2-klopapier", "name": "Klopapier"}]}, {"id": "cat-7", "name": "Haushalt & Ordnung", "icon": "🧹", "items": [{"id": "c7-0-besen", "name": "Besen"}, {"id": "c7-1-kehrblech", "name": "Kehrblech"}, {"id": "c7-2-handfeger", "name": "Handfeger"}, {"id": "c7-3-schnur", "name": "Schnur"}, {"id": "c7-4-gaffa-tape", "name": "Gaffa-Tape"}, {"id": "c7-5-waescheleine", "name": "Wäscheleine"}, {"id": "c7-6-waeschespinne", "name": "Wäschespinne"}, {"id": "c7-7-schreibzeug", "name": "Schreibzeug"}, {"id": "c7-8-papier", "name": "Papier"}, {"id": "c7-9-collegeblock", "name": "Collegeblock"}]}, {"id": "cat-8", "name": "Werkzeug", "icon": "🔧", "items": [{"id": "c8-0-teleskopleiter", "name": "Teleskopleiter"}]}, {"id": "cat-9", "name": "Strand", "icon": "🏖", "items": [{"id": "c9-0-strandtarp", "name": "Strandtarp"}, {"id": "c9-1-strandpavillon", "name": "Strandpavillon"}, {"id": "c9-2-strandmuschel", "name": "Strandmuschel"}, {"id": "c9-3-sandspielzeug", "name": "Sandspielzeug"}, {"id": "c9-4-spaten", "name": "Spaten"}, {"id": "c9-5-schaufeln", "name": "Schaufeln"}, {"id": "c9-6-neoprenanzuege-fuer-die-kinder", "name": "Neoprenanzüge für die Kinder"}, {"id": "c9-7-uv-shirt-fuer-jeden", "name": "UV-Shirt für jeden"}, {"id": "c9-8-body-boards", "name": "Body-Boards"}, {"id": "c9-9-drachen", "name": "Drachen"}, {"id": "c9-10-frisbee", "name": "Frisbee"}, {"id": "c9-11-schlaeger-spiel", "name": "Schläger-Spiel"}, {"id": "c9-12-volleyball", "name": "Volleyball"}, {"id": "c9-13-kleiner-ball", "name": "Kleiner Ball"}, {"id": "c9-14-schwimmweste-sarah", "name": "Schwimmweste Sarah"}, {"id": "c9-15-schwimmweste-anton", "name": "Schwimmweste Anton"}, {"id": "c9-16-bollerwagen", "name": "Bollerwagen"}, {"id": "c9-17-kuehltuch", "name": "Kühltuch"}]}, {"id": "cat-10", "name": "Fahrräder", "icon": "🚲", "items": [{"id": "c10-0-fahrrad-anton", "name": "Fahrrad Anton"}, {"id": "c10-1-fahrrad-emil", "name": "Fahrrad Emil"}, {"id": "c10-2-fahrrad-frieda", "name": "Fahrrad Frieda"}, {"id": "c10-3-e-bike-ladegeraete", "name": "E-Bike-Ladegeräte"}, {"id": "c10-4-fahrradbeleuchtung", "name": "Fahrradbeleuchtung"}, {"id": "c10-5-helme-fuer-alle-kinder", "name": "Helme für alle Kinder"}, {"id": "c10-6-fahrradwerkzeug", "name": "Fahrradwerkzeug"}, {"id": "c10-7-fahrradschloesser", "name": "Fahrradschlösser"}]}, {"id": "cat-11", "name": "Freizeit & Spiele", "icon": "🎲", "items": [{"id": "c11-0-haengematten", "name": "Hängematten"}, {"id": "c11-1-seile", "name": "Seile"}, {"id": "c11-2-karabiner", "name": "Karabiner"}, {"id": "c11-3-kubb", "name": "Kubb"}, {"id": "c11-4-moelkky", "name": "Mölkky"}, {"id": "c11-5-boule", "name": "Boule"}, {"id": "c11-6-picknickdecke", "name": "Picknickdecke"}, {"id": "c11-7-strandstuhl", "name": "Strandstuhl"}, {"id": "c11-8-festivalstuhl", "name": "Festivalstuhl"}, {"id": "c11-9-uno", "name": "Uno"}, {"id": "c11-10-skip-bo", "name": "Skip-Bo"}, {"id": "c11-11-skyjo", "name": "Skyjo"}, {"id": "c11-12-sea-salt-paper", "name": "Sea Salt & Paper"}, {"id": "c11-13-exit-games", "name": "Exit Games"}, {"id": "c11-14-adventure-games", "name": "Adventure Games"}]}, {"id": "cat-12", "name": "Kreativ & Basteln", "icon": "✂", "items": [{"id": "c12-0-origamipapier", "name": "Origamipapier"}, {"id": "c12-1-stifte", "name": "Stifte"}, {"id": "c12-2-bastelschere", "name": "Bastelschere"}, {"id": "c12-3-material-fuer-armbaender", "name": "Material für Armbänder"}]}, {"id": "cat-13", "name": "Sarah", "icon": "💙", "items": [{"id": "c13-0-rollstuhl", "name": "Rollstuhl"}, {"id": "c13-1-pants", "name": "Pants"}, {"id": "c13-2-feuchttuecher", "name": "Feuchttücher"}, {"id": "c13-3-bettunterlage", "name": "Bettunterlage"}, {"id": "c13-4-windeln", "name": "Windeln"}, {"id": "c13-5-zeitschriften", "name": "Zeitschriften"}, {"id": "c13-6-keyboard", "name": "Keyboard"}, {"id": "c13-7-medikamente", "name": "Medikamente"}, {"id": "c13-8-microklist", "name": "Microklist"}, {"id": "c13-9-abfuehrtropfen", "name": "Abführtropfen"}]}, {"id": "cat-14", "name": "Hygiene & Gesundheit", "icon": "🧴", "items": [{"id": "c14-0-duschgel", "name": "Duschgel"}, {"id": "c14-1-shampoo", "name": "Shampoo"}, {"id": "c14-2-sonnencreme", "name": "Sonnencreme"}, {"id": "c14-3-lippenpflegestift", "name": "Lippenpflegestift"}, {"id": "c14-4-after-sun", "name": "After Sun"}, {"id": "c14-5-nivea-creme", "name": "Nivea Creme"}, {"id": "c14-6-mueckenspray", "name": "Mückenspray"}, {"id": "c14-7-insektenstichgel", "name": "Insektenstichgel"}, {"id": "c14-8-pflaster", "name": "Pflaster"}, {"id": "c14-9-schere", "name": "Schere"}, {"id": "c14-10-pinzette", "name": "Pinzette"}, {"id": "c14-11-wundsalbe", "name": "Wundsalbe"}, {"id": "c14-12-hygienewaschspray", "name": "Hygienewaschspray"}, {"id": "c14-13-zahnbuerste", "name": "Zahnbürste"}, {"id": "c14-14-zahnpasta", "name": "Zahnpasta"}, {"id": "c14-15-haarbuerste", "name": "Haarbürste"}, {"id": "c14-16-haargummis", "name": "Haargummis"}]}, {"id": "cat-15", "name": "Katzen-Sitting", "icon": "🐱", "items": [{"id": "c15-0-katzen", "name": "Katzen"}, {"id": "c15-1-katzenfutter", "name": "Katzenfutter"}, {"id": "c15-2-trockenfutter", "name": "Trockenfutter"}, {"id": "c15-3-tracker", "name": "Tracker"}, {"id": "c15-4-ladekabel-tracker", "name": "Ladekabel Tracker"}, {"id": "c15-5-katzenstreu", "name": "Katzenstreu"}, {"id": "c15-6-katzenklo", "name": "Katzenklo"}, {"id": "c15-7-schaelchen", "name": "Schälchen"}, {"id": "c15-8-transportbox", "name": "Transportbox"}, {"id": "c15-9-futterautomat", "name": "Futterautomat"}]}, {"id": "cat-16", "name": "Camping allgemein", "icon": "🏕️", "items": [{"id": "c16-0-nackenventilator", "name": "Nackenventilator"}]}];
+const STORAGE = "bosbach-camping-app-v1";
+let db = JSON.parse(localStorage.getItem(STORAGE) || "null") || {
+  currentTrip:"urlaub-1",
+  trips:{"urlaub-1":{name:"Soulac / Frankreich",states:{},custom:[]}}
+};
+let filter="all";
+
+function save(){ localStorage.setItem(STORAGE,JSON.stringify(db)); }
+function trip(){ return db.trips[db.currentTrip]; }
+function state(id){
+  const t=trip();
+  if(!t.states[id]) t.states[id]={take:false,seen:false,box:false,car:false,need:false};
+  return t.states[id];
+}
+function allCategories(){
+  const extra = {};
+  for(const x of trip().custom){
+    (extra[x.category] ||= []).push(x);
+  }
+  return MASTER.map(c=>({...c,items:[...c.items,...(extra[c.name]||[])]}))
+    .concat(Object.entries(extra).filter(([k])=>!MASTER.some(c=>c.name===k)).map(([name,items],i)=>({id:"custom-cat-"+i,name,icon:"✨",items})));
+}
+function allItems(){
+  return allCategories().flatMap(c=>c.items.map(i=>({...i,category:c.name})));
+}
+function renderTrips(){
+  const s=document.getElementById("tripSelect"); s.innerHTML="";
+  Object.entries(db.trips).forEach(([id,t])=>{
+    const o=document.createElement("option"); o.value=id;o.textContent=t.name;o.selected=id===db.currentTrip;s.appendChild(o);
+  });
+}
+function renderCats(){
+  const q=document.getElementById("quickCat"); q.innerHTML="";
+  allCategories().forEach(c=>{const o=document.createElement("option");o.value=c.name;o.textContent=c.name;q.appendChild(o)});
+}
+function visibleItem(item){
+  const st=state(item.id);
+  if(filter==="selected") return st.take;
+  if(filter==="open") return st.take && !st.car;
+  if(filter==="need") return st.need;
+  return true;
+}
+function render(){
+  renderTrips();renderCats();
+  const root=document.getElementById("list");root.innerHTML="";
+  for(const cat of allCategories()){
+    const vis=cat.items.filter(visibleItem); if(!vis.length) continue;
+    const sec=document.createElement("section");sec.className="category";
+    sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${vis.length} Artikel</small></button><div class="catbody"></div>`;
+    sec.querySelector(".cathead").onclick=()=>sec.classList.toggle("closed");
+    const body=sec.querySelector(".catbody");
+    for(const item of vis){
+      const st=state(item.id);
+      const row=document.createElement("div");row.className="row"+(st.take?" selected":"");
+      row.innerHTML=`<div class="nameLine">
+        <input class="take" type="checkbox" ${st.take?"checked":""} aria-label="Mitnehmen">
+        <div class="name">${item.name}</div>
+      </div>
+      <div class="actions">
+        <button class="stage ${st.seen?"on":""}" data-stage="seen">✓ Gesichtet</button>
+        <button class="stage ${st.box?"on":""}" data-stage="box">📦 Kiste</button>
+        <button class="stage ${st.car?"on":""}" data-stage="car">🚗 Auto</button>
+        <button class="stage ${st.need?"on":""}" data-stage="need">🔎 Suchen</button>
+      </div>`;
+      row.querySelector(".take").onchange=e=>{st.take=e.target.checked;if(!st.take){st.seen=false;st.box=false;st.car=false;}save();render();};
+      row.querySelectorAll(".stage").forEach(b=>b.onclick=()=>{
+        const k=b.dataset.stage; st[k]=!st[k];
+        if(k!=="need" && st[k]) st.take=true;
+        save();render();
+      });
+      body.appendChild(row);
+    }
+    root.appendChild(sec);
+  }
+  updateStats(); renderNeed();
+}
+function updateStats(){
+  const sts=allItems().map(i=>state(i.id));
+  const count=k=>sts.filter(s=>s[k]).length;
+  sTake.textContent=count("take"); sSeen.textContent=count("seen"); sBox.textContent=count("box"); sCar.textContent=count("car"); sNeed.textContent=count("need");
+}
+function renderNeed(){
+  const n=document.getElementById("needList");n.innerHTML="";
+  const items=allItems().filter(i=>state(i.id).need);
+  if(!items.length){n.innerHTML='<div class="empty">Noch nichts auf der Such-/Kaufliste 🎉</div>';return;}
+  const card=document.createElement("div");card.className="needCard";
+  items.forEach(i=>{
+    const d=document.createElement("div");d.className="needItem";
+    d.innerHTML=`<b>${i.name}</b><span class="badge">${i.category}</span><button class="stage on" data-stage="need">✓ erledigt</button>`;
+    d.querySelector("button").onclick=()=>{state(i.id).need=false;save();render();};
+    card.appendChild(d);
+  });
+  n.appendChild(card);
+}
+document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render();
+});
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("view-"+b.dataset.view).classList.add("active");
+});
+tripSelect.onchange=e=>{db.currentTrip=e.target.value;save();render();};
+newTripBtn.onclick=()=>tripModal.classList.add("open");
+tripCancel.onclick=()=>tripModal.classList.remove("open");
+tripSave.onclick=()=>{
+  const name=tripName.value.trim();if(!name)return;
+  const id="trip-"+Date.now();db.trips[id]={name,states:{},custom:[]};db.currentTrip=id;tripName.value="";tripModal.classList.remove("open");save();render();
+};
+quickAdd.onclick=()=>{
+  const name=quickName.value.trim(); if(!name)return;
+  const id="custom-"+Date.now(); trip().custom.push({id,name,category:quickCat.value});
+  state(id).take=true; quickName.value=""; save();render();
+};
+quickName.addEventListener("keydown",e=>{if(e.key==="Enter")quickAdd.click()});
+render();
+</script>
+</body>
+</html>
