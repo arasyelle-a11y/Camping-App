@@ -40,9 +40,9 @@ button{cursor:pointer}
 .swipeDelete{position:absolute;right:0;top:0;bottom:0;width:92px;border:0;background:var(--red);color:white;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center}
 .row{padding:10px;position:relative;transition:transform .18s ease;touch-action:pan-y;background:var(--paper);z-index:1}
 .row:nth-child(even){background:var(--cream2)}.row.swiped{transform:translateX(-92px)}
-.row.dragging{transform:scale(1.025);box-shadow:0 10px 24px rgba(26,54,74,.22);border-radius:12px;z-index:30;opacity:.96}
-.swipeWrap.dragTarget{outline:2px dashed var(--green);outline-offset:-3px}
-.dragHint{font-size:9px;color:var(--muted);font-weight:800;margin-left:auto;white-space:nowrap}
+.row.dragging{transform:scale(1.045);box-shadow:0 14px 34px rgba(26,54,74,.32);border:2px solid var(--green);border-radius:14px;z-index:30;opacity:.98;background:#fffdf7}
+.swipeWrap.dragTarget{outline:3px dashed var(--green);outline-offset:-3px;background:#eef3e4}
+.dragHint{font-size:9px;color:var(--muted);font-weight:800;margin-left:auto;white-space:nowrap} body.dragMode,body.dragMode *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 .nameLine{display:flex;align-items:center;gap:9px}.name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
 .tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}
 .take{appearance:none;width:24px;height:24px;border:2px solid var(--green);border-radius:7px;background:white;display:grid;place-content:center;flex:0 0 auto}
@@ -265,7 +265,7 @@ function enableLongPressDrag(wrap,row,item){
   const start=e=>{
     if(e.target.closest("button,input"))return;
     const t=e.touches?.[0];if(!t)return;startY=t.clientY;
-    timer=setTimeout(()=>{dragging=true;row.classList.add("dragging");navigator.vibrate?.(25)},480);
+    timer=setTimeout(()=>{dragging=true;row.classList.add("dragging");document.body.classList.add("dragMode");navigator.vibrate?.(25)},480);
   };
   const move=e=>{
     const t=e.touches?.[0];if(!t)return;
@@ -279,7 +279,7 @@ function enableLongPressDrag(wrap,row,item){
   };
   const end=async()=>{
     clearTimeout(timer);timer=null;document.querySelectorAll(".swipeWrap.dragTarget").forEach(x=>x.classList.remove("dragTarget"));
-    if(dragging){dragging=false;row.classList.remove("dragging");await persistCategoryOrder(item.category);await loadItems();render()}
+    if(dragging){dragging=false;row.classList.remove("dragging");document.body.classList.remove("dragMode");await persistCategoryOrder(item.category);await loadItems();render()}
   };
   row.addEventListener("touchstart",start,{passive:true});row.addEventListener("touchmove",move,{passive:false});row.addEventListener("touchend",end);row.addEventListener("touchcancel",end);
 }
