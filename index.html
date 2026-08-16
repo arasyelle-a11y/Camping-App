@@ -108,7 +108,7 @@ button{cursor:pointer}
   <section class="view active" id="view-pack">
     <div class="top">
       <div class="tripbar">
-        <select id="placeSelect"></select>
+        <select id="tripSelect"></select>
         <button class="iconbtn" id="newTripBtn">＋ Urlaub</button>
       </div>
       <div class="tripInfo"><strong id="tripName">Aktueller Urlaub</strong><span class="countdown" id="tripCountdown"></span></div>
@@ -207,7 +207,7 @@ const SUPABASE_URL="https://muujfgwspkoogjxtvcrp.supabase.co";
 const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
-let masterItems=[], places=[], states=new Map(), currentTrip=null, currentPlace=null;
+let masterItems=[], places=[], trips=[], states=new Map(), currentTrip=null, currentPlace=null;
 let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, activeCategory=null;
 const el=id=>document.getElementById(id);
 
@@ -240,55 +240,49 @@ async function loadItems(){
 }
 async function loadPlaces(){
   const {data,error}=await sb.from("camping_places").select("*").order("name");
-  if(error)throw error;places=data||[];
-  el("placeSelect").innerHTML="";
+  if(error)throw error;
+  places=data||[];
   el("tripPlace").innerHTML="";
   for(const p of places){
-    const o=document.createElement("option");o.value=p.id;o.textContent=p.name;el("placeSelect").appendChild(o);
-    const t=document.createElement("option");t.value=p.id;t.textContent=p.name;el("tripPlace").appendChild(t);
+    const t=document.createElement("option");
+    t.value=p.id;t.textContent=p.name;el("tripPlace").appendChild(t);
   }
-  const saved=localStorage.getItem("camping-place-id");
-  currentPlace=places.find(p=>p.id===saved)||places.find(p=>p.name==="Le Gurp")||places[0];
-  if(currentPlace)el("placeSelect").value=currentPlace.id;
 }
-function updateTripInfo(){
-  if(!currentTrip){
-    el("tripName").textContent="Kein Urlaub ausgewählt";
-    el("tripCountdown").textContent="";
-    return;
-  }
-  el("tripName").textContent=currentTrip.name||"Aktueller Urlaub";
-  if(!currentTrip.start_date){
-    el("tripCountdown").textContent="";
-    return;
-  }
-  const today=new Date();today.setHours(0,0,0,0);
-  const start=new Date(currentTrip.start_date+"T00:00:00");
-  const end=currentTrip.end_date?new Date(currentTrip.end_date+"T00:00:00"):null;
-  const days=Math.ceil((start-today)/86400000);
-  if(days>1)el("tripCountdown").textContent=`Noch ${days} Tage bis zur Abfahrt`;
-  else if(days===1)el("tripCountdown").textContent="Morgen geht’s los! 🏕️";
-  else if(days===0)el("tripCountdown").textContent="Heute geht’s los! 🏕️";
-  else if(end && today<=end)el("tripCountdown").textContent="Urlaub läuft 🌲";
-  else el("tripCountdown").textContent="";
-}
-async function ensureTrip(place){
-  const {data,error}=await sb.from("camping_trips").select("*").eq("place_id",place.id).eq("archived",false).order("created_at",{ascending:false}).limit(1);
+async function loadTrips(){
+  const {data,error}=await sb.from("camping_trips").select("*").eq("archived",false).order("start_date",{ascending:true,nullsFirst:false}).order("created_at",{ascending:true});
   if(error)throw error;
-  if(data?.length){currentTrip=data[0];return}
-  const {data:newTrip,error:e}=await sb.from("camping_trips").insert({name:place.name+" – aktuell",place_id:place.id}).select().single();
-  if(e)throw e;currentTrip=newTrip;
+  trips=data||[];
+  const sel=el("tripSelect");
+  sel.innerHTML="";
+  for(const t of trips){
+    const o=document.createElement("option");
+    o.value=t.id;
+    o.textContent=t.name||"Urlaub";
+    sel.appendChild(o);
+  }
+  const saved=localStorage.getItem("camping-trip-id");
+  currentTrip=trips.find(t=>t.id===saved)||trips[0]||null;
+  currentPlace=currentTrip?places.find(p=>p.id===currentTrip.place_id)||null:null;
+  if(currentTrip)sel.value=currentTrip.id;
 }
+async function ensureTrip(place){ return currentTrip; }
 async function loadStates(){
   states=new Map();
   if(!currentTrip)return;
   const {data,error}=await sb.from("camping_trip_items").select("*").eq("trip_id",currentTrip.id);
   if(error)throw error;(data||[]).forEach(x=>states.set(x.item_id,x));
 }
-async function switchPlace(id){
-  currentPlace=places.find(p=>p.id===id);if(!currentPlace)return;
-  localStorage.setItem("camping-place-id",id);setSync("Lädt …");
-  await ensureTrip(currentPlace);await loadStates();subscribeTrip();updateTripInfo();render();setSync("Synchronisiert");
+async function switchTrip(id){
+  currentTrip=trips.find(t=>t.id===id)||null;
+  if(!currentTrip)return;
+  currentPlace=places.find(p=>p.id===currentTrip.place_id)||null;
+  localStorage.setItem("camping-trip-id",id);
+  setSync("Lädt …");
+  await loadStates();
+  subscribeTrip();
+  updateTripInfo();
+  render();
+  setSync("Synchronisiert");
 }
 function subscribeTrip(){
   if(channel)sb.removeChannel(channel);
@@ -549,7 +543,7 @@ el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastR
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render()});
 document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster()});
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));el("view-"+b.dataset.view).classList.add("active")});
-el("placeSelect").onchange=e=>switchPlace(e.target.value);
+el("tripSelect").onchange=e=>switchTrip(e.target.value);
 el("newTripBtn").onclick=()=>{
   if(currentPlace)el("tripPlace").value=currentPlace.id;
   el("tripNewPlace").value="";
@@ -594,10 +588,12 @@ el("tripSave").onclick=async()=>{
     if(error)throw error;
 
     currentPlace=place;currentTrip=data;
-    localStorage.setItem("camping-place-id",place.id);
+    localStorage.setItem("camping-trip-id",data.id);
     await loadPlaces();
-    currentPlace=places.find(p=>p.id===place.id)||place;
-    el("placeSelect").value=place.id;
+    await loadTrips();
+    currentTrip=trips.find(t=>t.id===data.id)||data;
+    currentPlace=places.find(p=>p.id===currentTrip.place_id)||place;
+    el("tripSelect").value=currentTrip.id;
     await loadStates();subscribeTrip();updateTripInfo();render();
     el("tripModal").classList.remove("open");
     setSync("Synchronisiert");toast("Urlaub angelegt 🏕️");
@@ -697,7 +693,13 @@ async function boot(){
   const {data:{session}}=await sb.auth.getSession();
   if(!session){el("login").classList.remove("hidden");return}
   el("login").classList.add("hidden");
-  try{setSync("Lädt …");await Promise.all([loadItems(),loadPlaces()]);if(currentPlace)await switchPlace(currentPlace.id);render();setSync("Synchronisiert")}catch(e){console.error(e);toast("Daten konnten nicht geladen werden");setSync("Fehler")}
+  try{
+    setSync("Lädt …");
+    await Promise.all([loadItems(),loadPlaces()]);
+    await loadTrips();
+    if(currentTrip)await switchTrip(currentTrip.id);
+    else{updateTripInfo();render();setSync("Synchronisiert")}
+  }catch(e){console.error(e);toast("Daten konnten nicht geladen werden");setSync("Fehler")}
 }
 sb.auth.onAuthStateChange((_event,session)=>{
   if(session){
