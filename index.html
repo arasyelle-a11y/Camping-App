@@ -249,7 +249,7 @@ async function loadPlaces(){
   }
 }
 async function loadTrips(){
-  const {data,error}=await sb.from("camping_trips").select("*").eq("archived",false).order("start_date",{ascending:true,nullsFirst:false}).order("created_at",{ascending:true});
+  const {data,error}=await sb.from("camping_trips").select("*").eq("archived",false).order("created_at",{ascending:true});
   if(error)throw error;
   trips=data||[];
   const sel=el("tripSelect");
@@ -279,9 +279,9 @@ async function switchTrip(id){
   localStorage.setItem("camping-trip-id",id);
   setSync("Lädt …");
   await loadStates();
-  subscribeTrip();
   updateTripInfo();
   render();
+  try{subscribeTrip()}catch(e){console.warn("Realtime konnte nicht gestartet werden",e)}
   setSync("Synchronisiert");
 }
 function subscribeTrip(){
@@ -699,7 +699,11 @@ async function boot(){
     await loadTrips();
     if(currentTrip)await switchTrip(currentTrip.id);
     else{updateTripInfo();render();setSync("Synchronisiert")}
-  }catch(e){console.error(e);toast("Daten konnten nicht geladen werden");setSync("Fehler")}
+  }catch(e){
+    console.error("BOOT ERROR",e);
+    toast("Daten konnten nicht geladen werden");
+    setSync("Fehler: "+(e?.message||"unbekannt"));
+  }
 }
 sb.auth.onAuthStateChange((_event,session)=>{
   if(session){
