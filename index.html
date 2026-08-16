@@ -302,7 +302,7 @@ function renderCategoryTabs(items){
   const tabs=el("categoryTabs");tabs.innerHTML="";
   const cats=grouped(items);
   if(!cats.length){activeCategory=null;return}
-  if(!activeCategory || !cats.some(c=>c.name===activeCategory)) activeCategory=cats[0].name;
+  if(!activeCategory || (activeCategory!=="__ALL__" && !cats.some(c=>c.name===activeCategory))) activeCategory=cats[0].name;
 
   cats.forEach(cat=>{
     const b=document.createElement("button");
@@ -312,6 +312,12 @@ function renderCategoryTabs(items){
     b.onclick=()=>{activeCategory=cat.name;render()};
     tabs.appendChild(b);
   });
+  const all=document.createElement("button");
+  all.className="categoryTab"+(activeCategory==="__ALL__"?" active":"");
+  all.dataset.category="__ALL__";
+  all.innerHTML='<span class="tabIcon">📋</span><span>Alle</span>';
+  all.onclick=()=>{activeCategory="__ALL__";render()};
+  tabs.appendChild(all);
 
   let touched=null;
   const mark=(x,y)=>{
@@ -339,9 +345,10 @@ function render(){
   el("list").innerHTML="";
 
   const allGroups=grouped(items.filter(visible));
-  const cat=allGroups.find(c=>c.name===activeCategory);
+  const groupsToShow=activeCategory==="__ALL__" ? allGroups : allGroups.filter(c=>c.name===activeCategory);
 
-  if(cat){
+  if(groupsToShow.length){
+    for(const cat of groupsToShow){
     const sec=document.createElement("section");
     sec.className="category";
     sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;
@@ -383,6 +390,7 @@ function render(){
     }
 
     el("list").appendChild(sec);
+    }
   }else{
     el("list").innerHTML='<div class="empty">In dieser Kategorie gibt es mit dem aktuellen Filter keine sichtbaren Artikel.</div>';
   }
