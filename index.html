@@ -28,7 +28,7 @@ button{cursor:pointer}
 .quickadd{display:grid;grid-template-columns:1fr 120px auto;gap:7px;padding:10px 14px 4px}
 .quickadd input,.quickadd select,.sheet input,.sheet select,.loginCard input{min-width:0;border:1px solid var(--line);background:white;border-radius:11px;padding:11px}
 .quickadd button{border:0;border-radius:11px;background:var(--navy);color:white;padding:0 14px;font-weight:800}
-.filters,.masterToolbar{display:flex;gap:7px;padding:8px 14px;overflow:auto}.categoryTabs{display:flex;gap:7px;padding:8px 14px 10px;overflow-x:auto;position:sticky;top:123px;z-index:9;background:rgba(253,247,238,.97);backdrop-filter:blur(10px);scrollbar-width:none}.categoryTabs::-webkit-scrollbar{display:none}.categoryTab{border:1px solid var(--line);background:var(--paper);color:var(--brown);border-radius:999px;padding:9px 12px;font-size:11px;font-weight:850;white-space:nowrap}.categoryTab.active{background:var(--green);border-color:var(--green);color:white}
+.filters,.masterToolbar{display:flex;gap:7px;padding:8px 14px;overflow:auto}.categoryTabs{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px;padding:7px 8px 9px;position:sticky;top:123px;z-index:9;background:rgba(253,247,238,.97);backdrop-filter:blur(10px)}.categoryTab{min-width:0;min-height:42px;border:1px solid var(--line);background:var(--paper);color:var(--brown);border-radius:10px;padding:4px 2px;font-size:8px;line-height:1.05;font-weight:850;text-align:center;white-space:normal;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;transform-origin:center;position:relative;z-index:1}.categoryTab .tabIcon{display:block;font-size:15px;line-height:1.1;margin-bottom:2px}.categoryTab.active{background:var(--green);border-color:var(--green);color:white;box-shadow:0 3px 10px rgba(26,54,74,.16)}.categoryTab.peek{transform:scale(1.38);z-index:30;box-shadow:0 8px 22px rgba(26,54,74,.28);background:white;border-color:var(--green);color:var(--navy)}.categoryTab.active.peek{background:var(--green);color:white}@media(max-width:420px){.categoryTabs{grid-template-columns:repeat(9,minmax(0,1fr));gap:3px;padding-left:5px;padding-right:5px}.categoryTab{font-size:7px;min-height:40px}.categoryTab .tabIcon{font-size:14px}}
 .filter,.masterToolbar button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 11px;font-size:11px;font-weight:800;white-space:nowrap;color:var(--brown)}
 .filter.active,.masterToolbar button.active{background:var(--green);color:white;border-color:var(--green)}
 .content{padding:0 12px}
@@ -303,16 +303,34 @@ function renderCategoryTabs(items){
   const cats=grouped(items);
   if(!cats.length){activeCategory=null;return}
   if(!activeCategory || !cats.some(c=>c.name===activeCategory)) activeCategory=cats[0].name;
+
   cats.forEach(cat=>{
     const b=document.createElement("button");
     b.className="categoryTab"+(cat.name===activeCategory?" active":"");
-    b.textContent=cat.icon+" "+cat.name;
+    b.dataset.category=cat.name;
+    b.innerHTML=`<span class="tabIcon">${cat.icon}</span><span>${cat.name}</span>`;
     b.onclick=()=>{activeCategory=cat.name;render()};
     tabs.appendChild(b);
   });
-  requestAnimationFrame(()=>{
-    tabs.querySelector(".categoryTab.active")?.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
-  });
+
+  let touched=null;
+  const mark=(x,y)=>{
+    const hit=document.elementFromPoint(x,y)?.closest(".categoryTab");
+    tabs.querySelectorAll(".categoryTab.peek").forEach(b=>b.classList.remove("peek"));
+    if(hit && tabs.contains(hit)){hit.classList.add("peek");touched=hit}else touched=null;
+  };
+  tabs.ontouchstart=e=>{const t=e.touches[0];mark(t.clientX,t.clientY)};
+  tabs.ontouchmove=e=>{const t=e.touches[0];mark(t.clientX,t.clientY)};
+  tabs.ontouchend=()=>{
+    const chosen=touched;
+    tabs.querySelectorAll(".categoryTab.peek").forEach(b=>b.classList.remove("peek"));
+    touched=null;
+    if(chosen){activeCategory=chosen.dataset.category;render()}
+  };
+  tabs.ontouchcancel=()=>{
+    tabs.querySelectorAll(".categoryTab.peek").forEach(b=>b.classList.remove("peek"));
+    touched=null;
+  };
 }
 
 function render(){
