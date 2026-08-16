@@ -87,7 +87,7 @@ button{cursor:pointer}
 .login.hidden{display:none}.loginCard{width:min(430px,100%);background:white;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}
 .loginCard h1{margin:0 0 4px;color:var(--green);font-size:24px}.loginCard p{margin:0 0 15px;color:var(--muted);font-size:13px}
 .loginCard input{width:100%;margin-bottom:9px}.loginCard button{width:100%;border:0;border-radius:11px;padding:12px;background:var(--green);color:white;font-weight:900}.loginErr{font-size:11px;color:var(--red);min-height:18px;margin-top:8px}
-.sync{font-size:10px;color:var(--muted);padding:4px 14px 0;text-align:right}
+.tripInfo{padding:7px 14px 0;font-size:12px;color:var(--brown);display:flex;justify-content:space-between;gap:10px;align-items:center}.tripInfo strong{color:var(--navy)}.countdown{font-size:10px;font-weight:900;color:var(--green);text-align:right}.tripForm label{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}.tripForm input,.tripForm select{width:100%}.sync{font-size:10px;color:var(--muted);padding:4px 14px 0;text-align:right}
 @media(max-width:520px){.stat b{font-size:14px}.stat span{font-size:7px}.quickadd{grid-template-columns:1fr 102px auto}.actions{gap:4px}.stage{font-size:8px}}
 </style>
 </head>
@@ -111,6 +111,7 @@ button{cursor:pointer}
         <select id="placeSelect"></select>
         <button class="iconbtn" id="newTripBtn">＋ Urlaub</button>
       </div>
+      <div class="tripInfo"><strong id="tripName">Aktueller Urlaub</strong><span class="countdown" id="tripCountdown"></span></div>
       <div class="stats">
         <div class="stat"><b id="sTake">0</b><span>Mitnehmen</span></div>
         <div class="stat"><b id="sSeen">0</b><span>Gesichtet</span></div>
@@ -163,6 +164,26 @@ button{cursor:pointer}
 </div>
 
 <div class="toast" id="undoToast"><span id="undoText">Artikel entfernt</span><button id="undoBtn">Rückgängig</button></div>
+
+<div class="modal" id="tripModal">
+  <div class="sheet tripForm">
+    <h3>Neuen Urlaub anlegen</h3>
+    <label for="tripPlace">Wohin geht es?</label>
+    <select id="tripPlace"></select>
+    <label for="tripNewPlace">Oder neues Ziel</label>
+    <input id="tripNewPlace" placeholder="z. B. Bretagne">
+    <label for="tripNameInput">Name des Urlaubs</label>
+    <input id="tripNameInput" placeholder="z. B. Le Gurp 2028">
+    <label for="tripStart">Anreise</label>
+    <input id="tripStart" type="date">
+    <label for="tripEnd">Abreise</label>
+    <input id="tripEnd" type="date">
+    <div class="sheetActions" style="margin-top:14px">
+      <button class="cancel" id="tripCancel">Abbrechen</button>
+      <button class="save" id="tripSave">Urlaub anlegen</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal" id="editModal"><div class="sheet"><h3>Artikel bearbeiten</h3><input id="editName" placeholder="Artikel"><select id="editCat"></select><div class="sheetActions"><button class="cancel" id="editCancel">Abbrechen</button><button class="save" id="editSave">Speichern</button></div></div></div>
 <div class="modal" id="addModal">
@@ -221,10 +242,35 @@ async function loadPlaces(){
   const {data,error}=await sb.from("camping_places").select("*").order("name");
   if(error)throw error;places=data||[];
   el("placeSelect").innerHTML="";
-  for(const p of places){const o=document.createElement("option");o.value=p.id;o.textContent=p.name;el("placeSelect").appendChild(o)}
+  el("tripPlace").innerHTML="";
+  for(const p of places){
+    const o=document.createElement("option");o.value=p.id;o.textContent=p.name;el("placeSelect").appendChild(o);
+    const t=document.createElement("option");t.value=p.id;t.textContent=p.name;el("tripPlace").appendChild(t);
+  }
   const saved=localStorage.getItem("camping-place-id");
   currentPlace=places.find(p=>p.id===saved)||places.find(p=>p.name==="Le Gurp")||places[0];
   if(currentPlace)el("placeSelect").value=currentPlace.id;
+}
+function updateTripInfo(){
+  if(!currentTrip){
+    el("tripName").textContent="Kein Urlaub ausgewählt";
+    el("tripCountdown").textContent="";
+    return;
+  }
+  el("tripName").textContent=currentTrip.name||"Aktueller Urlaub";
+  if(!currentTrip.start_date){
+    el("tripCountdown").textContent="";
+    return;
+  }
+  const today=new Date();today.setHours(0,0,0,0);
+  const start=new Date(currentTrip.start_date+"T00:00:00");
+  const end=currentTrip.end_date?new Date(currentTrip.end_date+"T00:00:00"):null;
+  const days=Math.ceil((start-today)/86400000);
+  if(days>1)el("tripCountdown").textContent=`Noch ${days} Tage bis zur Abfahrt`;
+  else if(days===1)el("tripCountdown").textContent="Morgen geht’s los! 🏕️";
+  else if(days===0)el("tripCountdown").textContent="Heute geht’s los! 🏕️";
+  else if(end && today<=end)el("tripCountdown").textContent="Urlaub läuft 🌲";
+  else el("tripCountdown").textContent="";
 }
 async function ensureTrip(place){
   const {data,error}=await sb.from("camping_trips").select("*").eq("place_id",place.id).eq("archived",false).order("created_at",{ascending:false}).limit(1);
@@ -242,7 +288,7 @@ async function loadStates(){
 async function switchPlace(id){
   currentPlace=places.find(p=>p.id===id);if(!currentPlace)return;
   localStorage.setItem("camping-place-id",id);setSync("Lädt …");
-  await ensureTrip(currentPlace);await loadStates();subscribeTrip();render();setSync("Synchronisiert");
+  await ensureTrip(currentPlace);await loadStates();subscribeTrip();updateTripInfo();render();setSync("Synchronisiert");
 }
 function subscribeTrip(){
   if(channel)sb.removeChannel(channel);
@@ -504,10 +550,60 @@ document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySel
 document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster()});
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));el("view-"+b.dataset.view).classList.add("active")});
 el("placeSelect").onchange=e=>switchPlace(e.target.value);
-el("newTripBtn").onclick=async()=>{
-  if(!currentPlace)return;const name=prompt("Name des neuen Urlaubs",currentPlace.name+" "+new Date().getFullYear());if(!name)return;
-  const {data,error}=await sb.from("camping_trips").insert({name,place_id:currentPlace.id}).select().single();
-  if(error)return toast("Urlaub konnte nicht angelegt werden");currentTrip=data;await loadStates();subscribeTrip();render();toast("Neuer Urlaub angelegt");
+el("newTripBtn").onclick=()=>{
+  if(currentPlace)el("tripPlace").value=currentPlace.id;
+  el("tripNewPlace").value="";
+  const place=places.find(p=>p.id===el("tripPlace").value)||currentPlace;
+  el("tripNameInput").value=(place?.name||"Urlaub")+" "+new Date().getFullYear();
+  el("tripStart").value="";
+  el("tripEnd").value="";
+  el("tripModal").classList.add("open");
+};
+el("tripPlace").onchange=()=>{
+  if(el("tripNewPlace").value.trim())return;
+  const p=places.find(x=>x.id===el("tripPlace").value);
+  if(p)el("tripNameInput").value=p.name+" "+new Date().getFullYear();
+};
+el("tripNewPlace").oninput=()=>{
+  const n=el("tripNewPlace").value.trim();
+  if(n)el("tripNameInput").value=n+" "+new Date().getFullYear();
+};
+el("tripCancel").onclick=()=>el("tripModal").classList.remove("open");
+el("tripSave").onclick=async()=>{
+  const name=el("tripNameInput").value.trim();
+  const start=el("tripStart").value,end=el("tripEnd").value;
+  if(!name)return toast("Bitte einen Urlaubsnamen eingeben");
+  if(start&&end&&end<start)return toast("Das Abreisedatum liegt vor der Anreise");
+  el("tripSave").disabled=true;setSync("Urlaub wird angelegt …");
+  try{
+    let place=null;
+    const newPlaceName=el("tripNewPlace").value.trim();
+    if(newPlaceName){
+      const existing=places.find(p=>p.name.toLowerCase()===newPlaceName.toLowerCase());
+      if(existing)place=existing;
+      else{
+        const {data,error}=await sb.from("camping_places").insert({name:newPlaceName}).select().single();
+        if(error)throw error;place=data;
+      }
+    }else place=places.find(p=>p.id===el("tripPlace").value);
+    if(!place)throw new Error("Kein Ziel gewählt");
+
+    const {data,error}=await sb.from("camping_trips").insert({
+      name,place_id:place.id,start_date:start||null,end_date:end||null,archived:false
+    }).select().single();
+    if(error)throw error;
+
+    currentPlace=place;currentTrip=data;
+    localStorage.setItem("camping-place-id",place.id);
+    await loadPlaces();
+    currentPlace=places.find(p=>p.id===place.id)||place;
+    el("placeSelect").value=place.id;
+    await loadStates();subscribeTrip();updateTripInfo();render();
+    el("tripModal").classList.remove("open");
+    setSync("Synchronisiert");toast("Urlaub angelegt 🏕️");
+  }catch(error){
+    console.error(error);toast("Urlaub konnte nicht angelegt werden");setSync("Fehler");
+  }finally{el("tripSave").disabled=false}
 };
 el("quickAdd").onclick=()=>{const n=el("quickName").value.trim();if(!n)return;el("addName").value=n;el("addCat").value=el("quickCat").value;addScope="trip";document.querySelectorAll(".addChoice button").forEach(b=>b.classList.toggle("active",b.dataset.scope==="trip"));el("addModal").classList.add("open")};
 el("quickName").onkeydown=e=>{if(e.key==="Enter")el("quickAdd").click()};
