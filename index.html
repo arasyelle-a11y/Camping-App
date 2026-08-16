@@ -37,16 +37,12 @@ button{cursor:pointer}
 .cathead .emoji{font-size:20px}.cathead strong{font-size:16px;flex:1}.cathead small{opacity:.85;font-weight:700}
 .category.closed .catbody{display:none}
 .swipeWrap{position:relative;overflow:hidden;border-top:1px solid #eee4d2}
-.swipeDelete{position:absolute;right:0;top:0;bottom:0;width:92px;border:0;background:var(--red);color:white;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center}
-.swipeEdit{position:absolute;left:0;top:0;bottom:0;width:92px;border:0;background:var(--teal);color:white;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center}
-.row.swipedRight{transform:translateX(92px)}
-
+.swipeDelete{position:absolute;right:0;top:0;bottom:0;width:92px;border:0;background:var(--red);color:white;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center}.swipeEdit{position:absolute;left:0;top:0;bottom:0;width:92px;border:0;background:var(--teal);color:white;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center}.row.swipedRight{transform:translateX(92px)}
 .row{padding:10px;position:relative;transition:transform .18s ease;touch-action:pan-y;background:var(--paper);z-index:1}
 .row:nth-child(even){background:var(--cream2)}.row.swiped{transform:translateX(-92px)}
 .row.dragging{transform:scale(1.045);box-shadow:0 14px 34px rgba(26,54,74,.30);border:2px solid var(--green);border-radius:14px;z-index:30;opacity:.98;background:#fffdf7}
-body.dragMode, body.dragMode *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 .swipeWrap.dragTarget{outline:3px dashed var(--green);outline-offset:-3px;background:#eef3e4}
-.dragHint{font-size:9px;color:var(--muted);font-weight:800;margin-left:auto;white-space:nowrap}
+.dragHint{font-size:9px;color:var(--muted);font-weight:800;margin-left:auto;white-space:nowrap} body.dragMode,body.dragMode *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 .nameLine{display:flex;align-items:center;gap:9px}.name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
 .tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}
 .take{appearance:none;width:24px;height:24px;border:2px solid var(--green);border-radius:7px;background:white;display:grid;place-content:center;flex:0 0 auto}
@@ -300,25 +296,17 @@ function enableLongPressDrag(wrap,row,item){
   row.addEventListener("touchstart",start,{passive:true});row.addEventListener("touchmove",move,{passive:false});row.addEventListener("touchend",end);row.addEventListener("touchcancel",end);
 }
 function attachSwipe(row,item){
-  let startX=0,startY=0,dx=0,drag=false;
-  row.addEventListener("touchstart",e=>{
-    if(row.classList.contains("dragging"))return;
-    const t=e.touches[0];startX=t.clientX;startY=t.clientY;dx=0;drag=true
-  },{passive:true});
+  let startX=0,startY=0,dx=0,active=false;
+  row.addEventListener("touchstart",e=>{const t=e.touches[0];startX=t.clientX;startY=t.clientY;dx=0;active=true},{passive:true});
   row.addEventListener("touchmove",e=>{
-    if(!drag||row.classList.contains("dragging"))return;
-    const t=e.touches[0];dx=t.clientX-startX;const dy=t.clientY-startY;
-    if(Math.abs(dx)>Math.abs(dy)){
-      const clamped=Math.max(-92,Math.min(92,dx));
-      row.style.transform=`translateX(${clamped}px)`;
-    }
+    if(!active||row.classList.contains("dragging"))return;
+    const t=e.touches[0],dy=t.clientY-startY;dx=t.clientX-startX;
+    if(Math.abs(dx)>Math.abs(dy)+6)row.style.transform=`translateX(${Math.max(-92,Math.min(92,dx))}px)`;
   },{passive:true});
   row.addEventListener("touchend",()=>{
     if(row.classList.contains("dragging"))return;
-    drag=false;row.style.transform="";
-    row.classList.remove("swiped","swipedRight");
-    if(dx<-45)row.classList.add("swiped");
-    else if(dx>45)row.classList.add("swipedRight");
+    active=false;row.style.transform="";row.classList.remove("swiped","swipedRight");
+    if(dx<-45)row.classList.add("swiped");else if(dx>45)row.classList.add("swipedRight");
   });
 }
 function render(){
@@ -330,10 +318,7 @@ function render(){
     const body=sec.querySelector(".catbody");
     for(const item of cat.items){
       const s=state(item.id),wrap=document.createElement("div"),del=document.createElement("button"),edit=document.createElement("button"),row=document.createElement("div");
-      wrap.className="swipeWrap";wrap.dataset.itemId=item.id;wrap.dataset.category=item.category;
-      del.className="swipeDelete";del.textContent="🗑 Entfernen";
-      edit.className="swipeEdit";edit.textContent="✏️ Bearbeiten";
-      row.className="row"+(s.selected?" selected":"");
+      wrap.className="swipeWrap";wrap.dataset.itemId=item.id;wrap.dataset.category=item.category;del.className="swipeDelete";del.textContent="🗑 Entfernen";edit.className="swipeEdit";edit.textContent="✏️ Bearbeiten";row.className="row"+(s.selected?" selected":"");
       row.innerHTML=`<div class="nameLine"><input class="take" type="checkbox" ${s.selected?"checked":""}><div class="name">${item.name}</div>${item.is_master?"":'<span class="tripOnly">nur Urlaub</span>'}<span class="dragHint">↕ halten</span></div>
       <div class="actions"><button class="stage ${s.seen?"on":""}" data-stage="seen">✓ Gesichtet</button><button class="stage ${s.in_box?"on":""}" data-stage="box">📦 Kiste</button><button class="stage ${s.in_car?"on":""}" data-stage="car">🚗 Auto</button><button class="stage ${s.need?"on":""}" data-stage="need">🔎 Suchen</button></div>`;
       row.querySelector(".take").onchange=e=>dbUpsert(item.id,{selected:e.target.checked,...(!e.target.checked?{seen:false,in_box:false,in_car:false}:{})});
@@ -343,7 +328,7 @@ function render(){
         dbUpsert(item.id,{[key]:!ss[key],...(key!=="need"&&!ss[key]?{selected:true}:{})});
       });
       del.onclick=async()=>{lastRemoved={itemId:item.id,old:{...state(item.id)}};await dbUpsert(item.id,{selected:false,seen:false,in_box:false,in_car:false});toast(item.name+" entfernt",true)};
-      edit.onclick=()=>{editingItem=item;el("editName").value=item.name;el("editCat").value=item.category;el("editModal").classList.add("open");row.classList.remove("swipedRight")};
+      edit.onclick=()=>{editingItem=item;el("editName").value=item.name;renderCats();el("editCat").value=item.category;el("editModal").classList.add("open");row.classList.remove("swipedRight")};
       wrap.appendChild(edit);wrap.appendChild(del);wrap.appendChild(row);body.appendChild(wrap);attachSwipe(row,item);enableLongPressDrag(wrap,row,item);
     }
     el("list").appendChild(sec);
@@ -377,7 +362,7 @@ function renderMaster(){
 }
 function renderCats(){
   const cats=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category))];
-  [el("quickCat"),el("addCat"),el("editCat")].forEach(sel=>{const old=sel.value;sel.innerHTML="";cats.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)});if(cats.includes(old))sel.value=old});
+  [el("quickCat"),el("addCat"),el("editCat")].filter(Boolean).forEach(sel=>{const old=sel.value;sel.innerHTML="";cats.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)});if(cats.includes(old))sel.value=old});
 }
 el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastRemoved=null;await dbUpsert(x.itemId,x.old);el("undoToast").classList.remove("show")};
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render()});
@@ -455,24 +440,16 @@ el("addSave").onclick=async()=>{
 el("editCancel").onclick=()=>{editingItem=null;el("editModal").classList.remove("open")};
 el("editSave").onclick=async()=>{
   if(!editingItem)return;
-  const name=el("editName").value.trim(),category=el("editCat").value;
-  if(!name||!category)return;
+  const name=el("editName").value.trim(),category=el("editCat").value;if(!name||!category)return;
   el("editSave").disabled=true;setSync("Speichert …");
   try{
     const patch={name,category};
-    if(category!==editingItem.category){
-      patch.category_order=null;
-      patch.item_order=null;
-    }
-    const {data,error}=await sb.from("camping_items").update(patch).eq("id",editingItem.id).select("*").single();
+    if(category!==editingItem.category){patch.category_order=null;patch.item_order=null}
+    const {error}=await sb.from("camping_items").update(patch).eq("id",editingItem.id);
     if(error)throw error;
-    editingItem=null;el("editModal").classList.remove("open");
-    await loadItems();render();setSync("Synchronisiert");toast("Artikel geändert");
-  }catch(error){
-    console.error(error);toast(error.code==="23505"?"Name existiert in dieser Kategorie bereits":"Änderung konnte nicht gespeichert werden");setSync("Fehler");
-  }finally{
-    el("editSave").disabled=false;
-  }
+    editingItem=null;el("editModal").classList.remove("open");await loadItems();render();setSync("Synchronisiert");toast("Artikel geändert");
+  }catch(error){console.error(error);toast("Änderung konnte nicht gespeichert werden");setSync("Fehler")}
+  finally{el("editSave").disabled=false}
 };
 el("loginBtn").onclick=async()=>{
   el("loginErr").textContent="";el("loginBtn").disabled=true;
@@ -489,7 +466,7 @@ async function boot(){
   const {data:{session}}=await sb.auth.getSession();
   if(!session){el("login").classList.remove("hidden");return}
   el("login").classList.add("hidden");
-  try{setSync("Lädt …");await Promise.all([loadItems(),loadPlaces()]);if(currentPlace)await switchPlace(currentPlace.id);render();setSync("Synchronisiert")}catch(e){console.error(e);toast("Daten konnten nicht geladen werden");setSync("Fehler")}
+  try{setSync("Lädt …");await Promise.all([loadItems(),loadPlaces()]);if(currentPlace)await switchPlace(currentPlace.id);render();setSync("Synchronisiert")}catch(e){console.error(e);toast("Daten konnten nicht geladen werden");setSync("Fehler");el("list").innerHTML='<div class="empty"><b>Ladefehler</b><br>Bitte Seite neu laden.</div>'}
 }
 sb.auth.onAuthStateChange((_event,session)=>{
   if(session){
