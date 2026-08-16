@@ -32,6 +32,10 @@ button{cursor:pointer}
 .categoryBulk{display:flex;gap:7px;padding:9px 10px 10px;border-top:1px solid var(--line);background:var(--cream2)}
 .categoryBulk button{flex:1;border:1px solid var(--green);border-radius:10px;padding:9px 6px;background:white;color:var(--green);font-size:10px;font-weight:850}
 .categoryBulk button:last-child{border-color:var(--line);color:var(--brown)}
+.allBulk{display:flex;gap:7px;padding:8px 12px 2px}
+.allBulk button{flex:1;border:1px solid var(--navy);border-radius:10px;padding:10px 7px;background:white;color:var(--navy);font-size:11px;font-weight:900}
+.allBulk button:last-child{border-color:var(--line);color:var(--brown)}
+
 @media(max-width:420px){.categoryTabs{grid-template-columns:repeat(9,minmax(0,1fr));gap:3px;padding-left:5px;padding-right:5px}.categoryTab{font-size:7px;min-height:40px}.categoryTab .tabIcon{font-size:14px}}
 .filter,.masterToolbar button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 11px;font-size:11px;font-weight:800;white-space:nowrap;color:var(--brown)}
 .filter.active,.masterToolbar button.active{background:var(--green);color:white;border-color:var(--green)}
@@ -343,6 +347,30 @@ function renderCategoryTabs(items){
   };
 }
 
+async function setAllSelected(selected){
+  if(!currentTrip)return;
+  const targets=currentItems();
+  if(!targets.length)return;
+  setSync("Speichert …");
+  const rows=targets.map(item=>{
+    const s=state(item.id);
+    return {
+      trip_id:currentTrip.id,item_id:item.id,
+      selected:selected,
+      seen:selected?s.seen:false,
+      in_box:selected?s.in_box:false,
+      in_car:selected?s.in_car:false,
+      need:s.need,
+      updated_at:new Date().toISOString()
+    };
+  });
+  rows.forEach(r=>states.set(r.item_id,r));
+  render();
+  const {error}=await sb.from("camping_trip_items").upsert(rows,{onConflict:"trip_id,item_id"});
+  if(error){console.error(error);toast("Gesamtauswahl konnte nicht gespeichert werden");setSync("Fehler");await loadStates();render()}
+  else setSync("Synchronisiert");
+}
+
 async function setCategorySelected(category,selected){
   if(!currentTrip)return;
   const targets=currentItems().filter(i=>i.category===category);
@@ -370,6 +398,16 @@ function render(){
   const items=currentItems();
   renderCategoryTabs(items);
   el("list").innerHTML="";
+
+  if(activeCategory==="__ALL__"){
+    const allBulk=document.createElement("div");
+    allBulk.className="allBulk";
+    allBulk.innerHTML='<button>✓ Wirklich alle auswählen</button><button>Alle abwählen</button>';
+    const allButtons=allBulk.querySelectorAll("button");
+    allButtons[0].onclick=()=>setAllSelected(true);
+    allButtons[1].onclick=()=>setAllSelected(false);
+    el("list").appendChild(allBulk);
+  }
 
   const allGroups=grouped(items.filter(visible));
   const groupsToShow=activeCategory==="__ALL__" ? allGroups : allGroups.filter(c=>c.name===activeCategory);
