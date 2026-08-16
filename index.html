@@ -156,18 +156,7 @@ button{cursor:pointer}
 
 <div class="toast" id="undoToast"><span id="undoText">Artikel entfernt</span><button id="undoBtn">Rückgängig</button></div>
 
-<div class="modal" id="editModal">
-  <div class="sheet">
-    <h3>Artikel bearbeiten</h3>
-    <input id="editName" placeholder="Artikel">
-    <select id="editCat"></select>
-    <div class="sheetActions">
-      <button class="cancel" id="editCancel">Abbrechen</button>
-      <button class="save" id="editSave">Speichern</button>
-    </div>
-  </div>
-</div>
-
+<div class="modal" id="editModal"><div class="sheet"><h3>Artikel bearbeiten</h3><input id="editName" placeholder="Artikel"><select id="editCat"></select><div class="sheetActions"><button class="cancel" id="editCancel">Abbrechen</button><button class="save" id="editSave">Speichern</button></div></div></div>
 <div class="modal" id="addModal">
   <div class="sheet">
     <h3>Artikel hinzufügen</h3>
@@ -296,37 +285,23 @@ function enableLongPressDrag(wrap,row,item){
   row.addEventListener("touchstart",start,{passive:true});row.addEventListener("touchmove",move,{passive:false});row.addEventListener("touchend",end);row.addEventListener("touchcancel",end);
 }
 function attachSwipe(row,item){
-  let startX=0,startY=0,dx=0,drag=false;
-  row.addEventListener("touchstart",e=>{const t=e.touches[0];startX=t.clientX;startY=t.clientY;dx=0;drag=true},{passive:true});
-  row.addEventListener("touchmove",e=>{if(!drag)return;const t=e.touches[0];dx=t.clientX-startX;const dy=t.clientY-startY;if(Math.abs(dx)>Math.abs(dy)&&dx<0)row.style.transform=`translateX(${Math.max(dx,-92)}px)`},{passive:true});
-  row.addEventListener("touchend",()=>{drag=false;row.style.transform="";row.classList.toggle("swiped",dx<-45)});
-}
-function attachEditSwipe(row){
-  let sx=0,sy=0,dx=0;
-  row.addEventListener("touchstart",e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;dx=0},{passive:true});
+  let sx=0,sy=0,dx=0,active=false;
+  row.addEventListener("touchstart",e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;dx=0;active=true},{passive:true});
   row.addEventListener("touchmove",e=>{
-    if(row.classList.contains("dragging"))return;
+    if(!active||row.classList.contains("dragging"))return;
     const t=e.touches[0],dy=t.clientY-sy;dx=t.clientX-sx;
-    if(dx>0 && Math.abs(dx)>Math.abs(dy)+10){
-      row.style.transform=`translateX(${Math.min(92,dx)}px)`;
-    }
+    if(Math.abs(dx)>Math.abs(dy)+8)row.style.transform=`translateX(${Math.max(-92,Math.min(92,dx))}px)`;
   },{passive:true});
   row.addEventListener("touchend",()=>{
     if(row.classList.contains("dragging"))return;
-    if(dx>45){
-      row.style.transform="";
-      row.classList.remove("swiped");
-      row.classList.add("swipedRight");
-    }else if(dx>0){
-      row.style.transform="";
-      row.classList.remove("swipedRight");
-    }
+    active=false;row.style.transform="";row.classList.remove("swiped","swipedRight");
+    if(dx < -45)row.classList.add("swiped");else if(dx > 45)row.classList.add("swipedRight");
   });
 }
 function render(){
   const items=currentItems();el("list").innerHTML="";
   for(const cat of grouped(items.filter(visible))){
-    const sec=document.createElement("section");sec.className="category";
+    const sec=document.createElement("section");sec.className="category closed";
     sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;
     sec.querySelector(".cathead").onclick=()=>sec.classList.toggle("closed");
     const body=sec.querySelector(".catbody");
@@ -343,7 +318,7 @@ function render(){
       });
       del.onclick=async()=>{lastRemoved={itemId:item.id,old:{...state(item.id)}};await dbUpsert(item.id,{selected:false,seen:false,in_box:false,in_car:false});toast(item.name+" entfernt",true)};
       edit.onclick=()=>{editingItem=item;el("editName").value=item.name;renderCats();el("editCat").value=item.category;el("editModal").classList.add("open");row.classList.remove("swipedRight")};
-      wrap.appendChild(edit);wrap.appendChild(del);wrap.appendChild(row);body.appendChild(wrap);attachSwipe(row,item);attachEditSwipe(row);enableLongPressDrag(wrap,row,item);
+      wrap.appendChild(edit);wrap.appendChild(del);wrap.appendChild(row);body.appendChild(wrap);attachSwipe(row,item);enableLongPressDrag(wrap,row,item);
     }
     el("list").appendChild(sec);
   }
@@ -366,7 +341,7 @@ function renderMaster(){
   if(masterFilter==="in")items=items.filter(i=>state(i.id).selected);
   if(masterFilter==="out")items=items.filter(i=>!state(i.id).selected);
   for(const cat of grouped(items)){
-    const sec=document.createElement("section");sec.className="category";
+    const sec=document.createElement("section");sec.className="category closed";
     sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;
     sec.querySelector(".cathead").onclick=()=>sec.classList.toggle("closed");
     const body=sec.querySelector(".catbody");
@@ -454,19 +429,16 @@ el("addSave").onclick=async()=>{
 el("editCancel").onclick=()=>{editingItem=null;el("editModal").classList.remove("open")};
 el("editSave").onclick=async()=>{
   if(!editingItem)return;
-  const name=el("editName").value.trim(),category=el("editCat").value;
-  if(!name||!category)return;
+  const name=el("editName").value.trim(),category=el("editCat").value;if(!name||!category)return;
   el("editSave").disabled=true;setSync("Speichert …");
   try{
     const patch={name,category};
     if(category!==editingItem.category){patch.category_order=null;patch.item_order=null}
     const {error}=await sb.from("camping_items").update(patch).eq("id",editingItem.id);
     if(error)throw error;
-    editingItem=null;el("editModal").classList.remove("open");
-    await loadItems();render();setSync("Synchronisiert");toast("Artikel geändert");
-  }catch(error){
-    console.error(error);toast("Änderung konnte nicht gespeichert werden");setSync("Fehler");
-  }finally{el("editSave").disabled=false}
+    editingItem=null;el("editModal").classList.remove("open");await loadItems();render();setSync("Synchronisiert");toast("Artikel geändert");
+  }catch(error){console.error(error);toast("Änderung konnte nicht gespeichert werden");setSync("Fehler")}
+  finally{el("editSave").disabled=false}
 };
 el("loginBtn").onclick=async()=>{
   el("loginErr").textContent="";el("loginBtn").disabled=true;
