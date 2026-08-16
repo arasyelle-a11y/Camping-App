@@ -28,7 +28,7 @@ button{cursor:pointer}
 .quickadd{display:grid;grid-template-columns:1fr 120px auto;gap:7px;padding:10px 14px 4px}
 .quickadd input,.quickadd select,.sheet input,.sheet select,.loginCard input{min-width:0;border:1px solid var(--line);background:white;border-radius:11px;padding:11px}
 .quickadd button{border:0;border-radius:11px;background:var(--navy);color:white;padding:0 14px;font-weight:800}
-.filters,.masterToolbar{display:flex;gap:7px;padding:8px 14px;overflow:auto}
+.filters,.masterToolbar{display:flex;gap:7px;padding:8px 14px;overflow:auto}.categoryTabs{display:flex;gap:7px;padding:8px 14px 10px;overflow-x:auto;position:sticky;top:123px;z-index:9;background:rgba(253,247,238,.97);backdrop-filter:blur(10px);scrollbar-width:none}.categoryTabs::-webkit-scrollbar{display:none}.categoryTab{border:1px solid var(--line);background:var(--paper);color:var(--brown);border-radius:999px;padding:9px 12px;font-size:11px;font-weight:850;white-space:nowrap}.categoryTab.active{background:var(--green);border-color:var(--green);color:white}
 .filter,.masterToolbar button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 11px;font-size:11px;font-weight:800;white-space:nowrap;color:var(--brown)}
 .filter.active,.masterToolbar button.active{background:var(--green);color:white;border-color:var(--green)}
 .content{padding:0 12px}
@@ -123,7 +123,7 @@ button{cursor:pointer}
       <button class="filter" data-filter="open">Noch offen</button>
       <button class="filter" data-filter="need">Suchen/Kaufen</button>
     </div>
-    <main class="content" id="list"></main>
+    <div class="categoryTabs" id="categoryTabs"></div><main class="content" id="list"></main>
   </section>
 
   <section class="view" id="view-need">
@@ -179,7 +179,7 @@ const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 let masterItems=[], places=[], states=new Map(), currentTrip=null, currentPlace=null;
-let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null;
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, activeCategory=null;
 const el=id=>document.getElementById(id);
 
 function toast(msg,undo=false){
@@ -298,30 +298,77 @@ function attachSwipe(row,item){
     if(dx < -45)row.classList.add("swiped");else if(dx > 45)row.classList.add("swipedRight");
   });
 }
+function renderCategoryTabs(items){
+  const tabs=el("categoryTabs");tabs.innerHTML="";
+  const cats=grouped(items);
+  if(!cats.length){activeCategory=null;return}
+  if(!activeCategory || !cats.some(c=>c.name===activeCategory)) activeCategory=cats[0].name;
+  cats.forEach(cat=>{
+    const b=document.createElement("button");
+    b.className="categoryTab"+(cat.name===activeCategory?" active":"");
+    b.textContent=cat.icon+" "+cat.name;
+    b.onclick=()=>{activeCategory=cat.name;render()};
+    tabs.appendChild(b);
+  });
+  requestAnimationFrame(()=>{
+    tabs.querySelector(".categoryTab.active")?.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
+  });
+}
+
 function render(){
-  const items=currentItems();el("list").innerHTML="";
-  for(const cat of grouped(items.filter(visible))){
-    const sec=document.createElement("section");sec.className="category closed";
+  const items=currentItems();
+  renderCategoryTabs(items);
+  el("list").innerHTML="";
+
+  const allGroups=grouped(items.filter(visible));
+  const cat=allGroups.find(c=>c.name===activeCategory);
+
+  if(cat){
+    const sec=document.createElement("section");
+    sec.className="category";
     sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;
-    sec.querySelector(".cathead").onclick=()=>sec.classList.toggle("closed");
     const body=sec.querySelector(".catbody");
+
     for(const item of cat.items){
       const s=state(item.id),wrap=document.createElement("div"),del=document.createElement("button"),edit=document.createElement("button"),row=document.createElement("div");
-      wrap.className="swipeWrap";wrap.dataset.itemId=item.id;wrap.dataset.category=item.category;del.className="swipeDelete";del.textContent="🗑 Entfernen";edit.className="swipeEdit";edit.textContent="✏️ Bearbeiten";row.className="row"+(s.selected?" selected":"");
+      wrap.className="swipeWrap";wrap.dataset.itemId=item.id;wrap.dataset.category=item.category;
+      del.className="swipeDelete";del.textContent="🗑 Entfernen";
+      edit.className="swipeEdit";edit.textContent="✏️ Bearbeiten";
+      row.className="row"+(s.selected?" selected":"");
       row.innerHTML=`<div class="nameLine"><input class="take" type="checkbox" ${s.selected?"checked":""}><div class="name">${item.name}</div>${item.is_master?"":'<span class="tripOnly">nur Urlaub</span>'}<span class="dragHint">↕ halten</span></div>
       <div class="actions"><button class="stage ${s.seen?"on":""}" data-stage="seen">✓ Gesichtet</button><button class="stage ${s.in_box?"on":""}" data-stage="box">📦 Kiste</button><button class="stage ${s.in_car?"on":""}" data-stage="car">🚗 Auto</button><button class="stage ${s.need?"on":""}" data-stage="need">🔎 Suchen</button></div>`;
+
       row.querySelector(".take").onchange=e=>dbUpsert(item.id,{selected:e.target.checked,...(!e.target.checked?{seen:false,in_box:false,in_car:false}:{})});
       row.querySelectorAll(".stage").forEach(b=>b.onclick=()=>{
         const k=b.dataset.stage,ss=state(item.id);
         const key=k==="box"?"in_box":k==="car"?"in_car":k;
         dbUpsert(item.id,{[key]:!ss[key],...(key!=="need"&&!ss[key]?{selected:true}:{})});
       });
-      del.onclick=async()=>{lastRemoved={itemId:item.id,old:{...state(item.id)}};await dbUpsert(item.id,{selected:false,seen:false,in_box:false,in_car:false});toast(item.name+" entfernt",true)};
-      edit.onclick=()=>{editingItem=item;el("editName").value=item.name;renderCats();el("editCat").value=item.category;el("editModal").classList.add("open");row.classList.remove("swipedRight")};
-      wrap.appendChild(edit);wrap.appendChild(del);wrap.appendChild(row);body.appendChild(wrap);attachSwipe(row,item);enableLongPressDrag(wrap,row,item);
+
+      del.onclick=async()=>{
+        lastRemoved={itemId:item.id,old:{...state(item.id)}};
+        await dbUpsert(item.id,{selected:false,seen:false,in_box:false,in_car:false});
+        toast(item.name+" entfernt",true)
+      };
+
+      edit.onclick=()=>{
+        editingItem=item;
+        el("editName").value=item.name;
+        renderCats();
+        el("editCat").value=item.category;
+        el("editModal").classList.add("open");
+        row.classList.remove("swipedRight")
+      };
+
+      wrap.appendChild(edit);wrap.appendChild(del);wrap.appendChild(row);body.appendChild(wrap);
+      attachSwipe(row,item);enableLongPressDrag(wrap,row,item);
     }
+
     el("list").appendChild(sec);
+  }else{
+    el("list").innerHTML='<div class="empty">In dieser Kategorie gibt es mit dem aktuellen Filter keine sichtbaren Artikel.</div>';
   }
+
   updateStats();renderNeed();renderMaster();renderCats();
 }
 function updateStats(){
