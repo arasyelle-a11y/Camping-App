@@ -182,7 +182,7 @@ button{cursor:pointer}
     <div class="top"><h2 style="margin:5px 0">👤 Persönliche Listen</h2><div style="font-size:12px;color:var(--muted)">Eigene Packliste pro Person – mit Menge und Verknüpfung zur Familienliste.</div></div>
     <div class="personToolbar">
       <div class="personTabs" id="personTabs"></div>
-      <button class="iconbtn" id="addPersonBtn">＋ Person</button>
+      <button class="iconbtn" id="addPersonBtn">＋ Person</button><button class="iconbtn" id="editPersonBtn">✏️ Person</button>
       <button class="iconbtn" id="addPersonItemBtn">＋ Artikel</button><button class="iconbtn" id="bulkPersonItemBtn">＋ Mehrere</button><button class="iconbtn" id="copyPersonListBtn">⧉ Liste kopieren</button>
       <button class="iconbtn" id="printPersonBtn">🖨️ Drucken</button>
     </div>
@@ -262,9 +262,10 @@ button{cursor:pointer}
 
 <div class="modal" id="bulkPersonItemModal"><div class="sheet">
   <h3>Mehrere Artikel anlegen</h3>
-  <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Eine Zeile = ein Artikel. Zeilenumbrüche werden automatisch getrennt. Optional kannst du eine Kategorie für alle festlegen.</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Eine Zeile = ein Artikel.</div>
   <input id="bulkPersonCategory" placeholder="Kategorie, z. B. Kleidung">
-  <textarea id="bulkPersonItems" rows="10" placeholder="Unterhosen&#10;Socken&#10;T-Shirts&#10;Kurze Hosen&#10;Pullover&#10;Schlafanzug&#10;Badebekleidung"></textarea><div id="bulkCount" style="font-size:12px;color:var(--muted);margin-top:5px">0 Artikel erkannt</div>
+  <textarea id="bulkPersonItems" rows="10" placeholder="Unterhosen&#10;Socken&#10;T-Shirts&#10;Kurze Hosen&#10;Pullover"></textarea>
+  <div id="bulkCount" style="font-size:12px;color:var(--muted);margin-top:5px">0 Artikel erkannt</div>
   <div class="sheetActions"><button class="cancel" id="bulkPersonCancel">Abbrechen</button><button class="save" id="bulkPersonSave">Alle anlegen</button></div>
 </div></div>
 
@@ -276,6 +277,12 @@ button{cursor:pointer}
   <div class="sheetActions"><button class="cancel" id="copyPersonCancel">Abbrechen</button><button class="save" id="copyPersonSave">Liste kopieren</button></div>
 </div></div>
 
+<div class="modal" id="editPersonModal"><div class="sheet">
+<h3>Person bearbeiten</h3><input id="editPersonName" placeholder="Name"><label class="fieldLabel">Farbe</label>
+<div class="colorPalette" id="editPersonColors"></div>
+<button id="deletePersonBtn" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;border:1px solid #d9a3a3;background:#fff4f4;color:#a33;font-weight:900">Person löschen</button>
+<div class="sheetActions"><button class="cancel" id="editPersonCancel">Abbrechen</button><button class="save" id="editPersonSave">Speichern</button></div>
+</div></div>
 <div class="modal" id="personItemModal"><div class="sheet">
   <h3>Persönlichen Artikel anlegen</h3>
   <input id="personItemName" placeholder="z. B. AirPods">
@@ -323,7 +330,7 @@ const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], personStates=new Map(), currentPerson=null;
-let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B";
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B";
 const el=id=>document.getElementById(id);
 
 function toast(msg,undo=false){
@@ -890,6 +897,10 @@ function renderPersonColors(){
     host.appendChild(b);
   }
 }
+function renderEditPersonColors(){
+ const host=el("editPersonColors");host.innerHTML="";
+ for(const c of PERSON_COLORS){const b=document.createElement("button");b.type="button";b.className="colorChoice"+(c===editPersonColor?" active":"");b.style.background=c;b.onclick=()=>{editPersonColor=c;renderEditPersonColors()};host.appendChild(b)}
+}
 function fillPersonMasterLinks(){
   const s=el("personItemLink");s.innerHTML='<option value="">Nicht verknüpfen</option>';
   for(const i of masterItems.filter(x=>x.is_master)){
@@ -992,6 +1003,27 @@ el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastR
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render()});
 document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster()});
 
+el("editPersonBtn").onclick=()=>{
+ if(!currentPerson)return toast("Bitte zuerst eine Person auswählen");
+ el("editPersonName").value=currentPerson.name;editPersonColor=currentPerson.color||PERSON_COLORS[0];renderEditPersonColors();el("editPersonModal").classList.add("open");
+};
+el("editPersonCancel").onclick=()=>el("editPersonModal").classList.remove("open");
+el("editPersonSave").onclick=async()=>{
+ if(!currentPerson)return;const name=el("editPersonName").value.trim();if(!name)return toast("Bitte einen Namen eingeben");
+ const {data,error}=await sb.from("camping_people").update({name,color:editPersonColor}).eq("id",currentPerson.id).select().single();
+ if(error){console.error(error);return toast("Person konnte nicht geändert werden")}
+ const idx=people.findIndex(p=>p.id===currentPerson.id);if(idx>=0)people[idx]=data;currentPerson=data;
+ el("editPersonModal").classList.remove("open");renderPeople();render();toast("Person gespeichert");
+};
+el("deletePersonBtn").onclick=async()=>{
+ if(!currentPerson)return;const doomed=currentPerson;
+ if(!confirm(`${doomed.name} wirklich löschen?\n\nDie persönliche Packliste dieser Person wird ebenfalls gelöscht.`))return;
+ const {error}=await sb.from("camping_people").delete().eq("id",doomed.id);
+ if(error){console.error(error);return toast("Person konnte nicht gelöscht werden")}
+ people=people.filter(p=>p.id!==doomed.id);personItems=personItems.filter(i=>i.person_id!==doomed.id);currentPerson=people[0]||null;
+ if(currentPerson)localStorage.setItem("camping-person-id",currentPerson.id);else localStorage.removeItem("camping-person-id");
+ el("editPersonModal").classList.remove("open");renderPeople();render();toast(`${doomed.name} gelöscht`);
+};
 el("addPersonBtn").onclick=()=>{el("personName").value="";chosenPersonColor=PERSON_COLORS[people.length%PERSON_COLORS.length];renderPersonColors();el("personModal").classList.add("open")};
 el("personCancel").onclick=()=>el("personModal").classList.remove("open");
 el("personSave").onclick=async()=>{
@@ -1000,9 +1032,8 @@ el("personSave").onclick=async()=>{
   if(error){console.error(error);return toast("Person konnte nicht angelegt werden")}
   people.push(data);currentPerson=data;localStorage.setItem("camping-person-id",data.id);el("personModal").classList.remove("open");renderPeople();toast(name+" angelegt");
 };
-
 function parseBulkPersonNames(){
-  const raw=el("bulkPersonItems").value
+  const raw=(el("bulkPersonItems").value||"")
     .replace(/\r\n?/g,"\n")
     .replace(/[\u2028\u2029\u0085]/g,"\n")
     .replace(/<br\s*\/?>/gi,"\n");
@@ -1018,6 +1049,7 @@ el("bulkPersonItemBtn").onclick=()=>{
   if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
   el("bulkPersonCategory").value="";
   el("bulkPersonItems").value="";
+  el("bulkCount").textContent="0 Artikel erkannt";
   el("bulkPersonItemModal").classList.add("open");
 };
 el("bulkPersonCancel").onclick=()=>el("bulkPersonItemModal").classList.remove("open");
@@ -1052,9 +1084,10 @@ el("copyPersonSave").onclick=async()=>{
   const source=personItems.filter(i=>i.person_id===currentPerson.id);
   if(!source.length)return toast("Diese Liste ist noch leer");
   const existing=new Set(personItems.filter(i=>i.person_id===targetId).map(i=>`${i.category.toLowerCase()}|${i.name.toLowerCase()}`));
+  const targetBase=personItems.filter(x=>x.person_id===targetId).length;
   const rows=source.filter(i=>!existing.has(`${i.category.toLowerCase()}|${i.name.toLowerCase()}`)).map((i,n)=>({
     person_id:targetId,name:i.name,category:i.category,icon:i.icon,default_quantity:i.default_quantity,
-    linked_master_item_id:null,sort_order:personItems.filter(x=>x.person_id===targetId).length+n
+    linked_master_item_id:null,sort_order:targetBase+n
   }));
   if(!rows.length){el("copyPersonModal").classList.remove("open");return toast("Alle Artikel sind dort schon vorhanden")}
   const {data,error}=await sb.from("camping_person_items").insert(rows).select();
@@ -1081,30 +1114,6 @@ el("personItemSave").onclick=async()=>{
 el("printPersonBtn").onclick=printCurrentPerson;
 
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
-el("addPersonBtn").onclick=()=>{el("personName").value="";chosenPersonColor=PERSON_COLORS[people.length%PERSON_COLORS.length];renderPersonColors();el("personModal").classList.add("open")};
-el("personCancel").onclick=()=>el("personModal").classList.remove("open");
-el("personSave").onclick=async()=>{
-  const name=el("personName").value.trim();if(!name)return toast("Bitte einen Namen eingeben");
-  const {data,error}=await sb.from("camping_people").insert({name,color:chosenPersonColor,sort_order:people.length}).select().single();
-  if(error){console.error(error);return toast("Person konnte nicht angelegt werden")}
-  people.push(data);currentPerson=data;localStorage.setItem("camping-person-id",data.id);el("personModal").classList.remove("open");renderPeople();toast(name+" angelegt");
-};
-
-el("addPersonItemBtn").onclick=()=>{
-  if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
-  el("personItemName").value="";el("personItemCategory").value="";el("personItemQty").value="1";fillPersonMasterLinks();el("personItemModal").classList.add("open");
-};
-el("personItemCancel").onclick=()=>el("personItemModal").classList.remove("open");
-el("personItemSave").onclick=async()=>{
-  if(!currentPerson)return;
-  const name=el("personItemName").value.trim(),category=el("personItemCategory").value.trim()||"Sonstiges",default_quantity=Math.max(0,parseInt(el("personItemQty").value||"1")),linked_master_item_id=el("personItemLink").value||null;
-  if(!name)return toast("Bitte einen Artikelnamen eingeben");
-  const {data,error}=await sb.from("camping_person_items").insert({person_id:currentPerson.id,name,category,default_quantity,linked_master_item_id,sort_order:personItems.filter(i=>i.person_id===currentPerson.id).length}).select().single();
-  if(error){console.error(error);return toast("Artikel konnte nicht angelegt werden")}
-  personItems.push(data);el("personItemModal").classList.remove("open");renderPeople();toast("Artikel angelegt");
-};
-el("printPersonBtn").onclick=printCurrentPerson;
-
 document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));el("view-"+b.dataset.view).classList.add("active")});
 el("tripSelect").onchange=e=>switchTrip(e.target.value);
 el("editTripBtn").onclick=()=>{
