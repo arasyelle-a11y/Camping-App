@@ -89,6 +89,34 @@ button{cursor:pointer}
 .loginCard input{width:100%;margin-bottom:9px}.loginCard button{width:100%;border:0;border-radius:11px;padding:12px;background:var(--green);color:white;font-weight:900}.loginErr{font-size:11px;color:var(--red);min-height:18px;margin-top:8px}
 .tripInfo{padding:7px 14px 0;font-size:12px;color:var(--brown);display:flex;justify-content:space-between;gap:10px;align-items:center}.tripInfo strong{color:var(--navy)}.countdown{font-size:10px;font-weight:900;color:var(--green);text-align:right}.tripForm label{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}.tripForm input,.tripForm select{width:100%}.sync{font-size:10px;color:var(--muted);padding:4px 14px 0;text-align:right}
 @media(max-width:520px){.stat b{font-size:14px}.stat span{font-size:7px}.quickadd{grid-template-columns:1fr 102px auto}.actions{gap:4px}.stage{font-size:8px}}
+
+.personToolbar{padding:12px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.personTabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.personTabs::-webkit-scrollbar{display:none}
+.personTab{border:2px solid transparent;border-radius:999px;padding:9px 13px;background:white;font-weight:850;white-space:nowrap;color:var(--navy)}
+.personTab.active{color:white;box-shadow:0 4px 12px rgba(26,54,74,.15)}
+.personList{padding:0 12px 20px}
+.personCategory{margin:10px 0;border:1px solid var(--line);border-radius:15px;overflow:hidden;background:white}
+.personCatHead{padding:10px 12px;background:var(--cream2);font-weight:900}
+.personItem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:11px 12px;border-top:1px solid var(--line)}
+.qtyBox{display:flex;align-items:center;gap:5px}
+.qtyBox button{width:28px;height:28px;border:1px solid var(--line);border-radius:8px;background:white;font-weight:900}
+.qty{min-width:28px;text-align:center;font-weight:900}
+.linkBadge{font-size:9px;font-weight:850;border:1px solid currentColor;border-radius:999px;padding:3px 6px;margin-left:5px}
+.colorPalette{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:8px 0 12px}
+.colorChoice{height:38px;border-radius:11px;border:3px solid transparent}
+.colorChoice.active{outline:3px solid var(--navy);outline-offset:2px}
+.personEmpty{padding:24px;text-align:center;color:var(--muted)}
+@media print{
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{position:absolute;left:0;top:0;width:100%;background:white;color:#111;padding:10mm}
+  #printArea h1{font-size:22pt;margin:0 0 3mm}
+  #printArea h2{font-size:14pt;margin:6mm 0 2mm;border-bottom:2px solid #555;padding-bottom:1mm}
+  .printRow{display:grid;grid-template-columns:9mm 1fr 22mm;align-items:center;min-height:10mm;border-bottom:1px solid #ddd;font-size:13pt}
+  .printCheck{width:6mm;height:6mm;border:1.5px solid #111}
+  .printQty{text-align:right;font-weight:700}
+}
 </style>
 </head>
 <body>
@@ -151,8 +179,14 @@ button{cursor:pointer}
   </section>
 
   <section class="view" id="view-person">
-    <div class="top"><h2 style="margin:5px 0">👤 Persönliche Listen</h2></div>
-    <div class="personCard"><b>Als Nächstes:</b> Anika, Emil, Frieda, Anton, Erik und Sarah – ebenfalls Supabase-synchronisiert.</div>
+    <div class="top"><h2 style="margin:5px 0">👤 Persönliche Listen</h2><div style="font-size:12px;color:var(--muted)">Eigene Packliste pro Person – mit Menge und Verknüpfung zur Familienliste.</div></div>
+    <div class="personToolbar">
+      <div class="personTabs" id="personTabs"></div>
+      <button class="iconbtn" id="addPersonBtn">＋ Person</button>
+      <button class="iconbtn" id="addPersonItemBtn">＋ Artikel</button>
+      <button class="iconbtn" id="printPersonBtn">🖨️ Drucken</button>
+    </div>
+    <div class="personList" id="personList"></div>
   </section>
   <section class="view" id="view-archive">
     <div class="top"><h2 style="margin:5px 0">🗂️ Urlaubsarchiv</h2><div style="font-size:12px;color:var(--muted)">Abgeschlossene Urlaube mit damaliger Packliste und Erinnerungen.</div></div>
@@ -218,6 +252,27 @@ button{cursor:pointer}
   </div>
 </div>
 
+<div class="modal" id="personModal"><div class="sheet">
+  <h3>Person anlegen</h3>
+  <input id="personName" placeholder="Name">
+  <label class="fieldLabel">Farbe</label>
+  <div class="colorPalette" id="personColors"></div>
+  <div class="sheetActions"><button class="cancel" id="personCancel">Abbrechen</button><button class="save" id="personSave">Anlegen</button></div>
+</div></div>
+
+<div class="modal" id="personItemModal"><div class="sheet">
+  <h3>Persönlichen Artikel anlegen</h3>
+  <input id="personItemName" placeholder="z. B. AirPods">
+  <input id="personItemCategory" placeholder="Kategorie, z. B. Technik">
+  <label class="fieldLabel">Standardmenge</label>
+  <input id="personItemQty" type="number" min="0" value="1">
+  <label class="fieldLabel">Optional mit Familien-Masterartikel verknüpfen</label>
+  <select id="personItemLink"><option value="">Nicht verknüpfen</option></select>
+  <div class="sheetActions"><button class="cancel" id="personItemCancel">Abbrechen</button><button class="save" id="personItemSave">Anlegen</button></div>
+</div></div>
+
+<div id="printArea" style="display:none"></div>
+
 <div class="modal" id="noteModal">
   <div class="sheet">
     <h3 id="noteTitle">Notiz</h3>
@@ -251,8 +306,8 @@ const SUPABASE_URL="https://muujfgwspkoogjxtvcrp.supabase.co";
 const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
-let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null;
-let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false;
+let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], personStates=new Map(), currentPerson=null;
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B";
 const el=id=>document.getElementById(id);
 
 function toast(msg,undo=false){
@@ -423,8 +478,10 @@ async function switchTrip(id){
   localStorage.setItem("camping-trip-id",id);
   setSync("Lädt …");
   await loadStates();
+  await loadPersonStates();
   updateTripInfo();
   render();
+  renderPeople();
   try{subscribeTrip()}catch(e){console.warn("Realtime konnte nicht gestartet werden",e)}
   setSync("Synchronisiert");
 }
@@ -671,7 +728,10 @@ function render(){
 
     for(const item of cat.items){
       const s=state(item.id),wrap=document.createElement("div"),del=document.createElement("button"),edit=document.createElement("button"),row=document.createElement("div");
-      wrap.className="swipeWrap";wrap.dataset.itemId=item.id;wrap.dataset.category=item.category;
+      wrap.className="swipeWrap";wrap.dataset.itemId=item.id;
+      const ownerItem=personItems.find(pi=>pi.linked_master_item_id===item.id);
+      const owner=ownerItem?people.find(p=>p.id===ownerItem.person_id):null;
+      if(owner){wrap.style.borderLeft=`4px solid ${owner.color}`;wrap.style.borderRadius="8px"}wrap.dataset.category=item.category;
       del.className="swipeDelete";del.textContent="🗑 Entfernen";
       edit.className="swipeEdit";edit.textContent="✏️ Bearbeiten";
       row.className="row"+(s.selected?" selected":"");
@@ -739,6 +799,100 @@ async function uploadMemoryPhoto(tripId,file,oldPath=null){
   if(error)throw error;
   if(oldPath)await sb.storage.from("camping-memory-photos").remove([oldPath]);
   return path;
+}
+
+const PERSON_COLORS=["#C96F5B","#D79A3B","#7E9B55","#4F8B82","#5B83B4","#7767A8","#B76D92","#9A6B4F","#68757D","#A96D55"];
+
+async function loadPeople(){
+  const {data,error}=await sb.from("camping_people").select("*").eq("is_active",true).order("sort_order",{ascending:true}).order("created_at",{ascending:true});
+  if(error)throw error;
+  people=data||[];
+  const saved=localStorage.getItem("camping-person-id");
+  currentPerson=people.find(p=>p.id===saved)||people[0]||null;
+}
+async function loadPersonItems(){
+  const {data,error}=await sb.from("camping_person_items").select("*").eq("is_active",true).order("sort_order",{ascending:true}).order("created_at",{ascending:true});
+  if(error)throw error;
+  personItems=data||[];
+}
+async function loadPersonStates(){
+  personStates=new Map();
+  if(!currentTrip)return;
+  const {data,error}=await sb.from("camping_trip_person_items").select("*").eq("trip_id",currentTrip.id);
+  if(error)throw error;
+  for(const x of data||[])personStates.set(x.person_item_id,x);
+}
+function personState(item){
+  return personStates.get(item.id)||{selected:true,quantity:item.default_quantity??1,packed:false,note:null};
+}
+async function savePersonState(item,patch){
+  if(!currentTrip)return;
+  const old=personState(item);
+  const row={trip_id:currentTrip.id,person_item_id:item.id,selected:old.selected,quantity:old.quantity,packed:old.packed,note:old.note,...patch,updated_at:new Date().toISOString()};
+  const {error}=await sb.from("camping_trip_person_items").upsert(row,{onConflict:"trip_id,person_item_id"});
+  if(error)throw error;
+  personStates.set(item.id,row);
+  renderPeople();
+}
+function renderPeople(){
+  const tabs=el("personTabs"),list=el("personList");
+  if(!tabs||!list)return;
+  tabs.innerHTML="";list.innerHTML="";
+  for(const p of people){
+    const b=document.createElement("button");b.className="personTab"+(currentPerson?.id===p.id?" active":"");
+    b.textContent=p.name;b.style.borderColor=p.color;
+    if(currentPerson?.id===p.id)b.style.background=p.color;
+    b.onclick=()=>{currentPerson=p;localStorage.setItem("camping-person-id",p.id);renderPeople()};
+    tabs.appendChild(b);
+  }
+  if(!currentPerson){list.innerHTML='<div class="personEmpty">Noch keine Person angelegt. Tippe oben auf „＋ Person“.</div>';return}
+  const mine=personItems.filter(i=>i.person_id===currentPerson.id);
+  if(!mine.length){list.innerHTML=`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel.</div>`;return}
+  const groups=new Map();
+  for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
+  for(const [cat,items] of groups){
+    const sec=document.createElement("section");sec.className="personCategory";
+    sec.innerHTML=`<div class="personCatHead" style="border-left:5px solid ${currentPerson.color}">${cat}</div><div></div>`;
+    const body=sec.lastElementChild;
+    for(const item of items){
+      const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id);
+      const row=document.createElement("div");row.className="personItem";
+      row.innerHTML=`<input class="pselect" type="checkbox" ${s.selected?"checked":""}><div><b>${item.name}</b>${linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:""}</div><div class="qtyBox"><button class="minus">−</button><span class="qty">${s.quantity}</span><button class="plus">＋</button></div>`;
+      row.querySelector(".pselect").onchange=e=>savePersonState(item,{selected:e.target.checked});
+      row.querySelector(".minus").onclick=()=>savePersonState(item,{quantity:Math.max(0,s.quantity-1)});
+      row.querySelector(".plus").onclick=()=>savePersonState(item,{quantity:s.quantity+1});
+      body.appendChild(row);
+    }
+    list.appendChild(sec);
+  }
+}
+function renderPersonColors(){
+  const host=el("personColors");host.innerHTML="";
+  for(const c of PERSON_COLORS){
+    const b=document.createElement("button");b.type="button";b.className="colorChoice"+(c===chosenPersonColor?" active":"");b.style.background=c;
+    b.onclick=()=>{chosenPersonColor=c;renderPersonColors()};
+    host.appendChild(b);
+  }
+}
+function fillPersonMasterLinks(){
+  const s=el("personItemLink");s.innerHTML='<option value="">Nicht verknüpfen</option>';
+  for(const i of masterItems.filter(x=>x.is_master)){
+    const o=document.createElement("option");o.value=i.id;o.textContent=`${i.category} · ${i.name}`;s.appendChild(o);
+  }
+}
+function printCurrentPerson(){
+  if(!currentPerson)return;
+  const mine=personItems.filter(i=>i.person_id===currentPerson.id&&personState(i).selected);
+  const groups=new Map();for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
+  const area=el("printArea");
+  let html=`<h1>${currentPerson.name} – Packliste</h1><div>${currentTrip?.name||""}${currentTrip?.start_date?" · "+fmtDate(currentTrip.start_date):""}${currentTrip?.end_date?" – "+fmtDate(currentTrip.end_date):""}</div>`;
+  for(const [cat,items] of groups){
+    html+=`<h2 style="border-color:${currentPerson.color}">${cat}</h2>`;
+    for(const i of items)html+=`<div class="printRow"><span class="printCheck"></span><span>${i.name}</span><span class="printQty">${personState(i).quantity}×</span></div>`;
+  }
+  area.innerHTML=html;area.style.display="block";
+  window.print();
+  setTimeout(()=>area.style.display="none",500);
 }
 function fmtDate(d){
   if(!d)return "";
@@ -821,7 +975,55 @@ function renderCats(){
 el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastRemoved=null;await dbUpsert(x.itemId,x.old);el("undoToast").classList.remove("show")};
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render()});
 document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster()});
-document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));el("view-"+b.dataset.view).classList.add("active")});
+
+el("addPersonBtn").onclick=()=>{el("personName").value="";chosenPersonColor=PERSON_COLORS[people.length%PERSON_COLORS.length];renderPersonColors();el("personModal").classList.add("open")};
+el("personCancel").onclick=()=>el("personModal").classList.remove("open");
+el("personSave").onclick=async()=>{
+  const name=el("personName").value.trim();if(!name)return toast("Bitte einen Namen eingeben");
+  const {data,error}=await sb.from("camping_people").insert({name,color:chosenPersonColor,sort_order:people.length}).select().single();
+  if(error){console.error(error);return toast("Person konnte nicht angelegt werden")}
+  people.push(data);currentPerson=data;localStorage.setItem("camping-person-id",data.id);el("personModal").classList.remove("open");renderPeople();toast(name+" angelegt");
+};
+el("addPersonItemBtn").onclick=()=>{
+  if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
+  el("personItemName").value="";el("personItemCategory").value="";el("personItemQty").value="1";fillPersonMasterLinks();el("personItemModal").classList.add("open");
+};
+el("personItemCancel").onclick=()=>el("personItemModal").classList.remove("open");
+el("personItemSave").onclick=async()=>{
+  if(!currentPerson)return;
+  const name=el("personItemName").value.trim(),category=el("personItemCategory").value.trim()||"Sonstiges",default_quantity=Math.max(0,parseInt(el("personItemQty").value||"1")),linked_master_item_id=el("personItemLink").value||null;
+  if(!name)return toast("Bitte einen Artikelnamen eingeben");
+  const {data,error}=await sb.from("camping_person_items").insert({person_id:currentPerson.id,name,category,default_quantity,linked_master_item_id,sort_order:personItems.filter(i=>i.person_id===currentPerson.id).length}).select().single();
+  if(error){console.error(error);return toast("Artikel konnte nicht angelegt werden")}
+  personItems.push(data);el("personItemModal").classList.remove("open");renderPeople();toast("Artikel angelegt");
+};
+el("printPersonBtn").onclick=printCurrentPerson;
+
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
+el("addPersonBtn").onclick=()=>{el("personName").value="";chosenPersonColor=PERSON_COLORS[people.length%PERSON_COLORS.length];renderPersonColors();el("personModal").classList.add("open")};
+el("personCancel").onclick=()=>el("personModal").classList.remove("open");
+el("personSave").onclick=async()=>{
+  const name=el("personName").value.trim();if(!name)return toast("Bitte einen Namen eingeben");
+  const {data,error}=await sb.from("camping_people").insert({name,color:chosenPersonColor,sort_order:people.length}).select().single();
+  if(error){console.error(error);return toast("Person konnte nicht angelegt werden")}
+  people.push(data);currentPerson=data;localStorage.setItem("camping-person-id",data.id);el("personModal").classList.remove("open");renderPeople();toast(name+" angelegt");
+};
+el("addPersonItemBtn").onclick=()=>{
+  if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
+  el("personItemName").value="";el("personItemCategory").value="";el("personItemQty").value="1";fillPersonMasterLinks();el("personItemModal").classList.add("open");
+};
+el("personItemCancel").onclick=()=>el("personItemModal").classList.remove("open");
+el("personItemSave").onclick=async()=>{
+  if(!currentPerson)return;
+  const name=el("personItemName").value.trim(),category=el("personItemCategory").value.trim()||"Sonstiges",default_quantity=Math.max(0,parseInt(el("personItemQty").value||"1")),linked_master_item_id=el("personItemLink").value||null;
+  if(!name)return toast("Bitte einen Artikelnamen eingeben");
+  const {data,error}=await sb.from("camping_person_items").insert({person_id:currentPerson.id,name,category,default_quantity,linked_master_item_id,sort_order:personItems.filter(i=>i.person_id===currentPerson.id).length}).select().single();
+  if(error){console.error(error);return toast("Artikel konnte nicht angelegt werden")}
+  personItems.push(data);el("personItemModal").classList.remove("open");renderPeople();toast("Artikel angelegt");
+};
+el("printPersonBtn").onclick=printCurrentPerson;
+
+document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));el("view-"+b.dataset.view).classList.add("active")});
 el("tripSelect").onchange=e=>switchTrip(e.target.value);
 el("editTripBtn").onclick=()=>{
   if(!currentTrip)return;
@@ -1107,6 +1309,8 @@ async function boot(){
     if(!hadCache)setSync("Lädt Urlaube …");
     await loadTrips();
     await loadArchivedTrips();
+    await loadPeople();
+    await loadPersonItems();
 
     if(currentTrip){
       el("tripSelect").value=currentTrip.id;
@@ -1114,9 +1318,11 @@ async function boot(){
 
       if(!hadCache)setSync("Lädt Packliste …");
       await loadStates();
+      await loadPersonStates();
 
       updateTripInfo();
       render();
+      renderPeople();
       saveCache();
 
       try{subscribeTrip()}catch(e){console.warn("Realtime konnte nicht gestartet werden",e)}
