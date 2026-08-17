@@ -264,7 +264,7 @@ button{cursor:pointer}
   <h3>Mehrere Artikel anlegen</h3>
   <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Eine Zeile = ein Artikel. Zeilenumbrüche werden automatisch getrennt. Optional kannst du eine Kategorie für alle festlegen.</div>
   <input id="bulkPersonCategory" placeholder="Kategorie, z. B. Kleidung">
-  <textarea id="bulkPersonItems" rows="10" placeholder="Unterhosen&#10;Socken&#10;T-Shirts&#10;Kurze Hosen&#10;Pullover&#10;Schlafanzug&#10;Badebekleidung"></textarea>
+  <textarea id="bulkPersonItems" rows="10" placeholder="Unterhosen&#10;Socken&#10;T-Shirts&#10;Kurze Hosen&#10;Pullover&#10;Schlafanzug&#10;Badebekleidung"></textarea><div id="bulkCount" style="font-size:12px;color:var(--muted);margin-top:5px">0 Artikel erkannt</div>
   <div class="sheetActions"><button class="cancel" id="bulkPersonCancel">Abbrechen</button><button class="save" id="bulkPersonSave">Alle anlegen</button></div>
 </div></div>
 
@@ -1001,6 +1001,19 @@ el("personSave").onclick=async()=>{
   people.push(data);currentPerson=data;localStorage.setItem("camping-person-id",data.id);el("personModal").classList.remove("open");renderPeople();toast(name+" angelegt");
 };
 
+function parseBulkPersonNames(){
+  const raw=el("bulkPersonItems").value
+    .replace(/\r\n?/g,"\n")
+    .replace(/[\u2028\u2029\u0085]/g,"\n")
+    .replace(/<br\s*\/?>/gi,"\n");
+  return raw.split(/\n+|;+/)
+    .map(x=>x.replace(/^[\s•·▪▫◦‣⁃\-–—*✓✔☐☑]+/,"").trim())
+    .filter(Boolean);
+}
+el("bulkPersonItems").addEventListener("input",()=>{
+  const n=parseBulkPersonNames().length;
+  el("bulkCount").textContent=`${n} Artikel erkannt`;
+});
 el("bulkPersonItemBtn").onclick=()=>{
   if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
   el("bulkPersonCategory").value="";
@@ -1011,7 +1024,7 @@ el("bulkPersonCancel").onclick=()=>el("bulkPersonItemModal").classList.remove("o
 el("bulkPersonSave").onclick=async()=>{
   if(!currentPerson)return;
   const category=el("bulkPersonCategory").value.trim()||"Sonstiges";
-  const names=el("bulkPersonItems").value.split(/\r?\n|;+/).map(x=>x.trim()).filter(Boolean);
+  const names=parseBulkPersonNames();
   if(!names.length)return toast("Bitte mindestens einen Artikel eingeben");
   const base=personItems.filter(i=>i.person_id===currentPerson.id).length;
   const rows=names.map((name,n)=>({person_id:currentPerson.id,name,category,default_quantity:1,sort_order:base+n}));
@@ -1075,57 +1088,6 @@ el("personSave").onclick=async()=>{
   const {data,error}=await sb.from("camping_people").insert({name,color:chosenPersonColor,sort_order:people.length}).select().single();
   if(error){console.error(error);return toast("Person konnte nicht angelegt werden")}
   people.push(data);currentPerson=data;localStorage.setItem("camping-person-id",data.id);el("personModal").classList.remove("open");renderPeople();toast(name+" angelegt");
-};
-
-el("bulkPersonItemBtn").onclick=()=>{
-  if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
-  el("bulkPersonCategory").value="";
-  el("bulkPersonItems").value="";
-  el("bulkPersonItemModal").classList.add("open");
-};
-el("bulkPersonCancel").onclick=()=>el("bulkPersonItemModal").classList.remove("open");
-el("bulkPersonSave").onclick=async()=>{
-  if(!currentPerson)return;
-  const category=el("bulkPersonCategory").value.trim()||"Sonstiges";
-  const names=el("bulkPersonItems").value.split(/\r?\n|;+/).map(x=>x.trim()).filter(Boolean);
-  if(!names.length)return toast("Bitte mindestens einen Artikel eingeben");
-  const base=personItems.filter(i=>i.person_id===currentPerson.id).length;
-  const rows=names.map((name,n)=>({person_id:currentPerson.id,name,category,default_quantity:1,sort_order:base+n}));
-  const {data,error}=await sb.from("camping_person_items").insert(rows).select();
-  if(error){console.error(error);return toast("Artikel konnten nicht angelegt werden")}
-  personItems.push(...(data||[]));
-  el("bulkPersonItemModal").classList.remove("open");
-  renderPeople();
-  toast(`${names.length} Artikel angelegt`);
-};
-
-el("copyPersonListBtn").onclick=()=>{
-  if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
-  const targets=people.filter(p=>p.id!==currentPerson.id);
-  if(!targets.length)return toast("Es gibt noch keine andere Person");
-  el("copyPersonInfo").textContent=`Liste von ${currentPerson.name} kopieren`;
-  const s=el("copyPersonTarget");s.innerHTML="";
-  for(const p of targets){const o=document.createElement("option");o.value=p.id;o.textContent=p.name;s.appendChild(o)}
-  el("copyPersonModal").classList.add("open");
-};
-el("copyPersonCancel").onclick=()=>el("copyPersonModal").classList.remove("open");
-el("copyPersonSave").onclick=async()=>{
-  if(!currentPerson)return;
-  const targetId=el("copyPersonTarget").value;
-  const source=personItems.filter(i=>i.person_id===currentPerson.id);
-  if(!source.length)return toast("Diese Liste ist noch leer");
-  const existing=new Set(personItems.filter(i=>i.person_id===targetId).map(i=>`${i.category.toLowerCase()}|${i.name.toLowerCase()}`));
-  const rows=source.filter(i=>!existing.has(`${i.category.toLowerCase()}|${i.name.toLowerCase()}`)).map((i,n)=>({
-    person_id:targetId,name:i.name,category:i.category,icon:i.icon,default_quantity:i.default_quantity,
-    linked_master_item_id:null,sort_order:personItems.filter(x=>x.person_id===targetId).length+n
-  }));
-  if(!rows.length){el("copyPersonModal").classList.remove("open");return toast("Alle Artikel sind dort schon vorhanden")}
-  const {data,error}=await sb.from("camping_person_items").insert(rows).select();
-  if(error){console.error(error);return toast("Liste konnte nicht kopiert werden")}
-  personItems.push(...(data||[]));
-  el("copyPersonModal").classList.remove("open");
-  renderPeople();
-  toast(`${rows.length} Artikel kopiert`);
 };
 
 el("addPersonItemBtn").onclick=()=>{
