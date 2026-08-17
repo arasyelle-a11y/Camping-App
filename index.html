@@ -414,17 +414,66 @@ function enableLongPressDrag(wrap,row,item){
   row.addEventListener("touchstart",start,{passive:true});row.addEventListener("touchmove",move,{passive:false});row.addEventListener("touchend",end);row.addEventListener("touchcancel",end);
 }
 function attachSwipe(row,item){
-  let sx=0,sy=0,dx=0,active=false;
-  row.addEventListener("touchstart",e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;dx=0;active=true},{passive:true});
+  let sx=0,sy=0,dx=0,dy=0,active=false,axis=null;
+
+  row.addEventListener("touchstart",e=>{
+    const t=e.touches[0];
+    sx=t.clientX; sy=t.clientY;
+    dx=0; dy=0; axis=null; active=true;
+  },{passive:true});
+
   row.addEventListener("touchmove",e=>{
     if(!active||row.classList.contains("dragging"))return;
-    const t=e.touches[0],dy=t.clientY-sy;dx=t.clientX-sx;
-    if(Math.abs(dx)>Math.abs(dy)+8)row.style.transform=`translateX(${Math.max(-92,Math.min(92,dx))}px)`;
+
+    const t=e.touches[0];
+    dx=t.clientX-sx;
+    dy=t.clientY-sy;
+
+    // Erst nach einer kleinen Bewegung entscheiden, ob diese Geste
+    // horizontal ODER vertikal ist. Danach bleibt die Richtung gesperrt.
+    if(!axis){
+      if(Math.abs(dx)<14 && Math.abs(dy)<14)return;
+
+      // Vertikales Scrollen bekommt klar Vorrang.
+      if(Math.abs(dy) >= Math.abs(dx)*0.85){
+        axis="vertical";
+        row.style.transform="";
+        return;
+      }
+
+      // Horizontal nur bei einer wirklich deutlich seitlichen Bewegung.
+      if(Math.abs(dx) > Math.abs(dy)*1.8 && Math.abs(dx)>=28){
+        axis="horizontal";
+      }else{
+        axis="vertical";
+        row.style.transform="";
+        return;
+      }
+    }
+
+    if(axis!=="horizontal")return;
+
+    row.style.transform=`translateX(${Math.max(-92,Math.min(92,dx))}px)`;
   },{passive:true});
+
   row.addEventListener("touchend",()=>{
     if(row.classList.contains("dragging"))return;
-    active=false;row.style.transform="";row.classList.remove("swiped","swipedRight");
-    if(dx < -45)row.classList.add("swiped");else if(dx > 45)row.classList.add("swipedRight");
+
+    active=false;
+    row.style.transform="";
+    row.classList.remove("swiped","swipedRight");
+
+    if(axis==="horizontal"){
+      if(dx < -82) row.classList.add("swiped");
+      else if(dx > 92) row.classList.add("swipedRight");
+    }
+
+    axis=null;
+  });
+
+  row.addEventListener("touchcancel",()=>{
+    active=false; axis=null; dx=0; dy=0;
+    row.style.transform="";
   });
 }
 function renderCategoryTabs(items){
