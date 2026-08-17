@@ -52,7 +52,7 @@ button{cursor:pointer}
 .swipeWrap.dragTarget{outline:3px dashed var(--green);outline-offset:-3px;background:#eef3e4}
 .dragHint{font-size:9px;color:var(--muted);font-weight:800;margin-left:auto;white-space:nowrap} body.dragMode,body.dragMode *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 .nameLine{display:flex;align-items:center;gap:9px}.name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
-.tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}
+.tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}.noteIcon{border:0;background:transparent;padding:2px 4px;font-size:16px;line-height:1;flex:0 0 auto}.sheet textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;font:inherit;color:var(--navy)}.fieldLabel{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}
 .take{appearance:none;width:24px;height:24px;border:2px solid var(--green);border-radius:7px;background:white;display:grid;place-content:center;flex:0 0 auto}
 .take:checked{background:var(--green)}.take:checked:after{content:"✓";color:white;font-weight:900}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}
@@ -185,7 +185,7 @@ button{cursor:pointer}
   </div>
 </div>
 
-<div class="modal" id="editModal"><div class="sheet"><h3>Artikel bearbeiten</h3><input id="editName" placeholder="Artikel"><select id="editCat"></select><div class="sheetActions"><button class="cancel" id="editCancel">Abbrechen</button><button class="save" id="editSave">Speichern</button></div></div></div>
+<div class="modal" id="editModal"><div class="sheet"><h3>Artikel bearbeiten</h3><input id="editName" placeholder="Artikel"><select id="editCat"></select><label class="fieldLabel" for="editNote">Notiz</label><textarea id="editNote" placeholder="z. B. Luftmatratze verliert Luft – flicken oder ersetzen"></textarea><div class="sheetActions"><button class="cancel" id="editCancel">Abbrechen</button><button class="save" id="editSave">Speichern</button></div></div></div>
 <div class="modal" id="addModal">
   <div class="sheet">
     <h3>Artikel hinzufügen</h3>
@@ -235,7 +235,7 @@ async function dbUpsert(itemId,patch){
   if(error){toast("Speichern fehlgeschlagen");console.error(error)}else setSync("Synchronisiert");
 }
 async function loadItems(){
-  const {data,error}=await sb.from("camping_items").select("id,name,category,icon,is_master,is_active,household_item_id,category_order,item_order").eq("is_active",true).order("category_order",{ascending:true}).order("item_order",{ascending:true});
+  const {data,error}=await sb.from("camping_items").select("id,name,category,icon,is_master,is_active,household_item_id,category_order,item_order,note").eq("is_active",true).order("category_order",{ascending:true}).order("item_order",{ascending:true});
   if(error)throw error;masterItems=data||[];
 }
 async function loadPlaces(){
@@ -462,6 +462,14 @@ async function setCategorySelected(category,selected){
   if(error){console.error(error);toast("Auswahl konnte nicht gespeichert werden");setSync("Fehler");await loadStates();render()}
   else setSync("Synchronisiert");
 }
+function openItemEditor(item){
+  editingItem=item;
+  el("editName").value=item.name||"";
+  renderCats();
+  el("editCat").value=item.category||"";
+  el("editNote").value=item.note||"";
+  el("editModal").classList.add("open");
+}
 function render(){
   const items=currentItems();
   renderCategoryTabs(items);
@@ -493,7 +501,7 @@ function render(){
       del.className="swipeDelete";del.textContent="🗑 Entfernen";
       edit.className="swipeEdit";edit.textContent="✏️ Bearbeiten";
       row.className="row"+(s.selected?" selected":"");
-      row.innerHTML=`<div class="nameLine"><input class="take" type="checkbox" ${s.selected?"checked":""}><div class="name">${item.name}</div>${item.is_master?"":'<span class="tripOnly">nur Urlaub</span>'}<span class="dragHint">↕ halten</span></div>
+      row.innerHTML=`<div class="nameLine"><input class="take" type="checkbox" ${s.selected?"checked":""}><div class="name">${item.name}</div>${item.note?'<button class="noteIcon" type="button" title="Notiz">✉️</button>':""}${item.is_master?"":'<span class="tripOnly">nur Urlaub</span>'}<span class="dragHint">↕ halten</span></div>
       <div class="actions"><button class="stage ${s.seen?"on":""}" data-stage="seen">✓ Gesichtet</button><button class="stage ${s.in_box?"on":""}" data-stage="box">📦 Kiste</button><button class="stage ${s.in_car?"on":""}" data-stage="car">🚗 Auto</button><button class="stage ${s.need?"on":""}" data-stage="need">🔎 Suchen</button></div>`;
 
       row.querySelector(".take").onchange=e=>dbUpsert(item.id,{selected:e.target.checked,...(!e.target.checked?{seen:false,in_box:false,in_car:false}:{})});
@@ -510,12 +518,13 @@ function render(){
       };
 
       edit.onclick=()=>{
-        editingItem=item;
-        el("editName").value=item.name;
-        renderCats();
-        el("editCat").value=item.category;
-        el("editModal").classList.add("open");
-        row.classList.remove("swipedRight")
+        openItemEditor(item);
+        row.classList.remove("swipedRight");
+      };
+      const noteBtn=row.querySelector(".noteIcon");
+      if(noteBtn)noteBtn.onclick=e=>{
+        e.stopPropagation();
+        openItemEditor(item);
       };
 
       wrap.appendChild(edit);wrap.appendChild(del);wrap.appendChild(row);body.appendChild(wrap);
@@ -695,10 +704,10 @@ el("addSave").onclick=async()=>{
 el("editCancel").onclick=()=>{editingItem=null;el("editModal").classList.remove("open")};
 el("editSave").onclick=async()=>{
   if(!editingItem)return;
-  const name=el("editName").value.trim(),category=el("editCat").value;if(!name||!category)return;
+  const name=el("editName").value.trim(),category=el("editCat").value,note=el("editNote").value.trim();if(!name||!category)return;
   el("editSave").disabled=true;setSync("Speichert …");
   try{
-    const patch={name,category};
+    const patch={name,category,note:note||null};
     if(category!==editingItem.category){patch.category_order=null;patch.item_order=null}
     const {error}=await sb.from("camping_items").update(patch).eq("id",editingItem.id);
     if(error)throw error;
