@@ -52,10 +52,10 @@ button{cursor:pointer}
 .swipeWrap.dragTarget{outline:3px dashed var(--green);outline-offset:-3px;background:#eef3e4}
 .dragHint{font-size:9px;color:var(--muted);font-weight:800;margin-left:auto;white-space:nowrap} body.dragMode,body.dragMode *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 .nameLine{display:flex;align-items:center;gap:9px}.name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
-.tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}.noteIcon{border:0;background:transparent;padding:2px 4px;font-size:16px;line-height:1;flex:0 0 auto}.sheet textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;font:inherit;color:var(--navy)}.fieldLabel{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}.noteViewText{white-space:pre-wrap;background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:14px;line-height:1.45;color:var(--navy);font-size:14px;min-height:70px}
+.tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}.noteIcon{border:0;background:transparent;padding:2px 4px;font-size:16px;line-height:1;flex:0 0 auto}.sheet textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;font:inherit;color:var(--navy)}.fieldLabel{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}.danger{background:#8f3f36!important;color:white!important}.archiveBtn{background:#355f4b!important;color:white!important}.archiveCard{margin:10px 12px;padding:14px;border:1px solid var(--line);border-radius:15px;background:white}.archiveCard h3{margin:0 0 4px;color:var(--navy)}.archiveMeta{font-size:11px;color:var(--muted);margin-bottom:10px}.archiveActions{display:flex;gap:7px;flex-wrap:wrap}.archiveActions button{border:1px solid var(--line);background:white;border-radius:10px;padding:8px 10px;font-weight:800;color:var(--navy)}.memoryBox{white-space:pre-wrap;background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;line-height:1.45}.historyRow{padding:10px 12px;border-bottom:1px solid var(--line);background:white}.historyTop{display:flex;align-items:center;gap:8px}.historyStatus{font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px}.historyStatus.yes{background:#dfeee5;color:#28533e}.historyStatus.no{background:#eee;color:#666}.historyName{font-weight:850;flex:1}.historyNote{font-size:12px;margin:6px 0 0 0;padding-left:4px;color:var(--brown)}.checkLine{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:750;color:var(--navy)}.noteViewText{white-space:pre-wrap;background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:14px;line-height:1.45;color:var(--navy);font-size:14px;min-height:70px}
 .take{appearance:none;width:24px;height:24px;border:2px solid var(--green);border-radius:7px;background:white;display:grid;place-content:center;flex:0 0 auto}
 .take:checked{background:var(--green)}.take:checked:after{content:"✓";color:white;font-weight:900}
-.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}
+.actions{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:8px}
 .stage{border:1.5px solid var(--line);border-radius:9px;background:white;padding:7px 2px;font-size:9px;font-weight:800;color:var(--muted)}
 .stage.on[data-stage="seen"]{background:#E5EDD4;border-color:var(--green);color:var(--green)}
 .stage.on[data-stage="box"]{background:#DDECF0;border-color:var(--teal);color:var(--teal)}
@@ -63,7 +63,7 @@ button{cursor:pointer}
 .stage.on[data-stage="need"]{background:#F8E3D7;border-color:var(--orange);color:var(--orange)}
 .row:not(.selected) .actions{opacity:.35;pointer-events:none}
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,254,251,.98);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
-.nav{width:min(760px,100%);display:grid;grid-template-columns:repeat(4,1fr)}
+.nav{width:min(760px,100%);display:grid;grid-template-columns:repeat(5,1fr)}
 .nav button{border:0;background:transparent;padding:11px 4px 9px;color:var(--muted);font-weight:800;font-size:10px}
 .nav button.active{color:var(--green)}.nav .nicon{display:block;font-size:19px;margin-bottom:2px}
 .view{display:none}.view.active{display:block}
@@ -154,12 +154,17 @@ button{cursor:pointer}
     <div class="top"><h2 style="margin:5px 0">👤 Persönliche Listen</h2></div>
     <div class="personCard"><b>Als Nächstes:</b> Anika, Emil, Frieda, Anton, Erik und Sarah – ebenfalls Supabase-synchronisiert.</div>
   </section>
+  <section class="view" id="view-archive">
+    <div class="top"><h2 style="margin:5px 0">🗂️ Urlaubsarchiv</h2><div style="font-size:12px;color:var(--muted)">Abgeschlossene Urlaube mit damaliger Packliste und Erinnerungen.</div></div>
+    <main class="content" id="archiveList"></main>
+  </section>
+
 
   <nav class="bottom"><div class="nav">
     <button class="active" data-view="pack"><span class="nicon">🏕️</span>Packliste</button>
     <button data-view="need"><span class="nicon">🔎</span>Suchen</button>
     <button data-view="master"><span class="nicon">📚</span>Master</button>
-    <button data-view="person"><span class="nicon">👤</span>Personen</button>
+    <button data-view="person"><span class="nicon">👤</span>Personen</button><button data-view="archive"><span class="nicon">🗂️</span>Archiv</button>
   </div></nav>
 </div>
 
@@ -176,9 +181,15 @@ button{cursor:pointer}
     <input id="editTripStart" type="date">
     <label for="editTripEnd">Abreise</label>
     <input id="editTripEnd" type="date">
+    <label for="editTripMemory">Urlaubserinnerung</label>
+    <textarea id="editTripMemory" placeholder="Mit wem wart ihr da? Stellplatz, was hat sich bewährt, was nächstes Mal anders?"></textarea>
     <div class="sheetActions" style="margin-top:14px">
       <button class="cancel" id="editTripCancel">Abbrechen</button>
       <button class="save" id="editTripSave">Speichern</button>
+    </div>
+    <div class="sheetActions" style="margin-top:8px">
+      <button class="archiveBtn" id="archiveTripBtn">🗂️ Archivieren</button>
+      <button class="danger" id="deleteTripBtn">Urlaub löschen</button>
     </div>
   </div>
 </div>
@@ -214,7 +225,7 @@ button{cursor:pointer}
   </div>
 </div>
 
-<div class="modal" id="editModal"><div class="sheet"><h3>Artikel bearbeiten</h3><input id="editName" placeholder="Artikel"><select id="editCat"></select><label class="fieldLabel" for="editNote">Notiz</label><textarea id="editNote" placeholder="z. B. Luftmatratze verliert Luft – flicken oder ersetzen"></textarea><div class="sheetActions"><button class="cancel" id="editCancel">Abbrechen</button><button class="save" id="editSave">Speichern</button></div></div></div>
+<div class="modal" id="editModal"><div class="sheet"><h3>Artikel bearbeiten</h3><input id="editName" placeholder="Artikel"><select id="editCat"></select><label class="fieldLabel" for="editNote">Notiz für diesen Urlaub</label><textarea id="editNote" placeholder="z. B. Luftmatratze verliert Luft – flicken oder ersetzen"></textarea><label class="checkLine"><input id="notePermanent" type="checkbox"> 📌 Auch dauerhaft beim Artikel merken</label><div id="permanentNoteHint" style="font-size:10px;color:var(--muted);margin-top:6px"></div><div class="sheetActions"><button class="cancel" id="editCancel">Abbrechen</button><button class="save" id="editSave">Speichern</button></div></div></div>
 <div class="modal" id="addModal">
   <div class="sheet">
     <h3>Artikel hinzufügen</h3>
@@ -236,7 +247,7 @@ const SUPABASE_URL="https://muujfgwspkoogjxtvcrp.supabase.co";
 const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
-let masterItems=[], places=[], trips=[], states=new Map(), currentTrip=null, currentPlace=null;
+let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null;
 let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false;
 const el=id=>document.getElementById(id);
 
@@ -258,7 +269,7 @@ function grouped(items){
 async function dbUpsert(itemId,patch){
   if(!currentTrip)return;
   const old=state(itemId);
-  const row={trip_id:currentTrip.id,item_id:itemId,selected:old.selected,seen:old.seen,in_box:old.in_box,in_car:old.in_car,need:old.need,...patch,updated_at:new Date().toISOString()};
+  const row={trip_id:currentTrip.id,item_id:itemId,selected:old.selected,seen:old.seen,in_box:old.in_box,in_car:old.in_car,need:old.need,note:old.note||null,...patch,updated_at:new Date().toISOString()};
   states.set(itemId,row);render();setSync("Speichert …");
   const {error}=await sb.from("camping_trip_items").upsert(row,{onConflict:"trip_id,item_id"});
   if(error){toast("Speichern fehlgeschlagen");console.error(error)}else setSync("Synchronisiert");
@@ -296,6 +307,12 @@ async function loadTrips(){
   currentTrip=trips.find(t=>t.id===saved)||trips[0]||null;
   currentPlace=currentTrip?places.find(p=>p.id===currentTrip.place_id)||null:null;
   if(currentTrip)sel.value=currentTrip.id;
+}
+async function loadArchivedTrips(){
+  const {data,error}=await sb.from("camping_trips").select("*").eq("archived",true).order("end_date",{ascending:false}).order("created_at",{ascending:false});
+  if(error)throw error;
+  archivedTrips=data||[];
+  renderArchive();
 }
 function updateTripInfo(){
   if(!currentTrip){
@@ -496,8 +513,13 @@ async function setCategorySelected(category,selected){
 }
 function openNoteViewer(item){
   noteViewingItem=item;
+  const tripNote=state(item.id).note||"";
+  const permanent=item.note||"";
   el("noteTitle").textContent=item.name||"Notiz";
-  el("noteViewText").textContent=item.note||"";
+  let parts=[];
+  if(tripNote)parts.push("🕓 "+(currentTrip?.name||"Dieser Urlaub")+":\n"+tripNote);
+  if(permanent)parts.push("📌 Dauerhafte Artikelnotiz:\n"+permanent);
+  el("noteViewText").textContent=parts.join("\n\n")||"Keine Notiz vorhanden.";
   el("noteModal").classList.add("open");
 }
 function openItemEditor(item){
@@ -505,7 +527,9 @@ function openItemEditor(item){
   el("editName").value=item.name||"";
   renderCats();
   el("editCat").value=item.category||"";
-  el("editNote").value=item.note||"";
+  el("editNote").value=state(item.id).note||"";
+  el("notePermanent").checked=false;
+  el("permanentNoteHint").textContent=item.note ? "Aktuell dauerhaft gespeichert: "+item.note : "Noch keine dauerhafte Artikelnotiz.";
   el("editModal").classList.add("open");
 }
 function render(){
@@ -539,7 +563,7 @@ function render(){
       del.className="swipeDelete";del.textContent="🗑 Entfernen";
       edit.className="swipeEdit";edit.textContent="✏️ Bearbeiten";
       row.className="row"+(s.selected?" selected":"");
-      row.innerHTML=`<div class="nameLine"><input class="take" type="checkbox" ${s.selected?"checked":""}><div class="name">${item.name}</div>${item.note?'<button class="noteIcon" type="button" title="Notiz">✉️</button>':""}${item.is_master?"":'<span class="tripOnly">nur Urlaub</span>'}<span class="dragHint">↕ halten</span></div>
+      row.innerHTML=`<div class="nameLine"><input class="take" type="checkbox" ${s.selected?"checked":""}><div class="name">${item.name}</div>${(item.note||s.note)?'<button class="noteIcon" type="button" title="Notiz">✉️</button>':""}${item.is_master?"":'<span class="tripOnly">nur Urlaub</span>'}<span class="dragHint">↕ halten</span></div>
       <div class="actions"><button class="stage ${s.seen?"on":""}" data-stage="seen">✓ Gesichtet</button><button class="stage ${s.in_box?"on":""}" data-stage="box">📦 Kiste</button><button class="stage ${s.in_car?"on":""}" data-stage="car">🚗 Auto</button><button class="stage ${s.need?"on":""}" data-stage="need">🔎 Suchen</button></div>`;
 
       row.querySelector(".take").onchange=e=>dbUpsert(item.id,{selected:e.target.checked,...(!e.target.checked?{seen:false,in_box:false,in_car:false}:{})});
@@ -589,6 +613,54 @@ function updateStats(){
   const ss=currentItems().map(i=>state(i.id)),cnt=k=>ss.filter(s=>s[k]).length;
   el("sTake").textContent=cnt("selected");el("sSeen").textContent=cnt("seen");el("sBox").textContent=cnt("in_box");el("sCar").textContent=cnt("in_car");el("sNeed").textContent=cnt("need");
 }
+function fmtDate(d){
+  if(!d)return "";
+  return new Date(d+"T00:00:00").toLocaleDateString("de-DE");
+}
+async function openArchivedTrip(trip){
+  setSync("Archiv wird geladen …");
+  const {data,error}=await sb.from("camping_trip_items").select("*").eq("trip_id",trip.id);
+  if(error){console.error(error);toast("Archiv konnte nicht geladen werden");return}
+  const hist=new Map((data||[]).map(x=>[x.item_id,x]));
+  const card=document.createElement("div");card.className="archiveCard";
+  const place=places.find(p=>p.id===trip.place_id);
+  card.innerHTML=`<h3>${trip.name}</h3><div class="archiveMeta">${place?.name||""}${trip.start_date?" · "+fmtDate(trip.start_date):""}${trip.end_date?" – "+fmtDate(trip.end_date):""}</div>
+    ${trip.memory_text?`<div class="memoryBox">${trip.memory_text}</div>`:""}
+    <div class="archiveActions"><button class="restore">↩️ Wieder aktivieren</button><button class="close">Schließen</button></div>
+    <h4 style="margin:16px 0 8px">Damals in der Packliste</h4><div class="historyList"></div>`;
+  const list=card.querySelector(".historyList");
+  for(const group of grouped(masterItems)){
+    const h=document.createElement("div");h.style.cssText="padding:10px 12px 5px;font-weight:900;color:var(--navy);background:var(--cream2)";
+    h.textContent=group.icon+" "+group.name;list.appendChild(h);
+    for(const item of group.items){
+      const s=hist.get(item.id)||{selected:false,note:null};
+      const r=document.createElement("div");r.className="historyRow";
+      r.innerHTML=`<div class="historyTop"><span class="historyStatus ${s.selected?"yes":"no"}">${s.selected?"✓ MIT":"— NICHT MIT"}</span><span class="historyName">${item.name}</span></div>
+        ${s.note?`<div class="historyNote">🕓 Damals: ${s.note}</div>`:""}
+        ${item.note?`<div class="historyNote">📌 Aktuell: ${item.note}</div>`:""}`;
+      list.appendChild(r);
+    }
+  }
+  const host=el("archiveList");host.innerHTML="";host.appendChild(card);
+  card.querySelector(".close").onclick=()=>renderArchive();
+  card.querySelector(".restore").onclick=async()=>{
+    const {error}=await sb.from("camping_trips").update({archived:false}).eq("id",trip.id);
+    if(error){console.error(error);toast("Wiederherstellen fehlgeschlagen");return}
+    await loadArchivedTrips();await loadTrips();renderArchive();toast("Urlaub wieder aktiviert");
+  };
+  setSync("Synchronisiert");
+}
+function renderArchive(){
+  const host=el("archiveList");if(!host)return;host.innerHTML="";
+  if(!archivedTrips.length){host.innerHTML='<div class="personCard">Noch keine archivierten Urlaube.</div>';return}
+  for(const trip of archivedTrips){
+    const place=places.find(p=>p.id===trip.place_id);
+    const c=document.createElement("div");c.className="archiveCard";
+    c.innerHTML=`<h3>${trip.name}</h3><div class="archiveMeta">${place?.name||""}${trip.start_date?" · "+fmtDate(trip.start_date):""}${trip.end_date?" – "+fmtDate(trip.end_date):""}</div>${trip.memory_text?`<div class="memoryBox">${trip.memory_text}</div>`:""}<div class="archiveActions"><button>Urlaub ansehen</button></div>`;
+    c.querySelector("button").onclick=()=>openArchivedTrip(trip);
+    host.appendChild(c);
+  }
+}
 function renderNeed(){
   const root=el("needList");root.innerHTML="";const items=currentItems().filter(i=>state(i.id).need);
   if(!items.length){root.innerHTML='<div class="empty">Noch nichts auf der Such-/Kaufliste 🎉</div>';return}
@@ -625,6 +697,7 @@ el("editTripBtn").onclick=()=>{
   el("editTripName").value=currentTrip.name||"";
   el("editTripStart").value=currentTrip.start_date||"";
   el("editTripEnd").value=currentTrip.end_date||"";
+  el("editTripMemory").value=currentTrip.memory_text||"";
   el("editTripModal").classList.add("open");
 };
 el("editTripCancel").onclick=()=>el("editTripModal").classList.remove("open");
@@ -634,6 +707,7 @@ el("editTripSave").onclick=async()=>{
   const place_id=el("editTripPlace").value;
   const start_date=el("editTripStart").value||null;
   const end_date=el("editTripEnd").value||null;
+  const memory_text=el("editTripMemory").value.trim()||null;
 
   if(!name)return toast("Bitte einen Urlaubsnamen eingeben");
   if(start_date && end_date && end_date<start_date)return toast("Das Abreisedatum liegt vor der Anreise");
@@ -642,7 +716,7 @@ el("editTripSave").onclick=async()=>{
   setSync("Urlaub wird gespeichert …");
   try{
     const {data,error}=await sb.from("camping_trips")
-      .update({name,place_id,start_date,end_date})
+      .update({name,place_id,start_date,end_date,memory_text})
       .eq("id",currentTrip.id)
       .select()
       .single();
@@ -673,6 +747,34 @@ el("editTripSave").onclick=async()=>{
   }finally{
     el("editTripSave").disabled=false;
   }
+};
+el("archiveTripBtn").onclick=async()=>{
+  if(!currentTrip)return;
+  if(!confirm(`„${currentTrip.name}“ wirklich archivieren? Die Packliste bleibt vollständig erhalten und wird im Archiv nur noch lesbar angezeigt.`))return;
+  setSync("Archiviert …");
+  const {error}=await sb.from("camping_trips").update({archived:true,memory_text:el("editTripMemory").value.trim()||null}).eq("id",currentTrip.id);
+  if(error){console.error(error);toast("Archivieren fehlgeschlagen");setSync("Fehler");return}
+  el("editTripModal").classList.remove("open");
+  localStorage.removeItem("camping-trip-id");
+  await loadTrips();await loadArchivedTrips();
+  if(currentTrip)await switchTrip(currentTrip.id);else{states=new Map();updateTripInfo();render()}
+  toast("Urlaub archiviert 🗂️");
+};
+el("deleteTripBtn").onclick=async()=>{
+  if(!currentTrip)return;
+  const typed=prompt(`Zum endgültigen Löschen bitte den Urlaubsnamen eingeben:\n${currentTrip.name}`);
+  if(typed!==currentTrip.name)return typed!==null&&toast("Name stimmt nicht – nichts gelöscht");
+  setSync("Löscht …");
+  const id=currentTrip.id;
+  const {error:e1}=await sb.from("camping_trip_items").delete().eq("trip_id",id);
+  if(e1){console.error(e1);toast("Löschen fehlgeschlagen");setSync("Fehler");return}
+  const {error:e2}=await sb.from("camping_trips").delete().eq("id",id);
+  if(e2){console.error(e2);toast("Löschen fehlgeschlagen");setSync("Fehler");return}
+  el("editTripModal").classList.remove("open");
+  localStorage.removeItem("camping-trip-id");
+  await loadTrips();
+  if(currentTrip)await switchTrip(currentTrip.id);else{states=new Map();updateTripInfo();render()}
+  toast("Urlaub gelöscht");
 };
 el("newTripBtn").onclick=()=>{
   if(currentPlace)el("tripPlace").value=currentPlace.id;
@@ -805,13 +907,15 @@ el("noteEdit").onclick=()=>{
 el("editCancel").onclick=()=>{editingItem=null;el("editModal").classList.remove("open")};
 el("editSave").onclick=async()=>{
   if(!editingItem)return;
-  const name=el("editName").value.trim(),category=el("editCat").value,note=el("editNote").value.trim();if(!name||!category)return;
+  const name=el("editName").value.trim(),category=el("editCat").value,tripNote=el("editNote").value.trim();if(!name||!category)return;
   el("editSave").disabled=true;setSync("Speichert …");
   try{
-    const patch={name,category,note:note||null};
+    const patch={name,category};
+    if(el("notePermanent").checked && tripNote)patch.note=tripNote;
     if(category!==editingItem.category){patch.category_order=null;patch.item_order=null}
     const {error}=await sb.from("camping_items").update(patch).eq("id",editingItem.id);
     if(error)throw error;
+    await dbUpsert(editingItem.id,{note:tripNote||null});
     editingItem=null;el("editModal").classList.remove("open");await loadItems();render();setSync("Synchronisiert");toast("Artikel geändert");
   }catch(error){console.error(error);toast("Änderung konnte nicht gespeichert werden");setSync("Fehler")}
   finally{el("editSave").disabled=false}
@@ -843,6 +947,7 @@ async function boot(){
 
     setSync("Lädt Urlaube …");
     await loadTrips();
+    await loadArchivedTrips();
 
     if(currentTrip){
       el("tripSelect").value=currentTrip.id;
