@@ -52,7 +52,7 @@ button{cursor:pointer}
 .swipeWrap.dragTarget{outline:3px dashed var(--green);outline-offset:-3px;background:#eef3e4}
 .dragHint{font-size:9px;color:var(--muted);font-weight:800;margin-left:auto;white-space:nowrap} body.dragMode,body.dragMode *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 .nameLine{display:flex;align-items:center;gap:9px}.name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
-.tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}.noteIcon{border:0;background:transparent;padding:2px 4px;font-size:16px;line-height:1;flex:0 0 auto}.sheet textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;font:inherit;color:var(--navy)}.fieldLabel{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}
+.tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}.noteIcon{border:0;background:transparent;padding:2px 4px;font-size:16px;line-height:1;flex:0 0 auto}.sheet textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;font:inherit;color:var(--navy)}.fieldLabel{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}.noteViewText{white-space:pre-wrap;background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:14px;line-height:1.45;color:var(--navy);font-size:14px;min-height:70px}
 .take{appearance:none;width:24px;height:24px;border:2px solid var(--green);border-radius:7px;background:white;display:grid;place-content:center;flex:0 0 auto}
 .take:checked{background:var(--green)}.take:checked:after{content:"✓";color:white;font-weight:900}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}
@@ -185,6 +185,17 @@ button{cursor:pointer}
   </div>
 </div>
 
+<div class="modal" id="noteModal">
+  <div class="sheet">
+    <h3 id="noteTitle">Notiz</h3>
+    <div class="noteViewText" id="noteViewText"></div>
+    <div class="sheetActions" style="margin-top:12px">
+      <button class="cancel" id="noteClose">Schließen</button>
+      <button class="save" id="noteEdit">Bearbeiten</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="editModal"><div class="sheet"><h3>Artikel bearbeiten</h3><input id="editName" placeholder="Artikel"><select id="editCat"></select><label class="fieldLabel" for="editNote">Notiz</label><textarea id="editNote" placeholder="z. B. Luftmatratze verliert Luft – flicken oder ersetzen"></textarea><div class="sheetActions"><button class="cancel" id="editCancel">Abbrechen</button><button class="save" id="editSave">Speichern</button></div></div></div>
 <div class="modal" id="addModal">
   <div class="sheet">
@@ -208,7 +219,7 @@ const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 let masterItems=[], places=[], trips=[], states=new Map(), currentTrip=null, currentPlace=null;
-let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, activeCategory=null, booting=false;
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false;
 const el=id=>document.getElementById(id);
 
 function toast(msg,undo=false){
@@ -462,6 +473,12 @@ async function setCategorySelected(category,selected){
   if(error){console.error(error);toast("Auswahl konnte nicht gespeichert werden");setSync("Fehler");await loadStates();render()}
   else setSync("Synchronisiert");
 }
+function openNoteViewer(item){
+  noteViewingItem=item;
+  el("noteTitle").textContent=item.name||"Notiz";
+  el("noteViewText").textContent=item.note||"";
+  el("noteModal").classList.add("open");
+}
 function openItemEditor(item){
   editingItem=item;
   el("editName").value=item.name||"";
@@ -524,7 +541,7 @@ function render(){
       const noteBtn=row.querySelector(".noteIcon");
       if(noteBtn)noteBtn.onclick=e=>{
         e.stopPropagation();
-        openItemEditor(item);
+        openNoteViewer(item);
       };
 
       wrap.appendChild(edit);wrap.appendChild(del);wrap.appendChild(row);body.appendChild(wrap);
@@ -700,6 +717,14 @@ el("addSave").onclick=async()=>{
   }finally{
     addingItem=false;el("addSave").disabled=false;
   }
+};
+el("noteClose").onclick=()=>{noteViewingItem=null;el("noteModal").classList.remove("open")};
+el("noteEdit").onclick=()=>{
+  if(!noteViewingItem)return;
+  const item=noteViewingItem;
+  noteViewingItem=null;
+  el("noteModal").classList.remove("open");
+  openItemEditor(item);
 };
 el("editCancel").onclick=()=>{editingItem=null;el("editModal").classList.remove("open")};
 el("editSave").onclick=async()=>{
