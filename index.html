@@ -429,25 +429,21 @@ function attachSwipe(row,item){
     dx=t.clientX-sx;
     dy=t.clientY-sy;
 
-    // Erst nach einer kleinen Bewegung entscheiden, ob diese Geste
-    // horizontal ODER vertikal ist. Danach bleibt die Richtung gesperrt.
     if(!axis){
-      if(Math.abs(dx)<14 && Math.abs(dy)<14)return;
+      if(Math.abs(dx)<10 && Math.abs(dy)<10)return;
 
-      // Vertikales Scrollen bekommt klar Vorrang.
-      if(Math.abs(dy) >= Math.abs(dx)*0.85){
+      // Klare vertikale Bewegung = Scrollen.
+      if(Math.abs(dy) > Math.abs(dx)*1.15){
         axis="vertical";
         row.style.transform="";
         return;
       }
 
-      // Horizontal nur bei einer wirklich deutlich seitlichen Bewegung.
-      if(Math.abs(dx) > Math.abs(dy)*1.8 && Math.abs(dx)>=28){
+      // Klare horizontale Bewegung = Wischen.
+      if(Math.abs(dx) > Math.abs(dy)*1.35 && Math.abs(dx)>=18){
         axis="horizontal";
       }else{
-        axis="vertical";
-        row.style.transform="";
-        return;
+        return; // noch nicht eindeutig – weiter beobachten
       }
     }
 
@@ -464,8 +460,8 @@ function attachSwipe(row,item){
     row.classList.remove("swiped","swipedRight");
 
     if(axis==="horizontal"){
-      if(dx < -82) row.classList.add("swiped");
-      else if(dx > 92) row.classList.add("swipedRight");
+      if(dx < -72) row.classList.add("swiped");
+      else if(dx > 76) row.classList.add("swipedRight");
     }
 
     axis=null;
