@@ -330,7 +330,7 @@ const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], personStates=new Map(), currentPerson=null;
-let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B";
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null;
 const el=id=>document.getElementById(id);
 
 function toast(msg,undo=false){
@@ -880,10 +880,12 @@ function renderPeople(){
     for(const item of items){
       const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id);
       const row=document.createElement("div");row.className="personItem";
-      row.innerHTML=`<input class="pselect" type="checkbox" ${s.selected?"checked":""}><div><b>${item.name}</b>${linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:""}</div><div class="qtyBox"><button class="minus">−</button><span class="qty">${s.quantity}</span><button class="plus">＋</button></div>`;
+      row.innerHTML=`<input class="pselect" type="checkbox" ${s.selected?"checked":""}><div><b>${item.name}</b>${linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:""}<div style="margin-top:6px;display:flex;gap:6px"><button class="pedit" style="border:1px solid var(--line);background:white;border-radius:8px;padding:4px 7px;font-size:11px;font-weight:800">Bearbeiten</button><button class="pdelete" style="border:1px solid #d9a3a3;background:#fff4f4;color:#a33;border-radius:8px;padding:4px 7px;font-size:11px;font-weight:800">Löschen</button></div></div><div class="qtyBox"><button class="minus">−</button><span class="qty">${s.quantity}</span><button class="plus">＋</button></div>`;
       row.querySelector(".pselect").onchange=e=>savePersonState(item,{selected:e.target.checked});
       row.querySelector(".minus").onclick=()=>savePersonState(item,{quantity:Math.max(0,s.quantity-1)});
       row.querySelector(".plus").onclick=()=>savePersonState(item,{quantity:s.quantity+1});
+      row.querySelector(".pedit").onclick=()=>openEditPersonItem(item);
+      row.querySelector(".pdelete").onclick=()=>deletePersonItem(item);
       body.appendChild(row);
     }
     list.appendChild(sec);
@@ -906,6 +908,27 @@ function fillPersonMasterLinks(){
   for(const i of masterItems.filter(x=>x.is_master)){
     const o=document.createElement("option");o.value=i.id;o.textContent=`${i.category} · ${i.name}`;s.appendChild(o);
   }
+}
+function openEditPersonItem(item){
+  editingPersonItem=item;
+  fillPersonMasterLinks();
+  el("personItemModal").querySelector("h3").textContent="Persönlichen Artikel bearbeiten";
+  el("personItemName").value=item.name||"";
+  el("personItemCategory").value=item.category||"";
+  el("personItemQty").value=item.default_quantity??1;
+  el("personItemLink").value=item.linked_master_item_id||"";
+  el("personItemSave").textContent="Speichern";
+  el("personItemModal").classList.add("open");
+}
+async function deletePersonItem(item){
+  if(!confirm(`„${item.name}“ wirklich löschen?`))return;
+  const {error}=await sb.from("camping_person_items").delete().eq("id",item.id);
+  if(error){console.error(error);return toast("Artikel konnte nicht gelöscht werden")}
+  personItems=personItems.filter(i=>i.id!==item.id);
+  personStates.delete(item.id);
+  renderPeople();
+  render();
+  toast("Artikel gelöscht");
 }
 function printCurrentPerson(){
   if(!currentPerson)return;
@@ -1100,16 +1123,26 @@ el("copyPersonSave").onclick=async()=>{
 
 el("addPersonItemBtn").onclick=()=>{
   if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
+  editingPersonItem=null;
+  el("personItemModal").querySelector("h3").textContent="Persönlichen Artikel anlegen";
+  el("personItemSave").textContent="Anlegen";
   el("personItemName").value="";el("personItemCategory").value="";el("personItemQty").value="1";fillPersonMasterLinks();el("personItemModal").classList.add("open");
 };
-el("personItemCancel").onclick=()=>el("personItemModal").classList.remove("open");
+el("personItemCancel").onclick=()=>{editingPersonItem=null;el("personItemModal").classList.remove("open")};
 el("personItemSave").onclick=async()=>{
   if(!currentPerson)return;
   const name=el("personItemName").value.trim(),category=el("personItemCategory").value.trim()||"Sonstiges",default_quantity=Math.max(0,parseInt(el("personItemQty").value||"1")),linked_master_item_id=el("personItemLink").value||null;
   if(!name)return toast("Bitte einen Artikelnamen eingeben");
-  const {data,error}=await sb.from("camping_person_items").insert({person_id:currentPerson.id,name,category,default_quantity,linked_master_item_id,sort_order:personItems.filter(i=>i.person_id===currentPerson.id).length}).select().single();
-  if(error){console.error(error);return toast("Artikel konnte nicht angelegt werden")}
-  personItems.push(data);el("personItemModal").classList.remove("open");renderPeople();toast("Artikel angelegt");
+  if(editingPersonItem){
+    const {data,error}=await sb.from("camping_person_items").update({name,category,default_quantity,linked_master_item_id}).eq("id",editingPersonItem.id).select().single();
+    if(error){console.error(error);return toast("Artikel konnte nicht geändert werden")}
+    const idx=personItems.findIndex(i=>i.id===editingPersonItem.id);if(idx>=0)personItems[idx]=data;
+    editingPersonItem=null;el("personItemModal").classList.remove("open");renderPeople();render();toast("Artikel gespeichert");
+  }else{
+    const {data,error}=await sb.from("camping_person_items").insert({person_id:currentPerson.id,name,category,default_quantity,linked_master_item_id,sort_order:personItems.filter(i=>i.person_id===currentPerson.id).length}).select().single();
+    if(error){console.error(error);return toast("Artikel konnte nicht angelegt werden")}
+    personItems.push(data);el("personItemModal").classList.remove("open");renderPeople();render();toast("Artikel angelegt");
+  }
 };
 el("printPersonBtn").onclick=printCurrentPerson;
 
