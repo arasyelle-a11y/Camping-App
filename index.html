@@ -278,9 +278,68 @@ async function dbUpsert(itemId,patch){
   const {error}=await sb.from("camping_trip_items").upsert(row,{onConflict:"trip_id,item_id"});
   if(error){toast("Speichern fehlgeschlagen");console.error(error)}else setSync("Synchronisiert");
 }
+const CACHE_KEY="camping-app-cache-v1";
+
+function saveCache(){
+  try{
+    localStorage.setItem(CACHE_KEY,JSON.stringify({
+      savedAt:Date.now(),
+      masterItems,places,trips,archivedTrips,
+      currentTripId:currentTrip?.id||localStorage.getItem("camping-trip-id")||null,
+      states:[...states.entries()]
+    }));
+  }catch(e){console.warn("Cache konnte nicht gespeichert werden",e)}
+}
+
+function restoreCache(){
+  try{
+    const raw=localStorage.getItem(CACHE_KEY);
+    if(!raw)return false;
+    const c=JSON.parse(raw);
+    if(!Array.isArray(c.masterItems)||!c.masterItems.length)return false;
+
+    masterItems=c.masterItems||[];
+    places=c.places||[];
+    trips=c.trips||[];
+    archivedTrips=c.archivedTrips||[];
+    states=new Map(c.states||[]);
+
+    const wanted=localStorage.getItem("camping-trip-id")||c.currentTripId;
+    currentTrip=trips.find(t=>t.id===wanted)||trips[0]||null;
+    currentPlace=currentTrip?places.find(p=>p.id===currentTrip.place_id)||null:null;
+
+    // Dropdowns aus dem Cache aufbauen.
+    const sel=el("tripSelect"); sel.innerHTML="";
+    for(const t of trips){
+      const o=document.createElement("option");
+      o.value=t.id;o.textContent=t.name||"Urlaub";sel.appendChild(o);
+    }
+    if(currentTrip)sel.value=currentTrip.id;
+
+    for(const id of ["tripPlace","editTripPlace"]){
+      const s=el(id); if(!s)continue; s.innerHTML="";
+      for(const p of places){
+        const o=document.createElement("option");
+        o.value=p.id;o.textContent=p.name;s.appendChild(o);
+      }
+    }
+
+    updateTripInfo();
+    render();
+    renderArchive();
+
+    const age=c.savedAt?Math.max(0,Math.round((Date.now()-c.savedAt)/60000)):null;
+    setSync(age===null?"Gespeicherte Daten":"Gespeicherte Daten · "+(age<1?"gerade eben":`vor ${age} Min.`));
+    return true;
+  }catch(e){
+    console.warn("Cache konnte nicht geladen werden",e);
+    return false;
+  }
+}
+
 async function loadItems(){
   const {data,error}=await sb.from("camping_items").select("id,name,category,icon,is_master,is_active,household_item_id,category_order,item_order,note").eq("is_active",true).order("category_order",{ascending:true}).order("item_order",{ascending:true});
-  if(error)throw error;masterItems=data||[];
+  if(error)throw error;masterItems=data||[];saveCache();
 }
 async function loadPlaces(){
   const {data,error}=await sb.from("camping_places").select("*").order("name");
@@ -294,6 +353,7 @@ async function loadPlaces(){
     const e=document.createElement("option");
     e.value=p.id;e.textContent=p.name;el("editTripPlace").appendChild(e);
   }
+  saveCache();
 }
 async function loadTrips(){
   const {data,error}=await sb.from("camping_trips").select("*").eq("archived",false).order("created_at",{ascending:true});
@@ -311,12 +371,14 @@ async function loadTrips(){
   currentTrip=trips.find(t=>t.id===saved)||trips[0]||null;
   currentPlace=currentTrip?places.find(p=>p.id===currentTrip.place_id)||null:null;
   if(currentTrip)sel.value=currentTrip.id;
+  saveCache();
 }
 async function loadArchivedTrips(){
   const {data,error}=await sb.from("camping_trips").select("*").eq("archived",true).order("end_date",{ascending:false}).order("created_at",{ascending:false});
   if(error)throw error;
   archivedTrips=data||[];
   renderArchive();
+  saveCache();
 }
 function updateTripInfo(){
   if(!currentTrip){
@@ -352,6 +414,7 @@ async function loadStates(){
   if(!currentTrip)return;
   const {data,error}=await sb.from("camping_trip_items").select("*").eq("trip_id",currentTrip.id);
   if(error)throw error;(data||[]).forEach(x=>states.set(x.item_id,x));
+  saveCache();
 }
 async function switchTrip(id){
   currentTrip=trips.find(t=>t.id===id)||null;
@@ -1026,18 +1089,22 @@ el("loginBtn").onclick=async()=>{
 async function boot(){
   if(booting)return;
   booting=true;
+
+  // Sofort die zuletzt bekannte Ansicht zeigen, noch bevor Supabase antwortet.
+  const hadCache=restoreCache();
+
   try{
     const {data:{session}}=await sb.auth.getSession();
     if(!session){el("login").classList.remove("hidden");return}
     el("login").classList.add("hidden");
 
-    setSync("Lädt Artikel …");
+    setSync(hadCache?"Aktualisiert im Hintergrund …":"Lädt Artikel …");
     await loadItems();
 
-    setSync("Lädt Ziele …");
+    if(!hadCache)setSync("Lädt Ziele …");
     await loadPlaces();
 
-    setSync("Lädt Urlaube …");
+    if(!hadCache)setSync("Lädt Urlaube …");
     await loadTrips();
     await loadArchivedTrips();
 
@@ -1045,27 +1112,37 @@ async function boot(){
       el("tripSelect").value=currentTrip.id;
       currentPlace=places.find(p=>p.id===currentTrip.place_id)||null;
 
-      setSync("Lädt Packliste …");
+      if(!hadCache)setSync("Lädt Packliste …");
       await loadStates();
 
       updateTripInfo();
       render();
+      saveCache();
 
       try{subscribeTrip()}catch(e){console.warn("Realtime konnte nicht gestartet werden",e)}
       setSync("Synchronisiert");
     }else{
+      states=new Map();
       updateTripInfo();
       render();
+      saveCache();
       setSync("Kein Urlaub vorhanden");
     }
   }catch(e){
     console.error("BOOT ERROR",e);
-    toast("Daten konnten nicht geladen werden");
-    setSync("Fehler: "+(e?.message||"unbekannt"));
+    if(hadCache){
+      setSync(navigator.onLine?"Gespeicherte Daten · Sync später":"Offline · gespeicherte Daten");
+      toast("Gespeicherte Packliste wird angezeigt");
+    }else{
+      toast("Daten konnten nicht geladen werden");
+      setSync(navigator.onLine?"Fehler: "+(e?.message||"unbekannt"):"Offline");
+    }
   }finally{
     booting=false;
   }
 }
+window.addEventListener("online",()=>{setSync("Wieder online · synchronisiert …");if(!booting)boot()});
+window.addEventListener("offline",()=>setSync("Offline · gespeicherte Daten"));
 sb.auth.onAuthStateChange((_event,session)=>{
   if(session){
     el("login").classList.add("hidden");
