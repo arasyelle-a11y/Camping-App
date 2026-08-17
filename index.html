@@ -52,7 +52,7 @@ button{cursor:pointer}
 .swipeWrap.dragTarget{outline:3px dashed var(--green);outline-offset:-3px;background:#eef3e4}
 .dragHint{font-size:9px;color:var(--muted);font-weight:800;margin-left:auto;white-space:nowrap} body.dragMode,body.dragMode *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 .nameLine{display:flex;align-items:center;gap:9px}.name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
-.tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}.noteIcon{border:0;background:transparent;padding:2px 4px;font-size:16px;line-height:1;flex:0 0 auto}.sheet textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;font:inherit;color:var(--navy)}.fieldLabel{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}.danger{background:#8f3f36!important;color:white!important}.archiveBtn{background:#355f4b!important;color:white!important}.archiveCard{margin:10px 12px;padding:14px;border:1px solid var(--line);border-radius:15px;background:white}.archiveCard h3{margin:0 0 4px;color:var(--navy)}.archiveMeta{font-size:11px;color:var(--muted);margin-bottom:10px}.archiveActions{display:flex;gap:7px;flex-wrap:wrap}.archiveActions button{border:1px solid var(--line);background:white;border-radius:10px;padding:8px 10px;font-weight:800;color:var(--navy)}.memoryBox{white-space:pre-wrap;background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;line-height:1.45}.historyRow{padding:10px 12px;border-bottom:1px solid var(--line);background:white}.historyTop{display:flex;align-items:center;gap:8px}.historyStatus{font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px}.historyStatus.yes{background:#dfeee5;color:#28533e}.historyStatus.no{background:#eee;color:#666}.historyName{font-weight:850;flex:1}.historyNote{font-size:12px;margin:6px 0 0 0;padding-left:4px;color:var(--brown)}.checkLine{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:750;color:var(--navy)}.noteViewText{white-space:pre-wrap;background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:14px;line-height:1.45;color:var(--navy);font-size:14px;min-height:70px}
+.tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}.noteIcon{border:0;background:transparent;padding:2px 4px;font-size:16px;line-height:1;flex:0 0 auto}.sheet textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;font:inherit;color:var(--navy)}.fieldLabel{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}.danger{background:#8f3f36!important;color:white!important}.archiveBtn{background:#355f4b!important;color:white!important}.archiveCard{margin:10px 12px;padding:14px;border:1px solid var(--line);border-radius:15px;background:white}.archiveCard h3{margin:0 0 4px;color:var(--navy)}.archiveMeta{font-size:11px;color:var(--muted);margin-bottom:10px}.archiveActions{display:flex;gap:7px;flex-wrap:wrap}.archiveActions button{border:1px solid var(--line);background:white;border-radius:10px;padding:8px 10px;font-weight:800;color:var(--navy)}.memoryBox{white-space:pre-wrap;background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;line-height:1.45}.memoryPhoto{width:100%;max-height:320px;object-fit:cover;border-radius:14px;margin:8px 0 10px;border:1px solid var(--line)}.photoPreview{width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px;display:none}.historyRow{padding:10px 12px;border-bottom:1px solid var(--line);background:white}.historyTop{display:flex;align-items:center;gap:8px}.historyStatus{font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px}.historyStatus.yes{background:#dfeee5;color:#28533e}.historyStatus.no{background:#eee;color:#666}.historyName{font-weight:850;flex:1}.historyNote{font-size:12px;margin:6px 0 0 0;padding-left:4px;color:var(--brown)}.checkLine{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:750;color:var(--navy)}.noteViewText{white-space:pre-wrap;background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:14px;line-height:1.45;color:var(--navy);font-size:14px;min-height:70px}
 .take{appearance:none;width:24px;height:24px;border:2px solid var(--green);border-radius:7px;background:white;display:grid;place-content:center;flex:0 0 auto}
 .take:checked{background:var(--green)}.take:checked:after{content:"✓";color:white;font-weight:900}
 .actions{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:8px}
@@ -183,6 +183,10 @@ button{cursor:pointer}
     <input id="editTripEnd" type="date">
     <label for="editTripMemory">Urlaubserinnerung</label>
     <textarea id="editTripMemory" placeholder="Mit wem wart ihr da? Stellplatz, was hat sich bewährt, was nächstes Mal anders?"></textarea>
+    <label for="editTripPhoto">Erinnerungsfoto</label>
+    <input id="editTripPhoto" type="file" accept="image/*">
+    <img id="editTripPhotoPreview" class="photoPreview" alt="Erinnerungsfoto">
+    <label class="checkLine" id="removeTripPhotoLine" style="display:none"><input id="removeTripPhoto" type="checkbox"> Foto entfernen</label>
     <div class="sheetActions" style="margin-top:14px">
       <button class="cancel" id="editTripCancel">Abbrechen</button>
       <button class="save" id="editTripSave">Speichern</button>
@@ -613,6 +617,21 @@ function updateStats(){
   const ss=currentItems().map(i=>state(i.id)),cnt=k=>ss.filter(s=>s[k]).length;
   el("sTake").textContent=cnt("selected");el("sSeen").textContent=cnt("seen");el("sBox").textContent=cnt("in_box");el("sCar").textContent=cnt("in_car");el("sNeed").textContent=cnt("need");
 }
+async function signedMemoryPhoto(path){
+  if(!path)return null;
+  const {data,error}=await sb.storage.from("camping-memory-photos").createSignedUrl(path,3600);
+  if(error){console.warn("Foto konnte nicht geladen werden",error);return null}
+  return data?.signedUrl||null;
+}
+async function uploadMemoryPhoto(tripId,file,oldPath=null){
+  if(!file)return oldPath||null;
+  const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+  const path=`${tripId}/cover-${Date.now()}.${ext}`;
+  const {error}=await sb.storage.from("camping-memory-photos").upload(path,file,{contentType:file.type||"image/jpeg"});
+  if(error)throw error;
+  if(oldPath)await sb.storage.from("camping-memory-photos").remove([oldPath]);
+  return path;
+}
 function fmtDate(d){
   if(!d)return "";
   return new Date(d+"T00:00:00").toLocaleDateString("de-DE");
@@ -625,9 +644,13 @@ async function openArchivedTrip(trip){
   const card=document.createElement("div");card.className="archiveCard";
   const place=places.find(p=>p.id===trip.place_id);
   card.innerHTML=`<h3>${trip.name}</h3><div class="archiveMeta">${place?.name||""}${trip.start_date?" · "+fmtDate(trip.start_date):""}${trip.end_date?" – "+fmtDate(trip.end_date):""}</div>
+    ${trip.photo_path?'<img class="memoryPhoto archivePhoto" alt="Urlaubserinnerung">':""}
     ${trip.memory_text?`<div class="memoryBox">${trip.memory_text}</div>`:""}
     <div class="archiveActions"><button class="restore">↩️ Wieder aktivieren</button><button class="close">Schließen</button></div>
     <h4 style="margin:16px 0 8px">Damals in der Packliste</h4><div class="historyList"></div>`;
+  if(trip.photo_path){
+    signedMemoryPhoto(trip.photo_path).then(url=>{const img=card.querySelector(".archivePhoto");if(img&&url)img.src=url});
+  }
   const list=card.querySelector(".historyList");
   for(const group of grouped(masterItems)){
     const h=document.createElement("div");h.style.cssText="padding:10px 12px 5px;font-weight:900;color:var(--navy);background:var(--cream2)";
@@ -656,7 +679,8 @@ function renderArchive(){
   for(const trip of archivedTrips){
     const place=places.find(p=>p.id===trip.place_id);
     const c=document.createElement("div");c.className="archiveCard";
-    c.innerHTML=`<h3>${trip.name}</h3><div class="archiveMeta">${place?.name||""}${trip.start_date?" · "+fmtDate(trip.start_date):""}${trip.end_date?" – "+fmtDate(trip.end_date):""}</div>${trip.memory_text?`<div class="memoryBox">${trip.memory_text}</div>`:""}<div class="archiveActions"><button>Urlaub ansehen</button></div>`;
+    c.innerHTML=`<h3>${trip.name}</h3><div class="archiveMeta">${place?.name||""}${trip.start_date?" · "+fmtDate(trip.start_date):""}${trip.end_date?" – "+fmtDate(trip.end_date):""}</div>${trip.photo_path?'<img class="memoryPhoto archiveThumb" alt="Urlaubserinnerung">':""}${trip.memory_text?`<div class="memoryBox">${trip.memory_text}</div>`:""}<div class="archiveActions"><button>Urlaub ansehen</button></div>`;
+    if(trip.photo_path)signedMemoryPhoto(trip.photo_path).then(url=>{const img=c.querySelector(".archiveThumb");if(img&&url)img.src=url});
     c.querySelector("button").onclick=()=>openArchivedTrip(trip);
     host.appendChild(c);
   }
@@ -698,7 +722,24 @@ el("editTripBtn").onclick=()=>{
   el("editTripStart").value=currentTrip.start_date||"";
   el("editTripEnd").value=currentTrip.end_date||"";
   el("editTripMemory").value=currentTrip.memory_text||"";
+  el("editTripPhoto").value="";
+  el("removeTripPhoto").checked=false;
+  pendingTripPhoto=null;
+  const preview=el("editTripPhotoPreview");
+  preview.style.display="none";preview.removeAttribute("src");
+  el("removeTripPhotoLine").style.display=currentTrip.photo_path?"flex":"none";
+  if(currentTrip.photo_path)signedMemoryPhoto(currentTrip.photo_path).then(url=>{if(url){preview.src=url;preview.style.display="block"}});
   el("editTripModal").classList.add("open");
+};
+el("editTripPhoto").onchange=()=>{
+  const f=el("editTripPhoto").files?.[0]||null;
+  pendingTripPhoto=f;
+  if(f){
+    const u=URL.createObjectURL(f);
+    el("editTripPhotoPreview").src=u;
+    el("editTripPhotoPreview").style.display="block";
+    el("removeTripPhoto").checked=false;
+  }
 };
 el("editTripCancel").onclick=()=>el("editTripModal").classList.remove("open");
 el("editTripSave").onclick=async()=>{
@@ -715,8 +756,14 @@ el("editTripSave").onclick=async()=>{
   el("editTripSave").disabled=true;
   setSync("Urlaub wird gespeichert …");
   try{
+    let photo_path=currentTrip.photo_path||null;
+    if(el("removeTripPhoto").checked && photo_path){
+      await sb.storage.from("camping-memory-photos").remove([photo_path]);
+      photo_path=null;
+    }
+    if(pendingTripPhoto)photo_path=await uploadMemoryPhoto(currentTrip.id,pendingTripPhoto,photo_path);
     const {data,error}=await sb.from("camping_trips")
-      .update({name,place_id,start_date,end_date,memory_text})
+      .update({name,place_id,start_date,end_date,memory_text,photo_path})
       .eq("id",currentTrip.id)
       .select()
       .single();
