@@ -111,7 +111,7 @@ button{cursor:pointer}
         <select id="tripSelect"></select>
         <button class="iconbtn" id="newTripBtn">＋ Urlaub</button>
       </div>
-      <div class="tripInfo"><strong id="tripName">Aktueller Urlaub</strong><span class="countdown" id="tripCountdown"></span></div>
+      <div class="tripInfo"><strong id="tripName">Aktueller Urlaub</strong><div style="display:flex;gap:8px;align-items:center"><span class="countdown" id="tripCountdown"></span><button id="editTripBtn" class="iconbtn" style="padding:7px 9px;font-size:11px">✏️</button></div></div>
       <div class="stats">
         <div class="stat"><b id="sTake">0</b><span>Mitnehmen</span></div>
         <div class="stat"><b id="sSeen">0</b><span>Gesichtet</span></div>
@@ -164,6 +164,24 @@ button{cursor:pointer}
 </div>
 
 <div class="toast" id="undoToast"><span id="undoText">Artikel entfernt</span><button id="undoBtn">Rückgängig</button></div>
+
+<div class="modal" id="editTripModal">
+  <div class="sheet tripForm">
+    <h3>Urlaub bearbeiten</h3>
+    <label for="editTripPlace">Ziel</label>
+    <select id="editTripPlace"></select>
+    <label for="editTripName">Urlaubsname</label>
+    <input id="editTripName" placeholder="z. B. Le Gurp 2028">
+    <label for="editTripStart">Anreise</label>
+    <input id="editTripStart" type="date">
+    <label for="editTripEnd">Abreise</label>
+    <input id="editTripEnd" type="date">
+    <div class="sheetActions" style="margin-top:14px">
+      <button class="cancel" id="editTripCancel">Abbrechen</button>
+      <button class="save" id="editTripSave">Speichern</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal" id="tripModal">
   <div class="sheet tripForm">
@@ -254,9 +272,12 @@ async function loadPlaces(){
   if(error)throw error;
   places=data||[];
   el("tripPlace").innerHTML="";
+  el("editTripPlace").innerHTML="";
   for(const p of places){
     const t=document.createElement("option");
     t.value=p.id;t.textContent=p.name;el("tripPlace").appendChild(t);
+    const e=document.createElement("option");
+    e.value=p.id;e.textContent=p.name;el("editTripPlace").appendChild(e);
   }
 }
 async function loadTrips(){
@@ -598,6 +619,61 @@ document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySel
 document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster()});
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));el("view-"+b.dataset.view).classList.add("active")});
 el("tripSelect").onchange=e=>switchTrip(e.target.value);
+el("editTripBtn").onclick=()=>{
+  if(!currentTrip)return;
+  el("editTripPlace").value=currentTrip.place_id||"";
+  el("editTripName").value=currentTrip.name||"";
+  el("editTripStart").value=currentTrip.start_date||"";
+  el("editTripEnd").value=currentTrip.end_date||"";
+  el("editTripModal").classList.add("open");
+};
+el("editTripCancel").onclick=()=>el("editTripModal").classList.remove("open");
+el("editTripSave").onclick=async()=>{
+  if(!currentTrip)return;
+  const name=el("editTripName").value.trim();
+  const place_id=el("editTripPlace").value;
+  const start_date=el("editTripStart").value||null;
+  const end_date=el("editTripEnd").value||null;
+
+  if(!name)return toast("Bitte einen Urlaubsnamen eingeben");
+  if(start_date && end_date && end_date<start_date)return toast("Das Abreisedatum liegt vor der Anreise");
+
+  el("editTripSave").disabled=true;
+  setSync("Urlaub wird gespeichert …");
+  try{
+    const {data,error}=await sb.from("camping_trips")
+      .update({name,place_id,start_date,end_date})
+      .eq("id",currentTrip.id)
+      .select()
+      .single();
+    if(error)throw error;
+
+    currentTrip=data;
+    currentPlace=places.find(p=>p.id===data.place_id)||null;
+
+    const local=trips.findIndex(t=>t.id===data.id);
+    if(local>=0)trips[local]=data;
+
+    el("tripSelect").innerHTML="";
+    for(const t of trips){
+      const o=document.createElement("option");
+      o.value=t.id;o.textContent=t.name||"Urlaub";
+      el("tripSelect").appendChild(o);
+    }
+    el("tripSelect").value=currentTrip.id;
+
+    updateTripInfo();
+    el("editTripModal").classList.remove("open");
+    setSync("Synchronisiert");
+    toast("Urlaub geändert");
+  }catch(error){
+    console.error(error);
+    toast("Urlaub konnte nicht gespeichert werden");
+    setSync("Fehler");
+  }finally{
+    el("editTripSave").disabled=false;
+  }
+};
 el("newTripBtn").onclick=()=>{
   if(currentPlace)el("tripPlace").value=currentPlace.id;
   el("tripNewPlace").value="";
