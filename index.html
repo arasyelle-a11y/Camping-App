@@ -73,6 +73,7 @@ button{cursor:pointer}
 .badge{font-size:9px;background:#F8E3D7;color:var(--orange);padding:5px 7px;border-radius:999px;font-weight:800}
 .masterRow button{border:1px solid var(--line);border-radius:9px;padding:7px 8px;background:white;font-weight:800;font-size:10px}
 .masterRow button.addBack{background:#E5EDD4;color:var(--green);border-color:var(--green)}
+.tripTypeChecks{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:8px 0 12px}.tripTypeChecks label{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:10px;padding:8px;background:white;font-size:11px;font-weight:800}.masterActions{display:flex;gap:5px;flex-wrap:wrap}.masterTypeBadge{display:inline-block;font-size:9px;padding:3px 6px;border-radius:999px;background:var(--cream2);margin:3px 3px 0 0;color:var(--brown);font-weight:800}.masterAddBar{display:flex;gap:7px;padding:8px 14px}.masterAddBar button{flex:1;border:0;border-radius:11px;background:var(--navy);color:white;padding:10px;font-weight:850}.masterTypeFilters{display:flex;gap:6px;padding:0 14px 8px;overflow:auto}.masterTypeFilters button{border:1px solid var(--line);background:white;border-radius:999px;padding:7px 9px;white-space:nowrap;font-size:10px;font-weight:800}.masterTypeFilters button.active{background:var(--green);color:white;border-color:var(--green)}
 .empty{padding:34px 20px;text-align:center;color:var(--muted)}
 .modal{position:fixed;inset:0;background:rgba(15,30,40,.42);display:none;align-items:flex-end;z-index:50}
 .modal.open{display:flex}.sheet{width:100%;max-width:760px;margin:0 auto;background:var(--paper);border-radius:20px 20px 0 0;padding:18px}
@@ -205,6 +206,8 @@ button{cursor:pointer}
       <button data-mf="in">Dabei</button>
       <button data-mf="out">Nicht dabei</button>
     </div>
+    <div class="masterTypeFilters" id="masterTypeFilters"></div>
+    <div class="masterAddBar"><button id="addMasterItemBtn">＋ Artikel</button><button id="bulkMasterItemBtn">＋ Mehrere</button></div>
     <main class="content" id="masterList"></main>
   </section>
 
@@ -248,7 +251,7 @@ button{cursor:pointer}
       <option value="holiday_home">🏡 Ferienhaus</option>
       <option value="city">🏙️ Städtetrip</option>
     </select>
-    <div class="tripTypeHint">Ändern aktualisiert nicht automatisch deine aktuelle Auswahl – die bleibt erhalten.</div>
+    <div class="tripTypeHint">Die Urlaubsart kann geändert werden. Mit „Vorschlag anwenden“ wird die Familien-Packliste passend neu vorausgewählt.</div><button type="button" id="applyTripTypeBtn" class="iconbtn" style="width:100%;margin:0 0 10px">✨ Vorschlag für diese Urlaubsart anwenden</button>
     <label>Wer kommt mit?</label>
     <div id="tripPeopleEdit" class="tripPeopleGrid"></div>
     <label for="editTripStart">Anreise</label>
@@ -313,7 +316,7 @@ button{cursor:pointer}
 <div class="modal" id="bulkPersonItemModal"><div class="sheet">
   <h3>Mehrere Artikel anlegen</h3>
   <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Eine Zeile = ein Artikel.</div>
-  <input id="bulkPersonCategory" placeholder="Kategorie, z. B. Kleidung">
+  <input id="bulkPersonCategory" list="personCategoryOptions" placeholder="Kategorie auswählen oder neu eingeben">
   <textarea id="bulkPersonItems" rows="10" placeholder="Unterhosen&#10;Socken&#10;T-Shirts&#10;Kurze Hosen&#10;Pullover"></textarea>
   <div id="bulkCount" style="font-size:12px;color:var(--muted);margin-top:5px">0 Artikel erkannt</div>
   <div class="sheetActions"><button class="cancel" id="bulkPersonCancel">Abbrechen</button><button class="save" id="bulkPersonSave">Alle anlegen</button></div>
@@ -343,7 +346,7 @@ button{cursor:pointer}
 <div class="modal" id="personItemModal"><div class="sheet">
   <h3>Persönlichen Artikel anlegen</h3>
   <input id="personItemName" placeholder="z. B. AirPods">
-  <input id="personItemCategory" placeholder="Kategorie, z. B. Technik">
+  <input id="personItemCategory" list="personCategoryOptions" placeholder="Kategorie auswählen oder neu eingeben"><datalist id="personCategoryOptions"></datalist>
   <label class="fieldLabel">Mengenregel</label>
   <select id="personItemRule">
     <option value="fixed">Feste Menge</option>
@@ -363,6 +366,8 @@ button{cursor:pointer}
   <div class="sheetActions"><button class="cancel" id="personItemCancel">Abbrechen</button><button class="save" id="personItemSave">Anlegen</button></div>
 </div></div>
 
+<div class="modal" id="masterItemModal"><div class="sheet"><h3>Masterartikel</h3><input id="masterItemName" placeholder="Artikel"><input id="masterItemCategory" list="masterCategoryOptions" placeholder="Kategorie auswählen oder neu eingeben"><datalist id="masterCategoryOptions"></datalist><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="masterItemTypes"></div><div class="sheetActions"><button class="cancel" id="masterItemCancel">Abbrechen</button><button class="save" id="masterItemSave">Speichern</button></div></div></div>
+<div class="modal" id="bulkMasterModal"><div class="sheet"><h3>Mehrere Masterartikel</h3><input id="bulkMasterCategory" list="masterCategoryOptions" placeholder="Kategorie auswählen oder neu eingeben"><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="bulkMasterTypes"></div><textarea id="bulkMasterItems" rows="10" placeholder="Eine Zeile = ein Artikel"></textarea><div id="bulkMasterCount" style="font-size:12px;color:var(--muted);margin:5px 0">0 Artikel erkannt</div><div class="sheetActions"><button class="cancel" id="bulkMasterCancel">Abbrechen</button><button class="save" id="bulkMasterSave">Alle anlegen</button></div></div></div>
 <div id="printArea" style="display:none"></div>
 
 <div class="modal" id="noteModal">
@@ -399,7 +404,7 @@ const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], personStates=new Map(), currentPerson=null;
-let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set();
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all";
 const el=id=>document.getElementById(id);
 
 function toast(msg,undo=false){
@@ -491,7 +496,7 @@ function restoreCache(){
 }
 
 async function loadItems(){
-  const {data,error}=await sb.from("camping_items").select("id,name,category,icon,is_master,is_active,household_item_id,category_order,item_order,note").eq("is_active",true).order("category_order",{ascending:true}).order("item_order",{ascending:true});
+  const {data,error}=await sb.from("camping_items").select("id,name,category,icon,is_master,is_active,household_item_id,category_order,item_order,note,trip_types").eq("is_active",true).order("category_order",{ascending:true}).order("item_order",{ascending:true});
   if(error)throw error;masterItems=data||[];saveCache();
 }
 async function loadPlaces(){
@@ -967,7 +972,7 @@ const TRIP_PRESETS={
   holiday_home:{includeCategories:["Technik","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah"],includeNames:["Geschirrtücher","Lappen","Tupperdosen","Zip-Beutel","Verschlussklemmen","Weinöffner","Bieröffner"]},
   city:{includeCategories:["Technik","Hygiene & Gesundheit","Sarah"],includeNames:["Picknickdecke"]}
 };
-function presetSelects(item,type){const p=TRIP_PRESETS[type]||TRIP_PRESETS.camping;let on=(p.includeCategories||[]).includes(item.category)||(p.includeNames||[]).includes(item.name);if((p.excludeNames||[]).includes(item.name))on=false;return on}
+function presetSelects(item,type){const tt=Array.isArray(item.trip_types)?item.trip_types:[];if(tt.length)return tt.includes("all")||tt.includes(type);const p=TRIP_PRESETS[type]||TRIP_PRESETS.camping;let on=(p.includeCategories||[]).includes(item.category)||(p.includeNames||[]).includes(item.name);if((p.excludeNames||[]).includes(item.name))on=false;return on}
 async function applyTripPreset(trip,type){const targets=masterItems.filter(i=>i.is_master);const rows=targets.map(item=>({trip_id:trip.id,item_id:item.id,selected:presetSelects(item,type),seen:false,in_box:false,in_car:false,need:false,note:null,updated_at:new Date().toISOString()}));if(rows.length){const {error}=await sb.from("camping_trip_items").upsert(rows,{onConflict:"trip_id,item_id"});if(error)throw error}}
 async function reconcilePersonBasics(personId){
   const mine=personItems.filter(i=>i.person_id===personId),byKey=new Map(mine.map(i=>[`${i.category.toLowerCase()}|${i.name.toLowerCase()}`,i]));let n=0;
@@ -1201,26 +1206,30 @@ function renderNeed(){
   personal.forEach(i=>{const p=people.find(x=>x.id===i.person_id),d=document.createElement("div");d.className="needItem";d.innerHTML=`<b><span class="personDot" style="background:${p?.color||"#888"}"></span>${p?.name||""}: ${i.name}</b><span class="badge">persönlich</span><button class="stage on">✓ erledigt</button>`;d.querySelector("button").onclick=()=>savePersonState(i,{needs_purchase:false});card.appendChild(d)});
   root.appendChild(card);
 }
+const TRIP_TYPE_LABELS={all:"🌍 Alle",camping:"🏕️ Camping",camping_power:"⚡ Strom-Camping",holiday_home:"🏡 Ferienhaus",city:"🏙️ Städtetrip"};
+function typeChecks(hostId,selected=["all"]){const host=el(hostId);host.innerHTML="";for(const [k,label] of Object.entries(TRIP_TYPE_LABELS)){const l=document.createElement("label");l.innerHTML=`<input type="checkbox" value="${k}" ${selected.includes(k)?"checked":""}> ${label}`;host.appendChild(l)}host.querySelectorAll('input').forEach(inp=>inp.onchange=()=>{if(inp.value==="all"&&inp.checked)host.querySelectorAll('input:not([value="all"])').forEach(x=>x.checked=false);else if(inp.value!=="all"&&inp.checked)host.querySelector('input[value="all"]').checked=false})}
+function checkedTypes(hostId){const a=[...el(hostId).querySelectorAll('input:checked')].map(x=>x.value);return a.length?a:["all"]}
+function renderMasterTypeFilters(){const h=el("masterTypeFilters");if(!h)return;h.innerHTML="";for(const [k,label] of Object.entries(TRIP_TYPE_LABELS)){const b=document.createElement("button");b.textContent=label;b.className=masterTypeFilter===k?"active":"";b.onclick=()=>{masterTypeFilter=k;renderMaster()};h.appendChild(b)}}
 function renderMaster(){
-  const root=el("masterList");root.innerHTML="";
-  let items=masterItems.filter(i=>i.is_master);
-  if(masterFilter==="in")items=items.filter(i=>state(i.id).selected);
-  if(masterFilter==="out")items=items.filter(i=>!state(i.id).selected);
-  for(const cat of grouped(items)){
-    const sec=document.createElement("section");sec.className="category closed";
-    sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;
-    sec.querySelector(".cathead").onclick=()=>sec.classList.toggle("closed");
-    const body=sec.querySelector(".catbody");
-    cat.items.forEach(i=>{const on=state(i.id).selected,r=document.createElement("div");r.className="masterRow";r.innerHTML=`<div class="masterName">${i.name}</div><button class="${on?"":"addBack"}">${on?"✓ Dabei":"＋ Mitnehmen"}</button>`;r.querySelector("button").onclick=()=>dbUpsert(i.id,{selected:!on,...(on?{seen:false,in_box:false,in_car:false}:{})});body.appendChild(r)});
-    root.appendChild(sec);
-  }
+  renderMasterTypeFilters();const root=el("masterList");root.innerHTML="";let items=masterItems.filter(i=>i.is_master);
+  if(masterFilter==="in")items=items.filter(i=>state(i.id).selected);if(masterFilter==="out")items=items.filter(i=>!state(i.id).selected);
+  if(masterTypeFilter!=="all")items=items.filter(i=>{const tt=i.trip_types||["all"];return tt.includes("all")||tt.includes(masterTypeFilter)});
+  for(const cat of grouped(items)){const sec=document.createElement("section");sec.className="category closed";sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;sec.querySelector(".cathead").onclick=()=>sec.classList.toggle("closed");const body=sec.querySelector(".catbody");
+    cat.items.forEach(i=>{const on=state(i.id).selected,r=document.createElement("div");r.className="masterRow";const types=(i.trip_types||["all"]).map(t=>`<span class="masterTypeBadge">${TRIP_TYPE_LABELS[t]||t}</span>`).join("");r.innerHTML=`<div class="masterName">${i.name}<div>${types}</div></div><div class="masterActions"><button class="medit">✏️</button><button class="${on?"":"addBack"}">${on?"✓ Dabei":"＋ Mitnehmen"}</button></div>`;const bs=r.querySelectorAll("button");bs[0].onclick=()=>openMasterItem(i);bs[1].onclick=()=>dbUpsert(i.id,{selected:!on,...(on?{seen:false,in_box:false,in_car:false}:{})});body.appendChild(r)});root.appendChild(sec)}
 }
+function fillCategorySuggestions(){const pc=[...new Set(personItems.map(i=>i.category).filter(Boolean))].sort(),mc=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category).filter(Boolean))].sort();const p=el("personCategoryOptions"),m=el("masterCategoryOptions");if(p)p.innerHTML=pc.map(x=>`<option value="${x}">`).join("");if(m)m.innerHTML=mc.map(x=>`<option value="${x}">`).join("")}
+function openMasterItem(item=null){editingMasterItem=item;fillCategorySuggestions();el("masterItemName").value=item?.name||"";el("masterItemCategory").value=item?.category||"";typeChecks("masterItemTypes",item?.trip_types||["all"]);el("masterItemModal").classList.add("open")}
 function renderCats(){
+  fillCategorySuggestions();
   const cats=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category))];
   [el("quickCat"),el("addCat"),el("editCat")].filter(Boolean).forEach(sel=>{const old=sel.value;sel.innerHTML="";cats.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)});if(cats.includes(old))sel.value=old});
 }
 el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastRemoved=null;await dbUpsert(x.itemId,x.old);el("undoToast").classList.remove("show")};
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render()});
+el("addMasterItemBtn").onclick=()=>openMasterItem();el("masterItemCancel").onclick=()=>el("masterItemModal").classList.remove("open");
+el("masterItemSave").onclick=async()=>{const name=el("masterItemName").value.trim(),category=el("masterItemCategory").value.trim(),trip_types=checkedTypes("masterItemTypes");if(!name||!category)return toast("Bitte Artikel und Kategorie eingeben");let data,error;if(editingMasterItem)({data,error}=await sb.from("camping_items").update({name,category,trip_types}).eq("id",editingMasterItem.id).select().single());else({data,error}=await sb.from("camping_items").insert({name,category,icon:iconForCategory(category),is_master:true,trip_types}).select().single());if(error){console.error(error);return toast("Masterartikel konnte nicht gespeichert werden")}editingMasterItem=null;el("masterItemModal").classList.remove("open");await loadItems();render();toast("Masterartikel gespeichert")};
+function parseBulkMaster(){return (el("bulkMasterItems").value||"").replace(/\r\n?/g,"\n").split(/\n+|;+/).map(x=>x.replace(/^[\s•·▪▫◦‣⁃\-–—*✓✔☐☑]+/,"").trim()).filter(Boolean)}
+el("bulkMasterItemBtn").onclick=()=>{fillCategorySuggestions();el("bulkMasterCategory").value="";el("bulkMasterItems").value="";el("bulkMasterCount").textContent="0 Artikel erkannt";typeChecks("bulkMasterTypes",["all"]);el("bulkMasterModal").classList.add("open")};el("bulkMasterItems").oninput=()=>el("bulkMasterCount").textContent=`${parseBulkMaster().length} Artikel erkannt`;el("bulkMasterCancel").onclick=()=>el("bulkMasterModal").classList.remove("open");el("bulkMasterSave").onclick=async()=>{const category=el("bulkMasterCategory").value.trim(),names=parseBulkMaster(),trip_types=checkedTypes("bulkMasterTypes");if(!category||!names.length)return toast("Kategorie und Artikel eingeben");const existing=new Set(masterItems.filter(i=>i.is_master).map(i=>`${i.category.toLowerCase()}|${i.name.toLowerCase()}`));const rows=names.filter(n=>!existing.has(`${category.toLowerCase()}|${n.toLowerCase()}`)).map((name,n)=>({name,category,icon:iconForCategory(category),is_master:true,trip_types,item_order:n+1}));if(!rows.length)return toast("Diese Artikel gibt es schon");const {error}=await sb.from("camping_items").insert(rows);if(error){console.error(error);return toast("Artikel konnten nicht angelegt werden")}el("bulkMasterModal").classList.remove("open");await loadItems();render();toast(`${rows.length} Masterartikel angelegt`)};
 document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster()});
 
 el("editPersonBtn").onclick=()=>{
@@ -1373,6 +1382,7 @@ el("editTripBtn").onclick=()=>{
   if(currentTrip.photo_path)signedMemoryPhoto(currentTrip.photo_path).then(url=>{if(url){preview.src=url;preview.style.display="block"}});
   el("editTripModal").classList.add("open");
 };
+el("applyTripTypeBtn").onclick=async()=>{if(!currentTrip)return;const type=el("editTripType").value||"camping";if(!confirm("Die aktuelle Familien-Auswahl wird durch den Vorschlag für diese Urlaubsart ersetzt. Persönliche Listen bleiben unverändert. Anwenden?"))return;try{await applyTripPreset(currentTrip,type);await loadStates();render();toast("Packlisten-Vorschlag angewendet")}catch(e){console.error(e);toast("Vorschlag konnte nicht angewendet werden")}};
 el("editTripPhoto").onchange=()=>{
   const f=el("editTripPhoto").files?.[0]||null;
   pendingTripPhoto=f;
