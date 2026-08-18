@@ -133,6 +133,20 @@ button{cursor:pointer}
 .ruleFields{display:grid;grid-template-columns:1fr 100px;gap:8px}
 .criticalPrint{margin-top:9mm;padding-top:4mm;border-top:3px solid #444}
 .criticalPrint h2{margin-top:0}
+
+.personTheme{margin:0 12px 10px;border-radius:16px;padding:12px 14px;color:white;font-weight:900;box-shadow:0 6px 18px rgba(0,0,0,.10)}
+.personTheme small{display:block;font-size:10px;font-weight:700;opacity:.9;margin-top:2px}
+.personCategory .personCatHead{display:flex;align-items:center;gap:8px;cursor:pointer}
+.personCategory .personCatHead .pcTitle{flex:1}
+.personCategory .personCatHead .pcCount{font-size:10px;opacity:.75}
+.personCategory.closed .personCatBody{display:none}
+.personList.personTint{border-radius:18px;margin:0 8px 16px;padding-top:4px}
+.personItem{border-left:4px solid transparent}
+.tripPeopleGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 12px}
+.tripPersonChoice{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:11px;padding:9px;background:white;font-size:12px;font-weight:800}
+.tripPersonChoice input{width:auto!important;margin:0!important}
+.tripTypeHint{font-size:10px;color:var(--muted);margin-top:-4px;margin-bottom:8px}
+.personSyncHint{font-size:10px;color:var(--muted);padding:0 14px 6px}
 </style>
 </head>
 <body>
@@ -202,7 +216,7 @@ button{cursor:pointer}
       <button class="iconbtn" id="modulesBtn">🧩 Grundausstattung</button><button class="iconbtn" id="addPersonItemBtn">＋ Artikel</button><button class="iconbtn" id="bulkPersonItemBtn">＋ Mehrere</button><button class="iconbtn" id="copyPersonListBtn">⧉ Liste kopieren</button>
       <button class="iconbtn" id="printPersonBtn">🖨️ Drucken</button>
     </div>
-    <div class="personList" id="personList"></div>
+    <div id="personTheme" class="personTheme" style="display:none"></div><div class="personList" id="personList"></div>
   </section>
   <section class="view" id="view-archive">
     <div class="top"><h2 style="margin:5px 0">🗂️ Urlaubsarchiv</h2><div style="font-size:12px;color:var(--muted)">Abgeschlossene Urlaube mit damaliger Packliste und Erinnerungen.</div></div>
@@ -227,6 +241,16 @@ button{cursor:pointer}
     <select id="editTripPlace"></select>
     <label for="editTripName">Urlaubsname</label>
     <input id="editTripName" placeholder="z. B. Le Gurp 2028">
+    <label for="editTripType">Art des Urlaubs</label>
+    <select id="editTripType">
+      <option value="camping">🏕️ Camping</option>
+      <option value="camping_power">⚡ Camping mit Strom</option>
+      <option value="holiday_home">🏡 Ferienhaus</option>
+      <option value="city">🏙️ Städtetrip</option>
+    </select>
+    <div class="tripTypeHint">Ändern aktualisiert nicht automatisch deine aktuelle Auswahl – die bleibt erhalten.</div>
+    <label>Wer kommt mit?</label>
+    <div id="tripPeopleEdit" class="tripPeopleGrid"></div>
     <label for="editTripStart">Anreise</label>
     <input id="editTripStart" type="date">
     <label for="editTripEnd">Abreise</label>
@@ -257,6 +281,16 @@ button{cursor:pointer}
     <input id="tripNewPlace" placeholder="z. B. Bretagne">
     <label for="tripNameInput">Name des Urlaubs</label>
     <input id="tripNameInput" placeholder="z. B. Le Gurp 2028">
+    <label for="tripType">Art des Urlaubs</label>
+    <select id="tripType">
+      <option value="camping">🏕️ Camping</option>
+      <option value="camping_power">⚡ Camping mit Strom</option>
+      <option value="holiday_home">🏡 Ferienhaus</option>
+      <option value="city">🏙️ Städtetrip</option>
+    </select>
+    <div class="tripTypeHint">Dient nur als Vorauswahl für die Familien-Packliste – danach kannst du alles ändern.</div>
+    <label>Wer kommt mit?</label>
+    <div id="tripPeopleNew" class="tripPeopleGrid"></div>
     <label for="tripStart">Anreise</label>
     <input id="tripStart" type="date">
     <label for="tripEnd">Abreise</label>
@@ -365,7 +399,7 @@ const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], personStates=new Map(), currentPerson=null;
-let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null;
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set();
 const el=id=>document.getElementById(id);
 
 function toast(msg,undo=false){
@@ -397,9 +431,10 @@ function saveCache(){
   try{
     localStorage.setItem(CACHE_KEY,JSON.stringify({
       savedAt:Date.now(),
-      masterItems,places,trips,archivedTrips,
+      masterItems,places,trips,archivedTrips,people,personItems,
       currentTripId:currentTrip?.id||localStorage.getItem("camping-trip-id")||null,
-      states:[...states.entries()]
+      states:[...states.entries()],personStates:[...personStates.entries()],
+      currentTripPeople:[...currentTripPeople]
     }));
   }catch(e){console.warn("Cache konnte nicht gespeichert werden",e)}
 }
@@ -415,7 +450,11 @@ function restoreCache(){
     places=c.places||[];
     trips=c.trips||[];
     archivedTrips=c.archivedTrips||[];
+    people=c.people||[];
+    personItems=c.personItems||[];
     states=new Map(c.states||[]);
+    personStates=new Map(c.personStates||[]);
+    currentTripPeople=new Set(c.currentTripPeople||[]);
 
     const wanted=localStorage.getItem("camping-trip-id")||c.currentTripId;
     currentTrip=trips.find(t=>t.id===wanted)||trips[0]||null;
@@ -439,6 +478,7 @@ function restoreCache(){
 
     updateTripInfo();
     render();
+    renderPeople();
     renderArchive();
 
     const age=c.savedAt?Math.max(0,Math.round((Date.now()-c.savedAt)/60000)):null;
@@ -537,6 +577,7 @@ async function switchTrip(id){
   setSync("Lädt …");
   await loadStates();
   await loadPersonStates();
+  await loadTripPeople();
   updateTripInfo();
   render();
   renderPeople();
@@ -905,17 +946,45 @@ function quantityRuleLabel(item){
   return item.default_quantity>1?`fest ${item.default_quantity}`:"";
 }
 
+
+function participantPeople(){
+  if(!currentTrip)return people;
+  if(!currentTripPeople.size)return people;
+  return people.filter(p=>currentTripPeople.has(p.id));
+}
+function isParticipant(personId){return !currentTripPeople.size || currentTripPeople.has(personId)}
+function renderTripPeoplePicker(hostId,selectedIds=null){
+  const host=el(hostId);if(!host)return;host.innerHTML="";
+  const sel=selectedIds||new Set(people.map(p=>p.id));
+  for(const p of people){const lab=document.createElement("label");lab.className="tripPersonChoice";lab.innerHTML=`<input type="checkbox" value="${p.id}" ${sel.has(p.id)?"checked":""}><span class="personDot" style="background:${p.color}"></span>${p.name}`;host.appendChild(lab)}
+}
+function selectedTripPeople(hostId){return new Set([...el(hostId).querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value))}
+async function loadTripPeople(){currentTripPeople=new Set();if(!currentTrip)return;const {data,error}=await sb.from("camping_trip_people").select("person_id").eq("trip_id",currentTrip.id);if(error)throw error;for(const r of data||[])currentTripPeople.add(r.person_id)}
+async function saveTripPeople(tripId,ids){const {error:delError}=await sb.from("camping_trip_people").delete().eq("trip_id",tripId);if(delError)throw delError;const rows=[...ids].map(person_id=>({trip_id:tripId,person_id}));if(rows.length){const {error}=await sb.from("camping_trip_people").insert(rows);if(error)throw error}}
+const TRIP_PRESETS={
+  camping:{includeCategories:["Zelt & Aufbau","Campingmöbel","Schlafen","Küche & Gas","Wasser & Spülen","Sanitär","Haushalt & Ordnung","Werkzeug","Strand","Fahrräder","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah","Technik","Strom & Licht"],excludeNames:["Mehrfachsteckdosen","Verlängerungskabel","E-Bike-Ladegeräte","Kühlschrank"]},
+  camping_power:{includeCategories:["Zelt & Aufbau","Campingmöbel","Schlafen","Küche & Gas","Wasser & Spülen","Sanitär","Haushalt & Ordnung","Werkzeug","Strand","Fahrräder","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah","Technik","Strom & Licht"]},
+  holiday_home:{includeCategories:["Technik","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah"],includeNames:["Geschirrtücher","Lappen","Tupperdosen","Zip-Beutel","Verschlussklemmen","Weinöffner","Bieröffner"]},
+  city:{includeCategories:["Technik","Hygiene & Gesundheit","Sarah"],includeNames:["Picknickdecke"]}
+};
+function presetSelects(item,type){const p=TRIP_PRESETS[type]||TRIP_PRESETS.camping;let on=(p.includeCategories||[]).includes(item.category)||(p.includeNames||[]).includes(item.name);if((p.excludeNames||[]).includes(item.name))on=false;return on}
+async function applyTripPreset(trip,type){const targets=masterItems.filter(i=>i.is_master);const rows=targets.map(item=>({trip_id:trip.id,item_id:item.id,selected:presetSelects(item,type),seen:false,in_box:false,in_car:false,need:false,note:null,updated_at:new Date().toISOString()}));if(rows.length){const {error}=await sb.from("camping_trip_items").upsert(rows,{onConflict:"trip_id,item_id"});if(error)throw error}}
+async function reconcilePersonBasics(personId){
+  const mine=personItems.filter(i=>i.person_id===personId),byKey=new Map(mine.map(i=>[`${i.category.toLowerCase()}|${i.name.toLowerCase()}`,i]));let n=0;
+  for(const m of PERSON_MODULES){for(const [name,category,default_quantity,quantity_rule] of m.items){const existing=byKey.get(`${category.toLowerCase()}|${name.toLowerCase()}`);if(!existing)continue;if((existing.quantity_rule||"fixed")!==quantity_rule||existing.default_quantity!==default_quantity||existing.module_key!==m.key){const {data,error}=await sb.from("camping_person_items").update({default_quantity,quantity_rule,module_key:m.key}).eq("id",existing.id).select().single();if(error)throw error;const idx=personItems.findIndex(i=>i.id===existing.id);if(idx>=0)personItems[idx]=data;n++}}}
+  return n;
+}
 async function loadPeople(){
   const {data,error}=await sb.from("camping_people").select("*").eq("is_active",true).order("sort_order",{ascending:true}).order("created_at",{ascending:true});
   if(error)throw error;
-  people=data||[];
+  people=data||[];saveCache();
   const saved=localStorage.getItem("camping-person-id");
   currentPerson=people.find(p=>p.id===saved)||people[0]||null;
 }
 async function loadPersonItems(){
   const {data,error}=await sb.from("camping_person_items").select("*").eq("is_active",true).order("sort_order",{ascending:true}).order("created_at",{ascending:true});
   if(error)throw error;
-  personItems=data||[];
+  personItems=data||[];saveCache();
 }
 async function loadPersonStates(){
   personStates=new Map();
@@ -926,7 +995,7 @@ async function loadPersonStates(){
 }
 function personState(item){
   const saved=personStates.get(item.id);
-  if(!saved)return {selected:true,quantity:suggestedQuantity(item),packed:false,note:null,needs_purchase:false,final_checked:false,quantity_manual:false};
+  if(!saved)return {selected:false,quantity:suggestedQuantity(item),packed:false,note:null,needs_purchase:false,final_checked:false,quantity_manual:false};
   return {...saved,quantity:saved.quantity_manual?saved.quantity:suggestedQuantity(item)};
 }
 async function savePersonState(item,patch){
@@ -940,49 +1009,24 @@ async function savePersonState(item,patch){
   renderPeople();renderPersonControlPanels();renderNeed();
 }
 function renderPeople(){
-  const tabs=el("personTabs"),list=el("personList");
-  if(!tabs||!list)return;
-  tabs.innerHTML="";list.innerHTML="";
-  for(const p of people){
-    const b=document.createElement("button");b.className="personTab"+(currentPerson?.id===p.id?" active":"");
-    b.textContent=p.name;b.style.borderColor=p.color;
-    if(currentPerson?.id===p.id)b.style.background=p.color;
-    b.onclick=()=>{currentPerson=p;localStorage.setItem("camping-person-id",p.id);renderPeople()};
-    tabs.appendChild(b);
-  }
-  if(!currentPerson){list.innerHTML='<div class="personEmpty">Noch keine Person angelegt. Tippe oben auf „＋ Person“.</div>';return}
-  const mine=personItems.filter(i=>i.person_id===currentPerson.id);
-  if(!mine.length){list.innerHTML=`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel. Mit „🧩 Grundausstattung“ kannst du mehrere auf einmal anlegen.</div>`;return}
-  const groups=new Map();
-  for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
-  for(const [cat,items] of groups){
-    const sec=document.createElement("section");sec.className="personCategory";
-    sec.innerHTML=`<div class="personCatHead" style="border-left:5px solid ${currentPerson.color}">${cat}</div><div></div>`;
-    const body=sec.lastElementChild;
-    for(const item of items){
-      const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id);
-      const row=document.createElement("div");row.className="personItem";
-      row.innerHTML=`<input class="pselect" type="checkbox" ${s.selected?"checked":""}>
-      <div><b>${item.name}</b>${item.must_not_forget?'<span class="starBadge">⭐ Darf nicht fehlen</span>':""}${linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:""}
-      <div class="ruleHint">${quantityRuleLabel(item)}${item.quantity_offset?` · persönlich ${item.quantity_offset>0?"+":""}${item.quantity_offset}`:""}</div>
-      <div class="personMiniActions"><button class="needp ${s.needs_purchase?"on":""}">🔎 ${s.needs_purchase?"Suchen/Kaufen":"fehlt?"}</button><button class="pedit">Bearbeiten</button><button class="pdelete">Löschen</button></div></div>
-      <div class="qtyBox"><button class="minus">−</button><span class="qty">${s.quantity}</span><button class="plus">＋</button></div>`;
-      row.querySelector(".pselect").onchange=e=>savePersonState(item,{selected:e.target.checked});
-      row.querySelector(".minus").onclick=()=>savePersonState(item,{quantity:Math.max(0,s.quantity-1),quantity_manual:true});
-      row.querySelector(".plus").onclick=()=>savePersonState(item,{quantity:s.quantity+1,quantity_manual:true});
-      row.querySelector(".needp").onclick=()=>savePersonState(item,{needs_purchase:!s.needs_purchase});
-      row.querySelector(".pedit").onclick=()=>openEditPersonItem(item);
-      row.querySelector(".pdelete").onclick=()=>deletePersonItem(item);
-      body.appendChild(row);
-    }
-    list.appendChild(sec);
-  }
+  const tabs=el("personTabs"),list=el("personList"),theme=el("personTheme");if(!tabs||!list)return;
+  tabs.innerHTML="";list.innerHTML="";const visiblePeople=participantPeople();
+  if(currentPerson&&!visiblePeople.some(p=>p.id===currentPerson.id))currentPerson=visiblePeople[0]||null;
+  for(const p of visiblePeople){const b=document.createElement("button");b.className="personTab"+(currentPerson?.id===p.id?" active":"");b.textContent=p.name;b.style.borderColor=p.color;if(currentPerson?.id===p.id)b.style.background=p.color;b.onclick=()=>{currentPerson=p;localStorage.setItem("camping-person-id",p.id);renderPeople()};tabs.appendChild(b)}
+  if(!currentPerson){theme.style.display="none";list.innerHTML='<div class="personEmpty">Für diesen Urlaub ist noch keine Person ausgewählt.</div>';return}
+  theme.style.display="block";theme.style.background=currentPerson.color;theme.innerHTML=`${currentPerson.name}s Packliste<small>${currentTrip?.name||""}</small>`;list.classList.add("personTint");list.style.background=`color-mix(in srgb, ${currentPerson.color} 8%, white)`;
+  const mine=personItems.filter(i=>i.person_id===currentPerson.id);if(!mine.length){list.innerHTML=`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel. Mit „🧩 Grundausstattung“ kannst du mehrere auf einmal anlegen.</div>`;return}
+  const groups=new Map();for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
+  for(const [cat,items] of groups){const sec=document.createElement("section");sec.className="personCategory";sec.innerHTML=`<div class="personCatHead" style="background:color-mix(in srgb, ${currentPerson.color} 18%, white);border-left:7px solid ${currentPerson.color}"><span class="pcTitle">${cat}</span><span class="pcCount">${items.length}</span><span>▾</span></div><div class="personCatBody"></div>`;const head=sec.querySelector(".personCatHead"),body=sec.querySelector(".personCatBody");head.onclick=()=>sec.classList.toggle("closed");
+    for(const item of items){const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id),row=document.createElement("div");row.className="personItem";row.style.borderLeftColor=currentPerson.color;row.innerHTML=`<input class="pselect" type="checkbox" ${s.selected?"checked":""}><div><b>${item.name}</b>${item.must_not_forget?'<span class="starBadge">⭐ Darf nicht fehlen</span>':""}${linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:""}<div class="ruleHint">${quantityRuleLabel(item)}${item.quantity_offset?` · persönlich ${item.quantity_offset>0?"+":""}${item.quantity_offset}`:""}${s.quantity_manual?" · manuell":""}</div><div class="personMiniActions"><button class="needp ${s.needs_purchase?"on":""}">🔎 ${s.needs_purchase?"Suchen/Kaufen":"fehlt?"}</button>${s.quantity_manual?'<button class="resetq">↺ Vorschlag</button>':""}<button class="pedit">Bearbeiten</button><button class="pdelete">Löschen</button></div></div><div class="qtyBox"><button class="minus" style="border-color:${currentPerson.color}">−</button><span class="qty">${s.quantity}</span><button class="plus" style="border-color:${currentPerson.color}">＋</button></div>`;
+      row.querySelector(".pselect").onchange=e=>savePersonState(item,{selected:e.target.checked});row.querySelector(".minus").onclick=()=>savePersonState(item,{quantity:Math.max(0,s.quantity-1),quantity_manual:true});row.querySelector(".plus").onclick=()=>savePersonState(item,{quantity:s.quantity+1,quantity_manual:true});row.querySelector(".needp").onclick=()=>savePersonState(item,{needs_purchase:!s.needs_purchase});const reset=row.querySelector(".resetq");if(reset)reset.onclick=()=>savePersonState(item,{quantity:suggestedQuantity(item),quantity_manual:false});row.querySelector(".pedit").onclick=()=>openEditPersonItem(item);row.querySelector(".pdelete").onclick=()=>deletePersonItem(item);body.appendChild(row)}
+    list.appendChild(sec)}
 }
 function renderPersonControlPanels(){
   const host=el("personControlPanels");if(!host)return;host.innerHTML="";
   if(!currentTrip)return;
-  const critical=personItems.filter(i=>i.must_not_forget&&personState(i).selected);
-  const needs=personItems.filter(i=>personState(i).needs_purchase);
+  const critical=personItems.filter(i=>isParticipant(i.person_id)&&i.must_not_forget&&personState(i).selected);
+  const needs=personItems.filter(i=>isParticipant(i.person_id)&&personState(i).needs_purchase);
   if(critical.length){
     const box=document.createElement("div");box.className="personControlPanel";
     box.innerHTML="<h3>⭐ Darf nicht fehlen – Endkontrolle</h3>";
@@ -1041,10 +1085,10 @@ async function addSelectedModules(){
       existing.add(k);rows.push({person_id:currentPerson.id,name,category,default_quantity,quantity_rule,module_key:m.key,sort_order:n++});
     }
   }
-  if(!rows.length){el("modulesModal").classList.remove("open");return toast("Diese Artikel sind schon vorhanden")}
-  const {data,error}=await sb.from("camping_person_items").insert(rows).select();
-  if(error){console.error(error);return toast("Grundausstattung konnte nicht angelegt werden")}
-  personItems.push(...(data||[]));el("modulesModal").classList.remove("open");renderPeople();toast(`${rows.length} Artikel hinzugefügt`);
+  let added=0;
+  if(rows.length){const {data,error}=await sb.from("camping_person_items").insert(rows).select();if(error){console.error(error);return toast("Grundausstattung konnte nicht angelegt werden")}personItems.push(...(data||[]));added=rows.length}
+  let updated=0;try{updated=await reconcilePersonBasics(currentPerson.id)}catch(e){console.error(e)}
+  el("modulesModal").classList.remove("open");renderPeople();toast(`${added} neu · ${updated} Standardartikel aktualisiert`);
 }
 function fillPersonMasterLinks(){
   const s=el("personItemLink");s.innerHTML='<option value="">Nicht verknüpfen</option>';
@@ -1150,7 +1194,7 @@ function renderArchive(){
 function renderNeed(){
   const root=el("needList");root.innerHTML="";
   const items=currentItems().filter(i=>state(i.id).need);
-  const personal=personItems.filter(i=>personState(i).needs_purchase);
+  const personal=personItems.filter(i=>isParticipant(i.person_id)&&personState(i).needs_purchase);
   if(!items.length&&!personal.length){root.innerHTML='<div class="empty">Noch nichts auf der Such-/Kaufliste 🎉</div>';return}
   const card=document.createElement("div");card.className="needCard";
   items.forEach(i=>{const d=document.createElement("div");d.className="needItem";d.innerHTML=`<b>${i.name}</b><span class="badge">${i.category}</span><button class="stage on">✓ erledigt</button>`;d.querySelector("button").onclick=()=>dbUpsert(i.id,{need:false});card.appendChild(d)});
@@ -1315,6 +1359,8 @@ el("editTripBtn").onclick=()=>{
   if(!currentTrip)return;
   el("editTripPlace").value=currentTrip.place_id||"";
   el("editTripName").value=currentTrip.name||"";
+  el("editTripType").value=currentTrip.trip_type||"camping";
+  renderTripPeoplePicker("tripPeopleEdit",new Set(participantPeople().map(p=>p.id)));
   el("editTripStart").value=currentTrip.start_date||"";
   el("editTripEnd").value=currentTrip.end_date||"";
   el("editTripMemory").value=currentTrip.memory_text||"";
@@ -1344,6 +1390,8 @@ el("editTripSave").onclick=async()=>{
   const place_id=el("editTripPlace").value;
   const start_date=el("editTripStart").value||null;
   const end_date=el("editTripEnd").value||null;
+  const trip_type=el("editTripType").value||"camping";
+  const trip_people=selectedTripPeople("tripPeopleEdit");
   const memory_text=el("editTripMemory").value.trim()||null;
 
   if(!name)return toast("Bitte einen Urlaubsnamen eingeben");
@@ -1359,7 +1407,7 @@ el("editTripSave").onclick=async()=>{
     }
     if(pendingTripPhoto)photo_path=await uploadMemoryPhoto(currentTrip.id,pendingTripPhoto,photo_path);
     const {data,error}=await sb.from("camping_trips")
-      .update({name,place_id,start_date,end_date,memory_text,photo_path})
+      .update({name,place_id,start_date,end_date,trip_type,memory_text,photo_path})
       .eq("id",currentTrip.id)
       .select()
       .single();
@@ -1367,6 +1415,8 @@ el("editTripSave").onclick=async()=>{
 
     currentTrip=data;
     currentPlace=places.find(p=>p.id===data.place_id)||null;
+    await saveTripPeople(data.id,trip_people);
+    currentTripPeople=new Set(trip_people);
 
     const local=trips.findIndex(t=>t.id===data.id);
     if(local>=0)trips[local]=data;
@@ -1424,6 +1474,8 @@ el("newTripBtn").onclick=()=>{
   el("tripNewPlace").value="";
   const place=places.find(p=>p.id===el("tripPlace").value)||currentPlace;
   el("tripNameInput").value=(place?.name||"Urlaub")+" "+new Date().getFullYear();
+  el("tripType").value=currentTrip?.trip_type||"camping";
+  renderTripPeoplePicker("tripPeopleNew",new Set(participantPeople().map(p=>p.id)));
   el("tripStart").value="";
   el("tripEnd").value="";
   el("tripModal").classList.add("open");
@@ -1441,6 +1493,8 @@ el("tripCancel").onclick=()=>el("tripModal").classList.remove("open");
 el("tripSave").onclick=async()=>{
   const name=el("tripNameInput").value.trim();
   const start=el("tripStart").value,end=el("tripEnd").value;
+  const trip_type=el("tripType").value||"camping";
+  const trip_people=selectedTripPeople("tripPeopleNew");
   if(!name)return toast("Bitte einen Urlaubsnamen eingeben");
   if(start&&end&&end<start)return toast("Das Abreisedatum liegt vor der Anreise");
   el("tripSave").disabled=true;setSync("Urlaub wird angelegt …");
@@ -1458,11 +1512,14 @@ el("tripSave").onclick=async()=>{
     if(!place)throw new Error("Kein Ziel gewählt");
 
     const {data,error}=await sb.from("camping_trips").insert({
-      name,place_id:place.id,start_date:start||null,end_date:end||null,archived:false
+      name,place_id:place.id,start_date:start||null,end_date:end||null,trip_type,archived:false
     }).select().single();
     if(error)throw error;
 
     currentPlace=place;currentTrip=data;
+    await saveTripPeople(data.id,trip_people);
+    currentTripPeople=new Set(trip_people);
+    await applyTripPreset(data,trip_type);
     localStorage.setItem("camping-trip-id",data.id);
     await loadPlaces();
     await loadTrips();
@@ -1605,6 +1662,7 @@ async function boot(){
       if(!hadCache)setSync("Lädt Packliste …");
       await loadStates();
       await loadPersonStates();
+      await loadTripPeople();
 
       updateTripInfo();
       render();
@@ -1614,9 +1672,9 @@ async function boot(){
       try{subscribeTrip()}catch(e){console.warn("Realtime konnte nicht gestartet werden",e)}
       setSync("Synchronisiert");
     }else{
-      states=new Map();
+      states=new Map();personStates=new Map();currentTripPeople=new Set();
       updateTripInfo();
-      render();
+      render();renderPeople();
       saveCache();
       setSync("Kein Urlaub vorhanden");
     }
