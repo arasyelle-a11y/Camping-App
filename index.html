@@ -209,6 +209,74 @@ button{cursor:pointer}
   max-height:calc(100dvh - 8px);
 }
 
+
+/* Header refinement: scenic image becomes part of the header; avoid duplicate trip information */
+.tripHero{
+  height:158px;
+  position:relative;
+  overflow:hidden;
+  border-bottom:3px solid var(--green);
+  background:var(--cream);
+  display:block;
+}
+.tripHeroArt{
+  position:absolute;
+  inset:0;
+  width:100%;
+  background-position:center center;
+  background-repeat:no-repeat;
+  background-size:cover;
+}
+.tripHeroShade{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  background:linear-gradient(90deg,
+    rgba(250,245,234,.98) 0%,
+    rgba(250,245,234,.92) 20%,
+    rgba(250,245,234,.55) 43%,
+    rgba(250,245,234,.10) 66%,
+    rgba(250,245,234,0) 82%);
+}
+.tripHeroText{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  padding:24px 18px 18px;
+  display:flex;
+  align-items:flex-end;
+  pointer-events:none;
+}
+.tripHeroTitle{
+  max-width:58%;
+  font-family:Georgia,serif;
+  font-size:28px;
+  font-weight:900;
+  line-height:1.03;
+  color:var(--navy);
+  text-shadow:0 1px 0 rgba(255,255,255,.55);
+}
+.compactTripInfo{
+  padding:8px 14px 2px;
+  min-height:34px;
+  align-items:center;
+}
+.compactTripInfo .tripProfileMini{
+  flex:1;
+  margin:0;
+  font-size:10.5px;
+  line-height:1.35;
+  color:var(--brown);
+  font-weight:800;
+}
+.tripInfoRight{display:flex;gap:7px;align-items:center;flex-shrink:0}
+.tripEditBtn{padding:6px 8px!important;font-size:11px!important}
+@media(max-width:520px){
+  .tripHero{height:145px}
+  .tripHeroText{padding:18px 14px 14px}
+  .tripHeroTitle{font-size:24px;max-width:60%}
+}
+
 </style>
 </head>
 <body>
@@ -225,12 +293,11 @@ button{cursor:pointer}
 
 <div class="app">
   <div class="tripHero" id="tripHero">
-  <div class="tripHeroText">
-    <div class="tripHeroEyebrow" id="tripProfileLine">🏕️ Reise planen</div>
-    <div class="tripHeroTitle" id="tripHeroTitle">Camping</div>
-    <div class="tripHeroSub" id="tripHeroSub">Packen · Kontrollieren · Losfahren</div>
-  </div>
   <div class="tripHeroArt" id="tripHeroArt"></div>
+  <div class="tripHeroShade"></div>
+  <div class="tripHeroText">
+    <div class="tripHeroTitle" id="tripHeroTitle">Reise planen</div>
+  </div>
 </div>
   <section class="view active" id="view-pack">
     <div class="top">
@@ -238,7 +305,10 @@ button{cursor:pointer}
         <select id="tripSelect"></select>
         <button class="iconbtn" id="newTripBtn">＋ Urlaub</button>
       </div>
-      <div class="tripInfo"><div><strong id="tripName">Aktueller Urlaub</strong><div class="tripProfileMini" id="tripProfileMini"></div></div><div style="display:flex;gap:8px;align-items:center"><span class="countdown" id="tripCountdown"></span><button id="editTripBtn" class="iconbtn" style="padding:7px 9px;font-size:11px">✏️</button></div></div>
+      <div class="tripInfo compactTripInfo">
+  <div class="tripProfileMini" id="tripProfileMini"></div>
+  <div class="tripInfoRight"><span class="countdown" id="tripCountdown"></span><button id="editTripBtn" class="iconbtn tripEditBtn">✏️</button></div>
+</div>
       <div class="stats">
         <div class="stat"><b id="sTake">0</b><span>Mitnehmen</span></div>
         <div class="stat"><b id="sSeen">0</b><span>Gesichtet</span></div>
@@ -549,19 +619,21 @@ function headerImageKey(profile){
   if(profile.activities?.includes("city"))return "city";
   return profile.accommodation||"tent";
 }
+
+function plainProfileLabel(label){
+  return String(label||"").replace(/^[^A-Za-zÀ-ž0-9]+\s*/u,"").trim();
+}
 function renderTripHero(){
-  const art=el("tripHeroArt"),title=el("tripHeroTitle"),eyebrow=el("tripProfileLine"),sub=el("tripHeroSub");
-  if(!art||!title||!eyebrow)return;
+  const art=el("tripHeroArt"),title=el("tripHeroTitle");
+  if(!art||!title)return;
   if(!currentTrip){
     art.style.backgroundImage=`url("${HEADER_IMAGES.tent}")`;
-    title.textContent="Reise planen";eyebrow.textContent="🏕️ Camping";sub.textContent="Packen · Kontrollieren · Losfahren";return;
+    title.textContent="Reise planen";
+    return;
   }
   const p=normalizedTripProfile(currentTrip),key=headerImageKey(p);
   art.style.backgroundImage=`url("${HEADER_IMAGES[key]||HEADER_IMAGES.tent}")`;
   title.textContent=currentTrip.name||"Urlaub";
-  const acts=(p.activities||[]).slice(0,2).map(a=>ACTIVITY_LABELS[a]).join(" · ");
-  eyebrow.textContent=`${ACCOMMODATION_LABELS[p.accommodation]||p.accommodation} · ${TRANSPORT_LABELS[p.transport]||p.transport}`;
-  sub.textContent=acts||"Planen · Packen · Losfahren";
 }
 
 let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], personStates=new Map(), currentPerson=null;
@@ -702,18 +774,18 @@ async function loadArchivedTrips(){
 }
 function updateTripInfo(){
   if(!currentTrip){
-    el("tripName").textContent="Kein Urlaub ausgewählt";
     el("tripCountdown").textContent="";
     if(el("tripProfileMini"))el("tripProfileMini").textContent="";
     renderTripHero();
     return;
   }
 
-  el("tripName").textContent=currentTrip.name||"Aktueller Urlaub";
   renderTripHero();
   const prof=normalizedTripProfile(currentTrip);
-  const acts=(prof.activities||[]).map(a=>ACTIVITY_LABELS[a]).join(" · ");
-  el("tripProfileMini").textContent=`${ACCOMMODATION_LABELS[prof.accommodation]||""} · ${TRANSPORT_LABELS[prof.transport]||""}${acts?" · "+acts:""}`;
+  const accommodation=plainProfileLabel(ACCOMMODATION_LABELS[prof.accommodation]||"");
+  const transport=plainProfileLabel(TRANSPORT_LABELS[prof.transport]||"");
+  const acts=(prof.activities||[]).map(a=>plainProfileLabel(ACTIVITY_LABELS[a])).join(" · ");
+  el("tripProfileMini").textContent=`${accommodation} · ${transport}${acts?" · "+acts:""}`;
 
   if(!currentTrip.start_date){
     el("tripCountdown").textContent="";
