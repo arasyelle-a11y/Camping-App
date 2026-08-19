@@ -148,6 +148,17 @@ button{cursor:pointer}
 .tripPersonChoice input{width:auto!important;margin:0!important}
 .tripTypeHint{font-size:10px;color:var(--muted);margin-top:-4px;margin-bottom:8px}
 .personSyncHint{font-size:10px;color:var(--muted);padding:0 14px 6px}
+
+.packModeBar{display:flex;gap:7px;padding:8px 14px 3px;align-items:center}
+.packModeBar .modeBtn{flex:1;border:1px solid var(--line);background:white;color:var(--navy);border-radius:12px;padding:10px 8px;font-weight:900;font-size:12px}
+.packModeBar .modeBtn.active{background:var(--navy);color:white;border-color:var(--navy)}
+.packModeHelp{padding:3px 14px 6px;font-size:10px;color:var(--muted);line-height:1.35}
+.otherItemsBar{padding:5px 14px 3px;display:none}
+.otherItemsBar.show{display:block}
+.otherItemsBar button{width:100%;border:1px dashed var(--line);background:var(--paper);color:var(--brown);border-radius:11px;padding:9px;font-size:10px;font-weight:850}
+.packMode .filters{display:none}
+.packMode .categoryBulk{display:none}
+.packMode .allBulk{display:none}
 </style>
 </head>
 <body>
@@ -185,6 +196,12 @@ button{cursor:pointer}
       <select id="quickCat"></select>
       <button id="quickAdd">＋</button>
     </div>
+    <div class="packModeBar">
+      <button class="modeBtn active" id="planModeBtn">🧭 Planen</button>
+      <button class="modeBtn" id="packModeBtn">📦 Packen</button>
+    </div>
+    <div class="packModeHelp" id="packModeHelp">Planung: passende Artikel für diese Urlaubsart zusammenstellen. Nicht passende Dinge bleiben zunächst ausgeblendet.</div>
+    <div class="otherItemsBar" id="otherItemsBar"><button id="toggleOtherItemsBtn">＋ Weitere Masterartikel anzeigen</button></div>
     <div class="filters">
       <button class="filter active" data-filter="all">Alle</button>
       <button class="filter" data-filter="selected">Mitnehmen</button>
@@ -404,7 +421,7 @@ const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], personStates=new Map(), currentPerson=null;
-let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all";
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all", packViewMode="plan", showOtherPlanning=false;
 const el=id=>document.getElementById(id);
 
 function toast(msg,undo=false){
@@ -529,6 +546,7 @@ async function loadTrips(){
   currentTrip=trips.find(t=>t.id===saved)||trips[0]||null;
   currentPlace=currentTrip?places.find(p=>p.id===currentTrip.place_id)||null:null;
   if(currentTrip)sel.value=currentTrip.id;
+  restorePackViewMode();
   saveCache();
 }
 async function loadArchivedTrips(){
@@ -579,6 +597,7 @@ async function switchTrip(id){
   if(!currentTrip)return;
   currentPlace=places.find(p=>p.id===currentTrip.place_id)||null;
   localStorage.setItem("camping-trip-id",id);
+  restorePackViewMode();
   setSync("Lädt …");
   await loadStates();
   await loadPersonStates();
@@ -596,8 +615,52 @@ function subscribeTrip(){
    .on("postgres_changes",{event:"*",schema:"public",table:"camping_trip_items",filter:"trip_id=eq."+currentTrip.id},async()=>{await loadStates();render();setSync("Synchronisiert")})
    .subscribe();
 }
+function itemFitsCurrentTrip(item){
+  if(!currentTrip)return true;
+  const type=currentTrip.trip_type||"camping";
+  const tt=Array.isArray(item.trip_types)&&item.trip_types.length?item.trip_types:["all"];
+  return tt.includes("all")||tt.includes(type);
+}
+function planningItems(){
+  const all=currentItems();
+  if(showOtherPlanning)return all;
+  // Manuell bereits gewählte Artikel bleiben sichtbar, auch wenn sie nicht zur Reiseart gehören.
+  return all.filter(i=>itemFitsCurrentTrip(i)||state(i.id).selected);
+}
+function modeItems(){
+  if(packViewMode==="pack")return currentItems().filter(i=>state(i.id).selected);
+  return planningItems();
+}
+function renderPackModeUI(){
+  const view=el("view-pack");
+  if(!view)return;
+  view.classList.toggle("packMode",packViewMode==="pack");
+  el("planModeBtn")?.classList.toggle("active",packViewMode==="plan");
+  el("packModeBtn")?.classList.toggle("active",packViewMode==="pack");
+  const help=el("packModeHelp"),other=el("otherItemsBar"),toggle=el("toggleOtherItemsBtn");
+  if(packViewMode==="pack"){
+    help.textContent="Packen: nur die für diesen Urlaub ausgewählten Dinge. Du kannst jederzeit zurück zur Planung.";
+    other.classList.remove("show");
+  }else{
+    help.textContent="Planung: passende Artikel für diese Urlaubsart zusammenstellen. Nicht passende Dinge bleiben zunächst ausgeblendet.";
+    other.classList.add("show");
+    toggle.textContent=showOtherPlanning?"− Nicht passende Artikel wieder ausblenden":"＋ Weitere Masterartikel anzeigen";
+  }
+}
+function setPackViewMode(mode){
+  packViewMode=mode;
+  showOtherPlanning=false;
+  if(currentTrip)localStorage.setItem("camping-pack-mode-"+currentTrip.id,mode);
+  activeCategory=null;
+  render();
+}
+function restorePackViewMode(){
+  packViewMode=currentTrip?localStorage.getItem("camping-pack-mode-"+currentTrip.id)||"plan":"plan";
+  showOtherPlanning=false;
+}
 function visible(i){
   const s=state(i.id);
+  if(packViewMode==="pack")return s.selected;
   if(filter==="selected")return s.selected;
   if(filter==="open")return s.selected&&!s.in_car;
   if(filter==="need")return s.need;
@@ -739,7 +802,7 @@ function renderCategoryTabs(items){
 
 async function setAllSelected(selected){
   if(!currentTrip)return;
-  const targets=currentItems();
+  const targets=packViewMode==="plan"?planningItems():currentItems().filter(i=>state(i.id).selected);
   if(!targets.length)return;
   setSync("Speichert …");
   const rows=targets.map(item=>{
@@ -763,7 +826,7 @@ async function setAllSelected(selected){
 
 async function setCategorySelected(category,selected){
   if(!currentTrip)return;
-  const targets=currentItems().filter(i=>i.category===category);
+  const targets=(packViewMode==="plan"?planningItems():currentItems()).filter(i=>i.category===category);
   if(!targets.length)return;
   setSync("Speichert …");
   const rows=targets.map(item=>{
@@ -807,7 +870,8 @@ function openItemEditor(item){
 }
 function render(){
   renderPersonControlPanels();
-  const items=currentItems();
+  renderPackModeUI();
+  const items=modeItems();
   renderCategoryTabs(items);
   el("list").innerHTML="";
 
@@ -881,7 +945,9 @@ function render(){
     el("list").appendChild(sec);
     }
   }else{
-    el("list").innerHTML='<div class="empty">In dieser Kategorie gibt es mit dem aktuellen Filter keine sichtbaren Artikel.</div>';
+    el("list").innerHTML=packViewMode==="pack"
+      ?'<div class="empty">Noch nichts zum Packen ausgewählt. Wechsel zu „Planen“, um Dinge hinzuzufügen.</div>'
+      :'<div class="empty">Für diese Urlaubsart sind hier gerade keine passenden Artikel sichtbar.</div>';
   }
 
   updateStats();renderNeed();renderMaster();renderCats();
@@ -1225,6 +1291,9 @@ function renderCats(){
   [el("quickCat"),el("addCat"),el("editCat")].filter(Boolean).forEach(sel=>{const old=sel.value;sel.innerHTML="";cats.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)});if(cats.includes(old))sel.value=old});
 }
 el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastRemoved=null;await dbUpsert(x.itemId,x.old);el("undoToast").classList.remove("show")};
+el("planModeBtn").onclick=()=>setPackViewMode("plan");
+el("packModeBtn").onclick=()=>setPackViewMode("pack");
+el("toggleOtherItemsBtn").onclick=()=>{showOtherPlanning=!showOtherPlanning;activeCategory=null;render()};
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render()});
 el("addMasterItemBtn").onclick=()=>openMasterItem();el("masterItemCancel").onclick=()=>el("masterItemModal").classList.remove("open");
 el("masterItemSave").onclick=async()=>{const name=el("masterItemName").value.trim(),category=el("masterItemCategory").value.trim(),trip_types=checkedTypes("masterItemTypes");if(!name||!category)return toast("Bitte Artikel und Kategorie eingeben");let data,error;if(editingMasterItem)({data,error}=await sb.from("camping_items").update({name,category,trip_types}).eq("id",editingMasterItem.id).select().single());else({data,error}=await sb.from("camping_items").insert({name,category,icon:iconForCategory(category),is_master:true,trip_types}).select().single());if(error){console.error(error);return toast("Masterartikel konnte nicht gespeichert werden")}editingMasterItem=null;el("masterItemModal").classList.remove("open");await loadItems();render();toast("Masterartikel gespeichert")};
@@ -1527,6 +1596,7 @@ el("tripSave").onclick=async()=>{
     if(error)throw error;
 
     currentPlace=place;currentTrip=data;
+    packViewMode="plan";showOtherPlanning=false;localStorage.setItem("camping-pack-mode-"+data.id,"plan");
     await saveTripPeople(data.id,trip_people);
     currentTripPeople=new Set(trip_people);
     await applyTripPreset(data,trip_type);
