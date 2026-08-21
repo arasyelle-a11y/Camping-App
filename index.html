@@ -300,6 +300,36 @@ button{cursor:pointer}
   }
 }
 
+
+/* Pack mode: Auswahl ist bereits im Planmodus erfolgt */
+#view-pack.packMode .take{display:none!important}
+#view-pack.packMode .nameLine{padding-left:2px}
+
+
+/* Modal stabilisieren: nur vertikal scrollen, kein seitliches "Schwimmen" */
+.modal{
+  overflow-x:hidden;
+}
+.modal .sheet{
+  width:100%;
+  max-width:760px;
+  overflow-x:hidden;
+  overscroll-behavior-x:none;
+  touch-action:pan-y;
+}
+.modal .sheet > *{
+  max-width:100%;
+}
+.tripForm,
+.tripForm input,
+.tripForm select,
+.tripForm textarea,
+.activityGrid,
+.tripPeopleGrid{
+  min-width:0;
+  max-width:100%;
+}
+
 </style>
 </head>
 <body>
@@ -875,9 +905,18 @@ function subscribeTrip(){
 }
 function itemFitsCurrentTrip(item){
   if(!currentTrip)return true;
-  const type=legacyTripTypeForProfile(normalizedTripProfile(currentTrip));
+  const p=normalizedTripProfile(currentTrip);
   const tt=Array.isArray(item.trip_types)&&item.trip_types.length?item.trip_types:["all"];
-  return tt.includes("all")||tt.includes(type);
+  if(tt.includes("all"))return true;
+  const keys=new Set(p.activities||[]);
+  keys.add(p.accommodation);
+  if(p.accommodation==="tent")keys.add("camping");
+  if(p.accommodation==="tent_power"){keys.add("camping");keys.add("camping_power")}
+  if(p.accommodation==="holiday_home")keys.add("holiday_home");
+  if(p.accommodation==="hotel")keys.add("hotel");
+  if(p.accommodation==="camper")keys.add("camper");
+  if((p.activities||[]).includes("city"))keys.add("city");
+  return tt.some(t=>keys.has(t));
 }
 function planningItems(){
   const all=currentItems();
@@ -889,6 +928,16 @@ function modeItems(){
   if(packViewMode==="pack")return currentItems().filter(i=>state(i.id).selected);
   return planningItems();
 }
+function currentPackProfile(){
+  const p=normalizedTripProfile(currentTrip);
+  if((p.activities||[]).includes("mountain"))return {seen:"✓ Gesichtet",box:"🎒 Rucksack",car:"⚖️ Gewicht",help:"Bergwandern: Rucksack und Gewicht werden vorbereitet; die detaillierte Gewichtsrechnung folgt später."};
+  if(p.transport==="plane")return {seen:"✓ Gesichtet",box:"🧳 Koffer",car:"🎒 Handgepäck",help:"Flugreise: Koffer oder Handgepäck zuordnen. Gepäck-Gewichtskontrolle folgt später."};
+  if(p.accommodation==="camper")return {seen:"✓ Gesichtet",box:"📦 Kiste",car:"🚐 Camper",help:"Packen: Gesichtet, Kiste oder Camper."};
+  if(p.accommodation==="hotel" || (p.activities||[]).includes("city"))return {seen:"✓ Gesichtet",box:"🧳 Koffer",car:"🚗 Auto",help:"Packen: Gesichtet, Koffer und Auto."};
+  if(p.accommodation==="holiday_home")return {seen:"✓ Gesichtet",box:"📦 Gepackt",car:"🚗 Auto",help:"Packen: Gesichtet, gepackt und im Auto."};
+  return {seen:"✓ Gesichtet",box:"📦 Kiste",car:"🚗 Auto",help:"Packen: Gesichtet, Kiste und Auto."};
+}
+
 function renderPackModeUI(){
   const view=el("view-pack");
   if(!view)return;
@@ -899,7 +948,7 @@ function renderPackModeUI(){
   el("packModeBtn")?.classList.toggle("active",packViewMode==="pack");
   const help=el("packModeHelp"),other=el("otherItemsBar"),toggle=el("toggleOtherItemsBtn");
   if(packViewMode==="pack"){
-    help.textContent="Packen: nur ausgewählte Dinge – jetzt mit Gesichtet, Kiste, Auto und Suchen.";
+    help.textContent=currentPackProfile().help;
     other.classList.remove("show");
   }else{
     help.textContent="Planen: Was soll überhaupt mit? Packstatus-Felder bleiben hier bewusst verborgen.";
@@ -1166,7 +1215,7 @@ function render(){
       edit.className="swipeEdit";edit.textContent="✏️ Bearbeiten";
       row.className="row"+(s.selected?" selected":"");
       row.innerHTML=`<div class="nameLine"><input class="take" type="checkbox" ${s.selected?"checked":""}><div class="name">${item.name}</div>${(item.note||s.note)?'<button class="noteIcon" type="button" title="Notiz">✉️</button>':""}${item.is_master?"":'<span class="tripOnly">nur Urlaub</span>'}<span class="dragHint">↕ halten</span></div>
-      <div class="actions"><button class="stage ${s.seen?"on":""}" data-stage="seen">✓ Gesichtet</button><button class="stage ${s.in_box?"on":""}" data-stage="box">📦 Kiste</button><button class="stage ${s.in_car?"on":""}" data-stage="car">🚗 Auto</button><button class="stage ${s.need?"on":""}" data-stage="need">🔎 Suchen</button></div>`;
+      <div class="actions"><button class="stage ${s.seen?"on":""}" data-stage="seen">${currentPackProfile().seen}</button><button class="stage ${s.in_box?"on":""}" data-stage="box">${currentPackProfile().box}</button><button class="stage ${s.in_car?"on":""}" data-stage="car">${currentPackProfile().car}</button><button class="stage ${s.need?"on":""}" data-stage="need">🔎 Suchen</button></div>`;
 
       row.querySelector(".take").onchange=e=>dbUpsert(item.id,{selected:e.target.checked,...(!e.target.checked?{seen:false,in_box:false,in_car:false}:{})});
       row.querySelectorAll(".stage").forEach(b=>b.onclick=()=>{
@@ -1533,7 +1582,7 @@ function renderNeed(){
   personal.forEach(i=>{const p=people.find(x=>x.id===i.person_id),d=document.createElement("div");d.className="needItem";d.innerHTML=`<b><span class="personDot" style="background:${p?.color||"#888"}"></span>${p?.name||""}: ${i.name}</b><span class="badge">persönlich</span><button class="stage on">✓ erledigt</button>`;d.querySelector("button").onclick=()=>savePersonState(i,{needs_purchase:false});card.appendChild(d)});
   root.appendChild(card);
 }
-const TRIP_TYPE_LABELS={all:"🌍 Alle",camping:"🏕️ Camping",camping_power:"⚡ Strom-Camping",holiday_home:"🏡 Ferienhaus",city:"🏙️ Städtetrip"};
+const TRIP_TYPE_LABELS={all:"🌍 Alle",camping:"🏕️ Camping",camping_power:"⚡ Camping + Strom",camper:"🚐 Camper",holiday_home:"🏡 Ferienhaus",hotel:"🏨 Hotel",city:"🏙️ Städtetrip",mountain:"⛰️ Bergwandern",beach:"🏖️ Strand",bike:"🚲 Fahrrad",hiking:"🥾 Wandern",sport:"🏃 Sport",swim:"🏊 Schwimmen",ski:"🎿 Ski / Wintersport"};
 function typeChecks(hostId,selected=["all"]){const host=el(hostId);host.innerHTML="";for(const [k,label] of Object.entries(TRIP_TYPE_LABELS)){const l=document.createElement("label");l.innerHTML=`<input type="checkbox" value="${k}" ${selected.includes(k)?"checked":""}> ${label}`;host.appendChild(l)}host.querySelectorAll('input').forEach(inp=>inp.onchange=()=>{if(inp.value==="all"&&inp.checked)host.querySelectorAll('input:not([value="all"])').forEach(x=>x.checked=false);else if(inp.value!=="all"&&inp.checked)host.querySelector('input[value="all"]').checked=false})}
 function checkedTypes(hostId){const a=[...el(hostId).querySelectorAll('input:checked')].map(x=>x.value);return a.length?a:["all"]}
 function renderMasterTypeFilters(){const h=el("masterTypeFilters");if(!h)return;h.innerHTML="";for(const [k,label] of Object.entries(TRIP_TYPE_LABELS)){const b=document.createElement("button");b.textContent=label;b.className=masterTypeFilter===k?"active":"";b.onclick=()=>{masterTypeFilter=k;renderMaster()};h.appendChild(b)}}
