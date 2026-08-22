@@ -337,6 +337,29 @@ button{cursor:pointer}
 .masterRow.selecting{background:var(--cream2)}
 .batchHint{font-size:11px;color:var(--muted);margin:-4px 0 12px;line-height:1.4}
 
+
+.globalSaveStatus{
+  position:fixed;right:12px;bottom:84px;z-index:95;
+  display:flex;align-items:center;gap:8px;
+  padding:9px 12px;border-radius:999px;
+  background:var(--navy);color:white;
+  box-shadow:0 8px 24px rgba(26,54,74,.22);
+  font-size:11px;font-weight:900;
+  opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:.2s;
+}
+.globalSaveStatus.show{opacity:1;transform:translateY(0)}
+.globalSaveStatus.saved{background:#355f4b}
+.globalSaveStatus.error{background:var(--red)}
+.saveSpinner{
+  width:13px;height:13px;border:2px solid rgba(255,255,255,.45);
+  border-top-color:white;border-radius:50%;
+  animation:saveSpin .75s linear infinite;
+}
+.globalSaveStatus.saved .saveSpinner,
+.globalSaveStatus.error .saveSpinner{display:none}
+@keyframes saveSpin{to{transform:rotate(360deg)}}
+
 </style>
 </head>
 <body>
@@ -439,6 +462,7 @@ button{cursor:pointer}
   </div></nav>
 </div>
 
+<div id="globalSaveStatus" class="globalSaveStatus" aria-live="polite"><span class="saveSpinner"></span><span id="globalSaveText">Speichert …</span></div>
 <div class="toast" id="undoToast"><span id="undoText">Artikel entfernt</span><button id="undoBtn">Rückgängig</button></div>
 
 <div class="modal" id="editTripModal">
@@ -724,6 +748,28 @@ function toast(msg,undo=false){
   clearTimeout(toast.t);toast.t=setTimeout(()=>el("undoToast").classList.remove("show"),4500);
 }
 function setSync(msg){el("syncText").textContent=msg}
+let backgroundSaves=0,saveStatusTimer=null;
+function showSaveStatus(kind="saving",text="Speichert …"){
+  const box=el("globalSaveStatus"),label=el("globalSaveText");if(!box||!label)return;
+  clearTimeout(saveStatusTimer);
+  box.classList.remove("saved","error");
+  if(kind==="saved")box.classList.add("saved");
+  if(kind==="error")box.classList.add("error");
+  label.textContent=text;box.classList.add("show");
+  if(kind!=="saving")saveStatusTimer=setTimeout(()=>box.classList.remove("show"),2200);
+}
+function beginBackgroundSave(label="Speichert …"){
+  backgroundSaves++;showSaveStatus("saving",label);setSync(label);
+}
+function finishBackgroundSave(message="Gespeichert"){
+  backgroundSaves=Math.max(0,backgroundSaves-1);
+  if(backgroundSaves>0){showSaveStatus("saving",`${backgroundSaves} Änderungen werden gespeichert …`);return}
+  showSaveStatus("saved","✓ "+message);setSync("Synchronisiert");
+}
+function failBackgroundSave(message="Speichern fehlgeschlagen"){
+  backgroundSaves=Math.max(0,backgroundSaves-1);
+  showSaveStatus("error","⚠️ "+message);setSync("Fehler beim Speichern");toast(message);
+}
 function iconForCategory(cat){const x=masterItems.find(i=>i.category===cat&&i.icon);return x?.icon||"🏕️"}
 function state(id){return states.get(id)||{selected:false,seen:false,in_box:false,in_car:false,need:false}}
 function currentItems(){
@@ -1642,9 +1688,56 @@ el("packModeBtn").onclick=()=>setPackViewMode("pack");
 el("toggleOtherItemsBtn").onclick=()=>{showOtherPlanning=!showOtherPlanning;activeCategory=null;render()};
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render()});
 el("addMasterItemBtn").onclick=()=>openMasterItem();el("masterItemCancel").onclick=()=>el("masterItemModal").classList.remove("open");
-el("masterItemSave").onclick=async()=>{const name=el("masterItemName").value.trim(),category=el("masterItemCategory").value.trim(),trip_types=checkedTypes("masterItemTypes");if(!name||!category)return toast("Bitte Artikel und Kategorie eingeben");masterOpenCategory=category;let data,error;if(editingMasterItem)({data,error}=await sb.from("camping_items").update({name,category,trip_types}).eq("id",editingMasterItem.id).select().single());else({data,error}=await sb.from("camping_items").insert({name,category,icon:iconForCategory(category),is_master:true,trip_types}).select().single());if(error){console.error(error);return toast("Masterartikel konnte nicht gespeichert werden")}editingMasterItem=null;el("masterItemModal").classList.remove("open");await loadItems();render();toast("Masterartikel gespeichert")};
+el("masterItemSave").onclick=async()=>{
+  const name=el("masterItemName").value.trim(),category=el("masterItemCategory").value.trim(),trip_types=checkedTypes("masterItemTypes");
+  if(!name||!category)return toast("Bitte Artikel und Kategorie eingeben");
+  masterOpenCategory=category;
+  const original=editingMasterItem?{...editingMasterItem}:null;
+  const editingId=editingMasterItem?.id||null;
+  const patch={name,category,trip_types};
+  editingMasterItem=null;
+  el("masterItemModal").classList.remove("open");
+  if(editingId){
+    const local=masterItems.find(i=>i.id===editingId);if(local)Object.assign(local,patch);
+    renderMaster();
+  }
+  beginBackgroundSave("Masterartikel wird gespeichert …");
+  try{
+    let data,error;
+    if(editingId)({data,error}=await sb.from("camping_items").update(patch).eq("id",editingId).select().single());
+    else ({data,error}=await sb.from("camping_items").insert({...patch,icon:iconForCategory(category),is_master:true}).select().single());
+    if(error)throw error;
+    await loadItems();render();
+    finishBackgroundSave("Masterartikel gespeichert");
+  }catch(error){
+    console.error(error);
+    if(original){
+      const local=masterItems.find(i=>i.id===original.id);if(local)Object.assign(local,original);
+      renderMaster();
+    }
+    failBackgroundSave("Masterartikel nicht gespeichert");
+  }
+};
 function parseBulkMaster(){return (el("bulkMasterItems").value||"").replace(/\r\n?/g,"\n").split(/\n+|;+/).map(x=>x.replace(/^[\s•·▪▫◦‣⁃\-–—*✓✔☐☑]+/,"").trim()).filter(Boolean)}
-el("bulkMasterItemBtn").onclick=()=>{fillMasterCategorySelect("bulkMasterCategory",{selected:masterOpenCategory||masterCategories()[0]||""});el("bulkMasterItems").value="";el("bulkMasterCount").textContent="0 Artikel erkannt";typeChecks("bulkMasterTypes",["all"]);el("bulkMasterModal").classList.add("open")};el("bulkMasterItems").oninput=()=>el("bulkMasterCount").textContent=`${parseBulkMaster().length} Artikel erkannt`;el("bulkMasterCancel").onclick=()=>el("bulkMasterModal").classList.remove("open");el("bulkMasterSave").onclick=async()=>{const category=el("bulkMasterCategory").value.trim(),names=parseBulkMaster(),trip_types=checkedTypes("bulkMasterTypes");if(!category||!names.length)return toast("Kategorie und Artikel eingeben");masterOpenCategory=category;const existing=new Set(masterItems.filter(i=>i.is_master).map(i=>`${i.category.toLowerCase()}|${i.name.toLowerCase()}`));const rows=names.filter(n=>!existing.has(`${category.toLowerCase()}|${n.toLowerCase()}`)).map((name,n)=>({name,category,icon:iconForCategory(category),is_master:true,trip_types,item_order:n+1}));if(!rows.length)return toast("Diese Artikel gibt es schon");const {error}=await sb.from("camping_items").insert(rows);if(error){console.error(error);return toast("Artikel konnten nicht angelegt werden")}el("bulkMasterModal").classList.remove("open");await loadItems();render();toast(`${rows.length} Masterartikel angelegt`)};
+el("bulkMasterItemBtn").onclick=()=>{fillMasterCategorySelect("bulkMasterCategory",{selected:masterOpenCategory||masterCategories()[0]||""});el("bulkMasterItems").value="";el("bulkMasterCount").textContent="0 Artikel erkannt";typeChecks("bulkMasterTypes",["all"]);el("bulkMasterModal").classList.add("open")};el("bulkMasterItems").oninput=()=>el("bulkMasterCount").textContent=`${parseBulkMaster().length} Artikel erkannt`;el("bulkMasterCancel").onclick=()=>el("bulkMasterModal").classList.remove("open");el("bulkMasterSave").onclick=async()=>{
+  const category=el("bulkMasterCategory").value.trim(),names=parseBulkMaster(),trip_types=checkedTypes("bulkMasterTypes");
+  if(!category||!names.length)return toast("Kategorie und Artikel eingeben");
+  masterOpenCategory=category;
+  const existing=new Set(masterItems.filter(i=>i.is_master).map(i=>`${i.category.toLowerCase()}|${i.name.toLowerCase()}`));
+  const rows=names.filter(n=>!existing.has(`${category.toLowerCase()}|${n.toLowerCase()}`)).map((name,n)=>({name,category,icon:iconForCategory(category),is_master:true,trip_types,item_order:n+1}));
+  if(!rows.length)return toast("Diese Artikel gibt es schon");
+  el("bulkMasterModal").classList.remove("open");
+  beginBackgroundSave(`${rows.length} Artikel werden gespeichert …`);
+  try{
+    const {error}=await sb.from("camping_items").insert(rows);
+    if(error)throw error;
+    await loadItems();render();
+    finishBackgroundSave(`${rows.length} Artikel gespeichert`);
+  }catch(error){
+    console.error(error);
+    failBackgroundSave("Artikel konnten nicht gespeichert werden");
+  }
+};
 el("masterBatchClearBtn").onclick=()=>{masterSelectedIds.clear();renderMaster()};
 el("masterBatchEditBtn").onclick=()=>{
   if(!masterSelectedIds.size)return;
@@ -1660,14 +1753,25 @@ el("batchMasterSave").onclick=async()=>{
   const category=el("batchMasterCategory").value;
   const trip_types=checkedTypes("batchMasterTypes");
   const ids=[...masterSelectedIds];
-  setSync("Speichert …");
-  for(const id of ids){
-    const patch={trip_types};if(category)patch.category=category;
-    const {error}=await sb.from("camping_items").update(patch).eq("id",id);
-    if(error){console.error(error);setSync("Fehler");return toast("Sammelbearbeitung konnte nicht gespeichert werden")}
-  }
+  const originals=new Map(ids.map(id=>[id,{...masterItems.find(i=>i.id===id)}]));
+  const patch={trip_types};if(category)patch.category=category;
   if(category)masterOpenCategory=category;
-  masterSelectedIds.clear();el("batchMasterModal").classList.remove("open");await loadItems();render();setSync("Synchronisiert");toast(`${ids.length} Masterartikel aktualisiert`);
+  ids.forEach(id=>{const local=masterItems.find(i=>i.id===id);if(local)Object.assign(local,patch)});
+  masterSelectedIds.clear();
+  el("batchMasterModal").classList.remove("open");
+  renderMaster();
+  beginBackgroundSave(`${ids.length} Artikel werden gespeichert …`);
+  try{
+    const {error}=await sb.from("camping_items").update(patch).in("id",ids);
+    if(error)throw error;
+    await loadItems();render();
+    finishBackgroundSave(`${ids.length} Artikel gespeichert`);
+  }catch(error){
+    console.error(error);
+    originals.forEach((original,id)=>{const local=masterItems.find(i=>i.id===id);if(local&&original)Object.assign(local,original)});
+    renderMaster();
+    failBackgroundSave("Sammelbearbeitung nicht gespeichert");
+  }
 };
 document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster()});
 
