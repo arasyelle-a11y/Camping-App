@@ -330,6 +330,13 @@ button{cursor:pointer}
   max-width:100%;
 }
 
+
+.masterBatchBar{display:none;align-items:center;gap:7px;padding:7px 14px;background:var(--cream2);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:8}
+.masterBatchBar.show{display:flex}.masterBatchBar span{font-size:11px;font-weight:900;color:var(--navy);margin-right:auto}.masterBatchBar button{border:0;border-radius:9px;padding:8px 9px;font-size:10px;font-weight:850;background:var(--navy);color:white}.masterBatchBar button:last-child{background:white;color:var(--muted);border:1px solid var(--line)}
+.masterSelect{appearance:none;width:22px;height:22px;border:2px solid var(--green);border-radius:6px;background:white;display:grid;place-content:center;flex:0 0 auto;margin-right:8px}.masterSelect:checked{background:var(--green)}.masterSelect:checked:after{content:"✓";color:white;font-weight:900;font-size:13px}
+.masterRow.selecting{background:var(--cream2)}
+.batchHint{font-size:11px;color:var(--muted);margin:-4px 0 12px;line-height:1.4}
+
 </style>
 </head>
 <body>
@@ -403,6 +410,7 @@ button{cursor:pointer}
       <button data-mf="out">Nicht dabei</button>
     </div>
     <div class="masterTypeFilters" id="masterTypeFilters"></div>
+    <div class="masterBatchBar" id="masterBatchBar"><span id="masterBatchCount">0 markiert</span><button id="masterBatchEditBtn">✏️ Gemeinsam bearbeiten</button><button id="masterBatchClearBtn">Auswahl aufheben</button></div>
     <div class="masterAddBar"><button id="addMasterItemBtn">＋ Artikel</button><button id="bulkMasterItemBtn">＋ Mehrere</button></div>
     <main class="content" id="masterList"></main>
   </section>
@@ -581,8 +589,13 @@ button{cursor:pointer}
   <div class="sheetActions"><button class="cancel" id="personItemCancel">Abbrechen</button><button class="save" id="personItemSave">Anlegen</button></div>
 </div></div>
 
-<div class="modal" id="masterItemModal"><div class="sheet"><h3>Masterartikel</h3><input id="masterItemName" placeholder="Artikel"><input id="masterItemCategory" list="masterCategoryOptions" placeholder="Kategorie auswählen oder neu eingeben"><datalist id="masterCategoryOptions"></datalist><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="masterItemTypes"></div><div class="sheetActions"><button class="cancel" id="masterItemCancel">Abbrechen</button><button class="save" id="masterItemSave">Speichern</button></div></div></div>
-<div class="modal" id="bulkMasterModal"><div class="sheet"><h3>Mehrere Masterartikel</h3><input id="bulkMasterCategory" list="masterCategoryOptions" placeholder="Kategorie auswählen oder neu eingeben"><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="bulkMasterTypes"></div><textarea id="bulkMasterItems" rows="10" placeholder="Eine Zeile = ein Artikel"></textarea><div id="bulkMasterCount" style="font-size:12px;color:var(--muted);margin:5px 0">0 Artikel erkannt</div><div class="sheetActions"><button class="cancel" id="bulkMasterCancel">Abbrechen</button><button class="save" id="bulkMasterSave">Alle anlegen</button></div></div></div>
+<div class="modal" id="masterItemModal"><div class="sheet"><h3>Masterartikel</h3><input id="masterItemName" placeholder="Artikel"><select id="masterItemCategory"></select><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="masterItemTypes"></div><div class="sheetActions"><button class="cancel" id="masterItemCancel">Abbrechen</button><button class="save" id="masterItemSave">Speichern</button></div></div></div>
+<div class="modal" id="bulkMasterModal"><div class="sheet"><h3>Mehrere Masterartikel</h3><select id="bulkMasterCategory"></select><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="bulkMasterTypes"></div><textarea id="bulkMasterItems" rows="10" placeholder="Eine Zeile = ein Artikel"></textarea><div id="bulkMasterCount" style="font-size:12px;color:var(--muted);margin:5px 0">0 Artikel erkannt</div><div class="sheetActions"><button class="cancel" id="bulkMasterCancel">Abbrechen</button><button class="save" id="bulkMasterSave">Alle anlegen</button></div></div></div>
+<div class="modal" id="batchMasterModal"><div class="sheet"><h3 id="batchMasterTitle">Masterartikel gemeinsam bearbeiten</h3>
+<div class="batchHint">Nur die Felder ändern, die für alle markierten Artikel gelten sollen.</div>
+<label class="fieldLabel">Kategorie ändern (optional)</label><select id="batchMasterCategory"><option value="">— Kategorie unverändert —</option></select>
+<label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="batchMasterTypes"></div>
+<div class="sheetActions"><button class="cancel" id="batchMasterCancel">Abbrechen</button><button class="save" id="batchMasterSave">Auf Auswahl anwenden</button></div></div></div>
 <div id="printArea" style="display:none"></div>
 
 <div class="modal" id="noteModal">
@@ -703,7 +716,7 @@ function renderTripHero(){
 }
 
 let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], personStates=new Map(), currentPerson=null;
-let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all", packViewMode="plan", showOtherPlanning=false;
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all", packViewMode="plan", showOtherPlanning=false, masterSelectedIds=new Set(), masterOpenCategory=null;
 const el=id=>document.getElementById(id);
 
 function toast(msg,undo=false){
@@ -1586,15 +1599,38 @@ const TRIP_TYPE_LABELS={all:"🌍 Alle",camping:"🏕️ Camping",camping_power:
 function typeChecks(hostId,selected=["all"]){const host=el(hostId);host.innerHTML="";for(const [k,label] of Object.entries(TRIP_TYPE_LABELS)){const l=document.createElement("label");l.innerHTML=`<input type="checkbox" value="${k}" ${selected.includes(k)?"checked":""}> ${label}`;host.appendChild(l)}host.querySelectorAll('input').forEach(inp=>inp.onchange=()=>{if(inp.value==="all"&&inp.checked)host.querySelectorAll('input:not([value="all"])').forEach(x=>x.checked=false);else if(inp.value!=="all"&&inp.checked)host.querySelector('input[value="all"]').checked=false})}
 function checkedTypes(hostId){const a=[...el(hostId).querySelectorAll('input:checked')].map(x=>x.value);return a.length?a:["all"]}
 function renderMasterTypeFilters(){const h=el("masterTypeFilters");if(!h)return;h.innerHTML="";for(const [k,label] of Object.entries(TRIP_TYPE_LABELS)){const b=document.createElement("button");b.textContent=label;b.className=masterTypeFilter===k?"active":"";b.onclick=()=>{masterTypeFilter=k;renderMaster()};h.appendChild(b)}}
+function updateMasterBatchBar(){
+  const bar=el("masterBatchBar"),count=el("masterBatchCount");if(!bar||!count)return;
+  count.textContent=`${masterSelectedIds.size} markiert`;bar.classList.toggle("show",masterSelectedIds.size>0);
+}
 function renderMaster(){
   renderMasterTypeFilters();const root=el("masterList");root.innerHTML="";let items=masterItems.filter(i=>i.is_master);
   if(masterFilter==="in")items=items.filter(i=>state(i.id).selected);if(masterFilter==="out")items=items.filter(i=>!state(i.id).selected);
   if(masterTypeFilter!=="all")items=items.filter(i=>{const tt=i.trip_types||["all"];return tt.includes("all")||tt.includes(masterTypeFilter)});
-  for(const cat of grouped(items)){const sec=document.createElement("section");sec.className="category closed";sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;sec.querySelector(".cathead").onclick=()=>sec.classList.toggle("closed");const body=sec.querySelector(".catbody");
-    cat.items.forEach(i=>{const on=state(i.id).selected,r=document.createElement("div");r.className="masterRow";const types=(i.trip_types||["all"]).map(t=>`<span class="masterTypeBadge">${TRIP_TYPE_LABELS[t]||t}</span>`).join("");r.innerHTML=`<div class="masterName">${i.name}<div>${types}</div></div><div class="masterActions"><button class="medit">✏️</button><button class="${on?"":"addBack"}">${on?"✓ Dabei":"＋ Mitnehmen"}</button></div>`;const bs=r.querySelectorAll("button");bs[0].onclick=()=>openMasterItem(i);bs[1].onclick=()=>dbUpsert(i.id,{selected:!on,...(on?{seen:false,in_box:false,in_car:false}:{})});body.appendChild(r)});root.appendChild(sec)}
+  for(const cat of grouped(items)){
+    const sec=document.createElement("section");sec.className="category"+(masterOpenCategory===cat.name?"":" closed");
+    sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;
+    sec.querySelector(".cathead").onclick=()=>{const opening=sec.classList.contains("closed");document.querySelectorAll("#masterList .category").forEach(x=>x.classList.add("closed"));if(opening){sec.classList.remove("closed");masterOpenCategory=cat.name}else masterOpenCategory=null};
+    const body=sec.querySelector(".catbody");
+    cat.items.forEach(i=>{
+      const on=state(i.id).selected,r=document.createElement("div");r.className="masterRow"+(masterSelectedIds.has(i.id)?" selecting":"");
+      const types=(i.trip_types||["all"]).map(t=>`<span class="masterTypeBadge">${TRIP_TYPE_LABELS[t]||t}</span>`).join("");
+      r.innerHTML=`<input class="masterSelect" type="checkbox" ${masterSelectedIds.has(i.id)?"checked":""}><div class="masterName">${i.name}<div>${types}</div></div><div class="masterActions"><button class="medit">✏️</button><button class="${on?"":"addBack"}">${on?"✓ Dabei":"＋ Mitnehmen"}</button></div>`;
+      const check=r.querySelector(".masterSelect");check.onchange=()=>{if(check.checked)masterSelectedIds.add(i.id);else masterSelectedIds.delete(i.id);r.classList.toggle("selecting",check.checked);updateMasterBatchBar()};
+      const bs=r.querySelectorAll("button");bs[0].onclick=()=>{masterOpenCategory=cat.name;openMasterItem(i)};bs[1].onclick=()=>dbUpsert(i.id,{selected:!on,...(on?{seen:false,in_box:false,in_car:false}:{})});body.appendChild(r)
+    });root.appendChild(sec)
+  }
+  updateMasterBatchBar();
 }
-function fillCategorySuggestions(){const pc=[...new Set(personItems.map(i=>i.category).filter(Boolean))].sort(),mc=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category).filter(Boolean))].sort();const p=el("personCategoryOptions"),m=el("masterCategoryOptions");if(p)p.innerHTML=pc.map(x=>`<option value="${x}">`).join("");if(m)m.innerHTML=mc.map(x=>`<option value="${x}">`).join("")}
-function openMasterItem(item=null){editingMasterItem=item;fillCategorySuggestions();el("masterItemName").value=item?.name||"";el("masterItemCategory").value=item?.category||"";typeChecks("masterItemTypes",item?.trip_types||["all"]);el("masterItemModal").classList.add("open")}
+function masterCategories(){return [...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"de"))}
+function fillMasterCategorySelect(id,{blank=false,selected=""}={}){
+  const s=el(id);if(!s)return;const cats=masterCategories();s.innerHTML="";
+  if(blank){const o=document.createElement("option");o.value="";o.textContent="— Kategorie unverändert —";s.appendChild(o)}
+  for(const c of cats){const o=document.createElement("option");o.value=o.textContent=c;s.appendChild(o)}
+  if(selected&&cats.includes(selected))s.value=selected;else if(blank)s.value="";
+}
+function fillCategorySuggestions(){const pc=[...new Set(personItems.map(i=>i.category).filter(Boolean))].sort();const p=el("personCategoryOptions");if(p)p.innerHTML=pc.map(x=>`<option value="${x}">`).join("");fillMasterCategorySelect("masterItemCategory",{selected:el("masterItemCategory")?.value||""});fillMasterCategorySelect("bulkMasterCategory",{selected:el("bulkMasterCategory")?.value||""})}
+function openMasterItem(item=null){editingMasterItem=item;if(item?.category)masterOpenCategory=item.category;fillMasterCategorySelect("masterItemCategory",{selected:item?.category||masterOpenCategory||masterCategories()[0]||""});el("masterItemName").value=item?.name||"";typeChecks("masterItemTypes",item?.trip_types||["all"]);el("masterItemModal").classList.add("open")}
 function renderCats(){
   fillCategorySuggestions();
   const cats=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category))];
@@ -1606,9 +1642,33 @@ el("packModeBtn").onclick=()=>setPackViewMode("pack");
 el("toggleOtherItemsBtn").onclick=()=>{showOtherPlanning=!showOtherPlanning;activeCategory=null;render()};
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render()});
 el("addMasterItemBtn").onclick=()=>openMasterItem();el("masterItemCancel").onclick=()=>el("masterItemModal").classList.remove("open");
-el("masterItemSave").onclick=async()=>{const name=el("masterItemName").value.trim(),category=el("masterItemCategory").value.trim(),trip_types=checkedTypes("masterItemTypes");if(!name||!category)return toast("Bitte Artikel und Kategorie eingeben");let data,error;if(editingMasterItem)({data,error}=await sb.from("camping_items").update({name,category,trip_types}).eq("id",editingMasterItem.id).select().single());else({data,error}=await sb.from("camping_items").insert({name,category,icon:iconForCategory(category),is_master:true,trip_types}).select().single());if(error){console.error(error);return toast("Masterartikel konnte nicht gespeichert werden")}editingMasterItem=null;el("masterItemModal").classList.remove("open");await loadItems();render();toast("Masterartikel gespeichert")};
+el("masterItemSave").onclick=async()=>{const name=el("masterItemName").value.trim(),category=el("masterItemCategory").value.trim(),trip_types=checkedTypes("masterItemTypes");if(!name||!category)return toast("Bitte Artikel und Kategorie eingeben");masterOpenCategory=category;let data,error;if(editingMasterItem)({data,error}=await sb.from("camping_items").update({name,category,trip_types}).eq("id",editingMasterItem.id).select().single());else({data,error}=await sb.from("camping_items").insert({name,category,icon:iconForCategory(category),is_master:true,trip_types}).select().single());if(error){console.error(error);return toast("Masterartikel konnte nicht gespeichert werden")}editingMasterItem=null;el("masterItemModal").classList.remove("open");await loadItems();render();toast("Masterartikel gespeichert")};
 function parseBulkMaster(){return (el("bulkMasterItems").value||"").replace(/\r\n?/g,"\n").split(/\n+|;+/).map(x=>x.replace(/^[\s•·▪▫◦‣⁃\-–—*✓✔☐☑]+/,"").trim()).filter(Boolean)}
-el("bulkMasterItemBtn").onclick=()=>{fillCategorySuggestions();el("bulkMasterCategory").value="";el("bulkMasterItems").value="";el("bulkMasterCount").textContent="0 Artikel erkannt";typeChecks("bulkMasterTypes",["all"]);el("bulkMasterModal").classList.add("open")};el("bulkMasterItems").oninput=()=>el("bulkMasterCount").textContent=`${parseBulkMaster().length} Artikel erkannt`;el("bulkMasterCancel").onclick=()=>el("bulkMasterModal").classList.remove("open");el("bulkMasterSave").onclick=async()=>{const category=el("bulkMasterCategory").value.trim(),names=parseBulkMaster(),trip_types=checkedTypes("bulkMasterTypes");if(!category||!names.length)return toast("Kategorie und Artikel eingeben");const existing=new Set(masterItems.filter(i=>i.is_master).map(i=>`${i.category.toLowerCase()}|${i.name.toLowerCase()}`));const rows=names.filter(n=>!existing.has(`${category.toLowerCase()}|${n.toLowerCase()}`)).map((name,n)=>({name,category,icon:iconForCategory(category),is_master:true,trip_types,item_order:n+1}));if(!rows.length)return toast("Diese Artikel gibt es schon");const {error}=await sb.from("camping_items").insert(rows);if(error){console.error(error);return toast("Artikel konnten nicht angelegt werden")}el("bulkMasterModal").classList.remove("open");await loadItems();render();toast(`${rows.length} Masterartikel angelegt`)};
+el("bulkMasterItemBtn").onclick=()=>{fillMasterCategorySelect("bulkMasterCategory",{selected:masterOpenCategory||masterCategories()[0]||""});el("bulkMasterItems").value="";el("bulkMasterCount").textContent="0 Artikel erkannt";typeChecks("bulkMasterTypes",["all"]);el("bulkMasterModal").classList.add("open")};el("bulkMasterItems").oninput=()=>el("bulkMasterCount").textContent=`${parseBulkMaster().length} Artikel erkannt`;el("bulkMasterCancel").onclick=()=>el("bulkMasterModal").classList.remove("open");el("bulkMasterSave").onclick=async()=>{const category=el("bulkMasterCategory").value.trim(),names=parseBulkMaster(),trip_types=checkedTypes("bulkMasterTypes");if(!category||!names.length)return toast("Kategorie und Artikel eingeben");masterOpenCategory=category;const existing=new Set(masterItems.filter(i=>i.is_master).map(i=>`${i.category.toLowerCase()}|${i.name.toLowerCase()}`));const rows=names.filter(n=>!existing.has(`${category.toLowerCase()}|${n.toLowerCase()}`)).map((name,n)=>({name,category,icon:iconForCategory(category),is_master:true,trip_types,item_order:n+1}));if(!rows.length)return toast("Diese Artikel gibt es schon");const {error}=await sb.from("camping_items").insert(rows);if(error){console.error(error);return toast("Artikel konnten nicht angelegt werden")}el("bulkMasterModal").classList.remove("open");await loadItems();render();toast(`${rows.length} Masterartikel angelegt`)};
+el("masterBatchClearBtn").onclick=()=>{masterSelectedIds.clear();renderMaster()};
+el("masterBatchEditBtn").onclick=()=>{
+  if(!masterSelectedIds.size)return;
+  el("batchMasterTitle").textContent=`${masterSelectedIds.size} Masterartikel gemeinsam bearbeiten`;
+  fillMasterCategorySelect("batchMasterCategory",{blank:true});
+  typeChecks("batchMasterTypes",[]);
+  // Für Sammelbearbeitung startet bewusst nichts vorausgewählt: Auswahl = neue gemeinsame Zuordnung.
+  el("batchMasterModal").classList.add("open");
+};
+el("batchMasterCancel").onclick=()=>el("batchMasterModal").classList.remove("open");
+el("batchMasterSave").onclick=async()=>{
+  if(!masterSelectedIds.size)return;
+  const category=el("batchMasterCategory").value;
+  const trip_types=checkedTypes("batchMasterTypes");
+  const ids=[...masterSelectedIds];
+  setSync("Speichert …");
+  for(const id of ids){
+    const patch={trip_types};if(category)patch.category=category;
+    const {error}=await sb.from("camping_items").update(patch).eq("id",id);
+    if(error){console.error(error);setSync("Fehler");return toast("Sammelbearbeitung konnte nicht gespeichert werden")}
+  }
+  if(category)masterOpenCategory=category;
+  masterSelectedIds.clear();el("batchMasterModal").classList.remove("open");await loadItems();render();setSync("Synchronisiert");toast(`${ids.length} Masterartikel aktualisiert`);
+};
 document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster()});
 
 el("editPersonBtn").onclick=()=>{
