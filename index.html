@@ -360,6 +360,9 @@ button{cursor:pointer}
 .globalSaveStatus.error .saveSpinner{display:none}
 @keyframes saveSpin{to{transform:rotate(360deg)}}
 
+
+.masterLegacyHint{margin:7px 14px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px;background:var(--cream2);font-size:10px;color:var(--muted);line-height:1.35}
+
 </style>
 </head>
 <body>
@@ -770,14 +773,26 @@ function failBackgroundSave(message="Speichern fehlgeschlagen"){
   backgroundSaves=Math.max(0,backgroundSaves-1);
   showSaveStatus("error","⚠️ "+message);setSync("Fehler beim Speichern");toast(message);
 }
-function iconForCategory(cat){const x=masterItems.find(i=>i.category===cat&&i.icon);return x?.icon||"🏕️"}
+function iconForCategory(cat){
+  const aliases=cat==="Baden & Wassersport"?["Baden & Wassersport","Strand"]:[cat];
+  const x=masterItems.find(i=>aliases.includes(i.category)&&i.icon);
+  if(x?.icon)return x.icon;
+  if(cat==="Vorräte")return "🥫";
+  if(cat==="Dokumente & Tickets")return "📄";
+  if(cat==="Baden & Wassersport")return "🏊";
+  return "🏕️"
+}
 function state(id){return states.get(id)||{selected:false,seen:false,in_box:false,in_car:false,need:false}}
 function currentItems(){
   return masterItems.filter(i=>i.is_master || states.has(i.id));
 }
 function grouped(items){
   const map=new Map();
-  for(const i of items){if(!map.has(i.category))map.set(i.category,[]);map.get(i.category).push(i)}
+  for(const i of items){
+    const category=i.category==="Strand"?"Baden & Wassersport":i.category;
+    if(!map.has(category))map.set(category,[]);
+    map.get(category).push(i)
+  }
   return [...map.entries()].map(([name,items])=>({name,icon:iconForCategory(name),items}));
 }
 async function dbUpsert(itemId,patch){
@@ -1402,8 +1417,8 @@ function selectedTripPeople(hostId){return new Set([...el(hostId).querySelectorA
 async function loadTripPeople(){currentTripPeople=new Set();if(!currentTrip)return;const {data,error}=await sb.from("camping_trip_people").select("person_id").eq("trip_id",currentTrip.id);if(error)throw error;for(const r of data||[])currentTripPeople.add(r.person_id)}
 async function saveTripPeople(tripId,ids){const {error:delError}=await sb.from("camping_trip_people").delete().eq("trip_id",tripId);if(delError)throw delError;const rows=[...ids].map(person_id=>({trip_id:tripId,person_id}));if(rows.length){const {error}=await sb.from("camping_trip_people").insert(rows);if(error)throw error}}
 const TRIP_PRESETS={
-  camping:{includeCategories:["Zelt & Aufbau","Campingmöbel","Schlafen","Küche & Gas","Wasser & Spülen","Sanitär","Haushalt & Ordnung","Werkzeug","Strand","Fahrräder","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah","Technik","Strom & Licht"],excludeNames:["Mehrfachsteckdosen","Verlängerungskabel","E-Bike-Ladegeräte","Kühlschrank"]},
-  camping_power:{includeCategories:["Zelt & Aufbau","Campingmöbel","Schlafen","Küche & Gas","Wasser & Spülen","Sanitär","Haushalt & Ordnung","Werkzeug","Strand","Fahrräder","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah","Technik","Strom & Licht"]},
+  camping:{includeCategories:["Zelt & Aufbau","Campingmöbel","Schlafen","Küche & Gas","Wasser & Spülen","Sanitär","Haushalt & Ordnung","Werkzeug","Baden & Wassersport","Fahrräder","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah","Technik","Strom & Licht"],excludeNames:["Mehrfachsteckdosen","Verlängerungskabel","E-Bike-Ladegeräte","Kühlschrank"]},
+  camping_power:{includeCategories:["Zelt & Aufbau","Campingmöbel","Schlafen","Küche & Gas","Wasser & Spülen","Sanitär","Haushalt & Ordnung","Werkzeug","Baden & Wassersport","Fahrräder","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah","Technik","Strom & Licht"]},
   holiday_home:{includeCategories:["Technik","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah"],includeNames:["Geschirrtücher","Lappen","Tupperdosen","Zip-Beutel","Verschlussklemmen","Weinöffner","Bieröffner"]},
   city:{includeCategories:["Technik","Hygiene & Gesundheit","Sarah"],includeNames:["Picknickdecke"]}
 };
@@ -1668,7 +1683,20 @@ function renderMaster(){
   }
   updateMasterBatchBar();
 }
-function masterCategories(){return [...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"de"))}
+async function migrateMasterCategories(){
+  const legacy=masterItems.filter(i=>i.is_master&&i.category==="Strand");
+  if(!legacy.length)return;
+  const ids=legacy.map(i=>i.id);
+  const {error}=await sb.from("camping_items").update({category:"Baden & Wassersport"}).in("id",ids);
+  if(error){console.warn("Kategorie Strand konnte noch nicht umbenannt werden",error);return}
+  legacy.forEach(i=>i.category="Baden & Wassersport");
+}
+function masterCategories(){
+  const fixed=["Baden & Wassersport","Vorräte","Dokumente & Tickets"];
+  return [...new Set([...masterItems.filter(i=>i.is_master).map(i=>i.category).filter(Boolean),...fixed])]
+    .filter(c=>c!=="Strand"&&c!=="Sarah")
+    .sort((a,b)=>a.localeCompare(b,"de"));
+}
 function fillMasterCategorySelect(id,{blank=false,selected=""}={}){
   const s=el(id);if(!s)return;const cats=masterCategories();s.innerHTML="";
   if(blank){const o=document.createElement("option");o.value="";o.textContent="— Kategorie unverändert —";s.appendChild(o)}
@@ -2213,7 +2241,7 @@ async function boot(){
     el("login").classList.add("hidden");
 
     setSync(hadCache?"Aktualisiert im Hintergrund …":"Lädt Artikel …");
-    await loadItems();
+    await loadItems();await migrateMasterCategories();
 
     if(!hadCache)setSync("Lädt Ziele …");
     await loadPlaces();
