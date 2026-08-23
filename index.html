@@ -363,6 +363,15 @@ button{cursor:pointer}
 
 .masterLegacyHint{margin:7px 14px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px;background:var(--cream2);font-size:10px;color:var(--muted);line-height:1.35}
 
+
+.masterRow{cursor:pointer;transition:background .15s,box-shadow .15s}
+.masterRow.selecting{background:#e5edd4!important;box-shadow:inset 4px 0 0 var(--green)}
+.masterRow.selecting .masterName{color:var(--green)}
+.tripTypeChecks{display:block!important}
+.typeGroup{margin:10px 0 13px}.typeGroupTitle{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.typeTileGrid{display:flex;flex-wrap:wrap;gap:7px}.typeTile{border:1.5px solid var(--line);background:white;color:var(--navy);border-radius:11px;padding:9px 10px;font-size:11px;font-weight:850}
+.typeTile.selected{background:var(--green);border-color:var(--green);color:white}
+
 </style>
 </head>
 <body>
@@ -984,6 +993,7 @@ function itemFitsCurrentTrip(item){
   if(tt.includes("all"))return true;
   const keys=new Set(p.activities||[]);
   keys.add(p.accommodation);
+  keys.add(p.transport);
   if(p.accommodation==="tent")keys.add("camping");
   if(p.accommodation==="tent_power"){keys.add("camping");keys.add("camping_power")}
   if(p.accommodation==="holiday_home")keys.add("holiday_home");
@@ -1656,9 +1666,27 @@ function renderNeed(){
   personal.forEach(i=>{const p=people.find(x=>x.id===i.person_id),d=document.createElement("div");d.className="needItem";d.innerHTML=`<b><span class="personDot" style="background:${p?.color||"#888"}"></span>${p?.name||""}: ${i.name}</b><span class="badge">persönlich</span><button class="stage on">✓ erledigt</button>`;d.querySelector("button").onclick=()=>savePersonState(i,{needs_purchase:false});card.appendChild(d)});
   root.appendChild(card);
 }
-const TRIP_TYPE_LABELS={all:"🌍 Alle",camping:"🏕️ Camping",camping_power:"⚡ Camping + Strom",camper:"🚐 Camper",holiday_home:"🏡 Ferienhaus",hotel:"🏨 Hotel",city:"🏙️ Städtetrip",mountain:"⛰️ Bergwandern",beach:"🏖️ Strand",bike:"🚲 Fahrrad",hiking:"🥾 Wandern",sport:"🏃 Sport",swim:"🏊 Schwimmen",ski:"🎿 Ski / Wintersport"};
-function typeChecks(hostId,selected=["all"]){const host=el(hostId);host.innerHTML="";for(const [k,label] of Object.entries(TRIP_TYPE_LABELS)){const l=document.createElement("label");l.innerHTML=`<input type="checkbox" value="${k}" ${selected.includes(k)?"checked":""}> ${label}`;host.appendChild(l)}host.querySelectorAll('input').forEach(inp=>inp.onchange=()=>{if(inp.value==="all"&&inp.checked)host.querySelectorAll('input:not([value="all"])').forEach(x=>x.checked=false);else if(inp.value!=="all"&&inp.checked)host.querySelector('input[value="all"]').checked=false})}
-function checkedTypes(hostId){const a=[...el(hostId).querySelectorAll('input:checked')].map(x=>x.value);return a.length?a:["all"]}
+const TRIP_TYPE_GROUPS={
+all:{label:"Alle",items:{all:"🌍 Alle Reisen"}},
+accommodation:{label:"🏠 Unterkunft",items:{camping:"🏕️ Camping",camping_power:"⚡ Camping + Strom",camper:"🚐 Camper",holiday_home:"🏡 Ferienhaus",hotel:"🏨 Hotel"}},
+transport:{label:"🧭 Anreise",items:{car:"🚗 Auto",plane:"✈️ Flugzeug",train:"🚆 Bahn"}},
+activity:{label:"🎯 Aktivitäten",items:{city:"🏙️ Städtetrip",beach:"🏖️ Strand",swim:"🏊 Schwimmen",bike:"🚲 Fahrrad",hiking:"🥾 Wandern",mountain:"⛰️ Bergwandern",sport:"🏃 Sport",ski:"🎿 Ski / Wintersport"}}
+};
+const TRIP_TYPE_LABELS=Object.assign({},...Object.values(TRIP_TYPE_GROUPS).map(g=>g.items));
+function typeChecks(hostId,selected=["all"]){
+ const host=el(hostId);host.innerHTML="";const chosen=new Set(selected||[]);
+ for(const [gk,g] of Object.entries(TRIP_TYPE_GROUPS)){
+  const wrap=document.createElement("div");wrap.className="typeGroup";
+  if(gk!=="all"){const h=document.createElement("div");h.className="typeGroupTitle";h.textContent=g.label;wrap.appendChild(h)}
+  const grid=document.createElement("div");grid.className="typeTileGrid";
+  for(const [k,label] of Object.entries(g.items)){
+   const btn=document.createElement("button");btn.type="button";btn.className="typeTile"+(chosen.has(k)?" selected":"");btn.dataset.value=k;btn.textContent=label;
+   btn.onclick=()=>{if(k==="all"){host.querySelectorAll(".typeTile").forEach(x=>x.classList.remove("selected"));btn.classList.add("selected")}else{host.querySelector('.typeTile[data-value="all"]')?.classList.remove("selected");btn.classList.toggle("selected")}};
+   grid.appendChild(btn)
+  }wrap.appendChild(grid);host.appendChild(wrap)
+ }
+}
+function checkedTypes(hostId){const a=[...el(hostId).querySelectorAll(".typeTile.selected")].map(x=>x.dataset.value);return a.length?a:["all"]}
 function renderMasterTypeFilters(){const h=el("masterTypeFilters");if(!h)return;h.innerHTML="";for(const [k,label] of Object.entries(TRIP_TYPE_LABELS)){const b=document.createElement("button");b.textContent=label;b.className=masterTypeFilter===k?"active":"";b.onclick=()=>{masterTypeFilter=k;renderMaster()};h.appendChild(b)}}
 function updateMasterBatchBar(){
   const bar=el("masterBatchBar"),count=el("masterBatchCount");if(!bar||!count)return;
@@ -1676,9 +1704,9 @@ function renderMaster(){
     cat.items.forEach(i=>{
       const on=state(i.id).selected,r=document.createElement("div");r.className="masterRow"+(masterSelectedIds.has(i.id)?" selecting":"");
       const types=(i.trip_types||["all"]).map(t=>`<span class="masterTypeBadge">${TRIP_TYPE_LABELS[t]||t}</span>`).join("");
-      r.innerHTML=`<input class="masterSelect" type="checkbox" ${masterSelectedIds.has(i.id)?"checked":""}><div class="masterName">${i.name}<div>${types}</div></div><div class="masterActions"><button class="medit">✏️</button><button class="${on?"":"addBack"}">${on?"✓ Dabei":"＋ Mitnehmen"}</button></div>`;
-      const check=r.querySelector(".masterSelect");check.onchange=()=>{if(check.checked)masterSelectedIds.add(i.id);else masterSelectedIds.delete(i.id);r.classList.toggle("selecting",check.checked);updateMasterBatchBar()};
-      const bs=r.querySelectorAll("button");bs[0].onclick=()=>{masterOpenCategory=cat.name;openMasterItem(i)};bs[1].onclick=()=>dbUpsert(i.id,{selected:!on,...(on?{seen:false,in_box:false,in_car:false}:{})});body.appendChild(r)
+      r.innerHTML=`<div class="masterName">${i.name}<div>${types}</div></div><div class="masterActions"><button class="medit">✏️</button><button class="${on?"":"addBack"}">${on?"✓ Dabei":"＋ Mitnehmen"}</button></div>`;
+      r.onclick=e=>{if(e.target.closest("button"))return;if(masterSelectedIds.has(i.id))masterSelectedIds.delete(i.id);else masterSelectedIds.add(i.id);r.classList.toggle("selecting",masterSelectedIds.has(i.id));updateMasterBatchBar()};
+      const bs=r.querySelectorAll("button");bs[0].onclick=e=>{e.stopPropagation();masterOpenCategory=cat.name;openMasterItem(i)};bs[1].onclick=e=>{e.stopPropagation();dbUpsert(i.id,{selected:!on,...(on?{seen:false,in_box:false,in_car:false}:{})})};body.appendChild(r)
     });root.appendChild(sec)
   }
   updateMasterBatchBar();
