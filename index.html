@@ -1605,17 +1605,23 @@ function masterPersonCategory(itemId,pid){
   const link=itemPeople.find(x=>x.item_id===itemId&&x.person_id===pid), mi=masterItems.find(x=>x.id===itemId);
   return link?.personal_category||personalCategoryFromMaster(mi?.category);
 }
-async function changeMasterPersonalCategory(item){
-  const link=itemPeople.find(x=>x.item_id===item.master_item_id&&x.person_id===currentPerson.id);if(!link)return;
-  const existing=[...new Set(personItems.filter(x=>x.person_id===currentPerson.id&&!x.linked_master_item_id).map(x=>x.category).filter(Boolean))];
-  const defaults=["Kleidung","Schuhe","Baden & Strand","Hygiene","Technik","Persönliches","Fahrrad","Sport/Laufen","Lesen & Freizeit","Kosmetik","Medikamente","Schlafen"];
-  const choices=[...new Set([...defaults,...existing])];
-  const current=masterPersonCategory(item.master_item_id,currentPerson.id);
-  const wanted=prompt(`Kategorie bei ${currentPerson.name}:\n\n${choices.join("\n")}\n\nBitte Kategorie eingeben:`,current);
-  if(wanted===null)return;const category=wanted.trim();if(!category)return;
-  const {error}=await sb.from("camping_item_people").update({personal_category:category}).eq("item_id",item.master_item_id).eq("person_id",currentPerson.id);
-  if(error){console.error(error);toast("Kategorie konnte nicht gespeichert werden");return}
-  link.personal_category=category;saveCache();renderPersonList();toast(`✓ ${item.name} → ${category}`);
+let categoryEditingMasterItem=null;
+function changeMasterPersonalCategory(item){
+ const link=itemPeople.find(x=>x.item_id===item.master_item_id&&x.person_id===currentPerson.id);if(!link)return;
+ categoryEditingMasterItem=item;
+ const existing=[...new Set(personItems.filter(x=>x.person_id===currentPerson.id&&!x.linked_master_item_id).map(x=>x.category).filter(Boolean))];
+ const defaults=["Kleidung","Schuhe","Baden & Strand","Hygiene","Technik","Persönliches","Fahrrad","Sport/Laufen","Lesen & Freizeit","Kosmetik","Medikamente","Schlafen"];
+ const choices=[...new Set([...defaults,...existing])],sel=el("personCategorySelect");sel.innerHTML="";
+ for(const c of choices){const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)}
+ sel.value=masterPersonCategory(item.master_item_id,currentPerson.id);
+ el("personCategoryTitle").textContent=`Kategorie bei ${currentPerson.name}`;el("personCategoryModal").classList.add("open");
+}
+async function saveMasterPersonalCategory(){
+ const item=categoryEditingMasterItem;if(!item)return;const link=itemPeople.find(x=>x.item_id===item.master_item_id&&x.person_id===currentPerson.id);if(!link)return;
+ const category=el("personCategorySelect").value;if(!category)return;el("personCategoryModal").classList.remove("open");
+ const {error}=await sb.from("camping_item_people").update({personal_category:category}).eq("item_id",item.master_item_id).eq("person_id",currentPerson.id);
+ if(error){console.error(error);toast("Kategorie konnte nicht gespeichert werden");return}
+ link.personal_category=category;categoryEditingMasterItem=null;saveCache();renderPersonList();toast(`✓ ${item.name} → ${category}`);
 }
 function fillPersonMasterLinks(){
   const s=el("personItemLink");s.innerHTML='<option value="">Nicht verknüpfen</option>';
@@ -1802,6 +1808,8 @@ function renderCats(){
   [el("quickCat"),el("addCat"),el("editCat")].filter(Boolean).forEach(sel=>{const old=sel.value;sel.innerHTML="";cats.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)});if(cats.includes(old))sel.value=old});
 }
 el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastRemoved=null;await dbUpsert(x.itemId,x.old);el("undoToast").classList.remove("show")};
+el("personCategoryCancel").onclick=()=>{el("personCategoryModal").classList.remove("open");categoryEditingMasterItem=null};
+el("personCategorySave").onclick=saveMasterPersonalCategory;
 el("planModeBtn").onclick=()=>setPackViewMode("plan");
 el("packModeBtn").onclick=()=>setPackViewMode("pack");
 el("toggleOtherItemsBtn").onclick=()=>{showOtherPlanning=!showOtherPlanning;activeCategory=null;render()};
@@ -2405,4 +2413,4 @@ sb.auth.onAuthStateChange((_event,session)=>{
 });
 boot();
 </script>
-</body></html>
+<div id="personCategoryModal" class="modal"><div class="modalCard"><h3 id="personCategoryTitle">Kategorie ändern</h3><label>Kategorie<select id="personCategorySelect"></select></label><div class="modalActions"><button type="button" id="personCategoryCancel" class="secondary">Abbrechen</button><button type="button" id="personCategorySave">Speichern</button></div></div></div></body></html>
