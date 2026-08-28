@@ -766,7 +766,7 @@ function renderTripHero(){
   setTripHeroTitle(title,currentTrip.name||"Urlaub");
 }
 
-let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], personStates=new Map(), currentPerson=null;
+let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], itemPeople=[], personStates=new Map(), currentPerson=null;
 let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all", packViewMode="plan", showOtherPlanning=false, masterSelectedIds=new Set(), masterOpenCategory=null;
 const el=id=>document.getElementById(id);
 
@@ -1464,7 +1464,10 @@ async function loadPeople(){
 async function loadPersonItems(){
   const {data,error}=await sb.from("camping_person_items").select("*").eq("is_active",true).order("sort_order",{ascending:true}).order("created_at",{ascending:true});
   if(error)throw error;
-  personItems=data||[];saveCache();
+  personItems=data||[];
+  const {data:links,error:linkError}=await sb.from("camping_item_people").select("*");
+  if(linkError)throw linkError;
+  itemPeople=links||[];saveCache();
 }
 async function loadPersonStates(){
   personStates=new Map();
@@ -1474,9 +1477,10 @@ async function loadPersonStates(){
   for(const x of data||[])personStates.set(x.person_item_id,x);
 }
 function personState(item){
+  if(item.is_master_assignment)return {selected:true,quantity:1,packed:false,note:null,needs_purchase:false,final_checked:false,quantity_manual:false};
   const saved=personStates.get(item.id);
   if(!saved)return {selected:false,quantity:suggestedQuantity(item),packed:false,note:null,needs_purchase:false,final_checked:false,quantity_manual:false};
-  return {...saved,quantity:saved.quantity_manual?saved.quantity:suggestedQuantity(item)};
+  return saved;
 }
 async function savePersonState(item,patch){
   if(!currentTrip)return;
@@ -1495,10 +1499,12 @@ function renderPeople(){
   for(const p of visiblePeople){const b=document.createElement("button");b.className="personTab"+(currentPerson?.id===p.id?" active":"");b.textContent=p.name;b.style.borderColor=p.color;if(currentPerson?.id===p.id)b.style.background=p.color;b.onclick=()=>{currentPerson=p;localStorage.setItem("camping-person-id",p.id);renderPeople()};tabs.appendChild(b)}
   if(!currentPerson){theme.style.display="none";list.innerHTML='<div class="personEmpty">Für diesen Urlaub ist noch keine Person ausgewählt.</div>';return}
   theme.style.display="block";theme.style.background=currentPerson.color;theme.innerHTML=`${currentPerson.name}s Packliste<small>${currentTrip?.name||""}</small>`;list.classList.add("personTint");list.style.background=`color-mix(in srgb, ${currentPerson.color} 8%, white)`;
-  const mine=personItems.filter(i=>i.person_id===currentPerson.id);if(!mine.length){list.innerHTML=`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel. Mit „🧩 Grundausstattung“ kannst du mehrere auf einmal anlegen.</div>`;return}
+  const baseMine=personItems.filter(i=>i.person_id===currentPerson.id);
+  const masterMine=assignedMasterItemsForPerson(currentPerson.id).map(mi=>({id:"master:"+mi.id,master_item_id:mi.id,person_id:currentPerson.id,name:mi.name,category:masterPersonCategory(mi.id,currentPerson.id),default_quantity:1,quantity_rule:"fixed",quantity_offset:0,must_not_forget:false,is_master_assignment:true}));
+  const mine=[...baseMine,...masterMine];if(!mine.length){list.innerHTML=`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel. Mit „🧩 Grundausstattung“ kannst du mehrere auf einmal anlegen.</div>`;return}
   const groups=new Map();for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
   for(const [cat,items] of groups){const sec=document.createElement("section");sec.className="personCategory";sec.innerHTML=`<div class="personCatHead" style="background:color-mix(in srgb, ${currentPerson.color} 18%, white);border-left:7px solid ${currentPerson.color}"><span class="pcTitle">${cat}</span><span class="pcCount">${items.length}</span><span>▾</span></div><div class="personCatBody"></div>`;const head=sec.querySelector(".personCatHead"),body=sec.querySelector(".personCatBody");head.onclick=()=>sec.classList.toggle("closed");
-    for(const item of items){const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id),row=document.createElement("div");row.className="personItem";row.style.borderLeftColor=currentPerson.color;row.innerHTML=`<input class="pselect" type="checkbox" ${s.selected?"checked":""}><div><b>${item.name}</b>${item.must_not_forget?'<span class="starBadge">⭐ Darf nicht fehlen</span>':""}${linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:""}${item.note?`<div class="personNote">📝 ${item.note}</div>`:""}<div class="ruleHint">${quantityRuleLabel(item)}${item.quantity_offset?` · persönlich ${item.quantity_offset>0?"+":""}${item.quantity_offset}`:""}${s.quantity_manual?" · manuell":""}</div><div class="personMiniActions"><button class="needp ${s.needs_purchase?"on":""}">🔎 ${s.needs_purchase?"Suchen/Kaufen":"fehlt?"}</button>${s.quantity_manual?'<button class="resetq">↺ Vorschlag</button>':""}<button class="pedit">Bearbeiten</button><button class="pdelete">Löschen</button></div></div><div class="qtyBox"><button class="minus" style="border-color:${currentPerson.color}">−</button><span class="qty">${s.quantity}</span><button class="plus" style="border-color:${currentPerson.color}">＋</button></div>`;
+    for(const item of items){const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id),row=document.createElement("div");row.className="personItem";row.style.borderLeftColor=currentPerson.color;row.innerHTML=`<input class="pselect" type="checkbox" ${s.selected?"checked":""}><div><b>${item.name}</b>${item.must_not_forget?'<span class="starBadge">⭐ Darf nicht fehlen</span>':""}${item.is_master_assignment?`<span class="linkBadge" style="color:${currentPerson.color}">Masterartikel · ${currentPerson.name}</span>`:(linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:"")}${item.note?`<div class="personNote">📝 ${item.note}</div>`:""}<div class="ruleHint">${quantityRuleLabel(item)}${item.quantity_offset?` · persönlich ${item.quantity_offset>0?"+":""}${item.quantity_offset}`:""}${s.quantity_manual?" · manuell":""}</div><div class="personMiniActions"><button class="needp ${s.needs_purchase?"on":""}">🔎 ${s.needs_purchase?"Suchen/Kaufen":"fehlt?"}</button>${s.quantity_manual?'<button class="resetq">↺ Vorschlag</button>':""}<button class="pedit">Bearbeiten</button><button class="pdelete">Löschen</button></div></div><div class="qtyBox"><button class="minus" style="border-color:${currentPerson.color}">−</button><span class="qty">${s.quantity}</span><button class="plus" style="border-color:${currentPerson.color}">＋</button></div>`;
       row.querySelector(".pselect").onchange=e=>savePersonState(item,{selected:e.target.checked});row.querySelector(".minus").onclick=()=>savePersonState(item,{quantity:Math.max(0,s.quantity-1),quantity_manual:true});row.querySelector(".plus").onclick=()=>savePersonState(item,{quantity:s.quantity+1,quantity_manual:true});row.querySelector(".needp").onclick=()=>savePersonState(item,{needs_purchase:!s.needs_purchase});const reset=row.querySelector(".resetq");if(reset)reset.onclick=()=>savePersonState(item,{quantity:suggestedQuantity(item),quantity_manual:false});row.querySelector(".pedit").onclick=()=>openEditPersonItem(item);row.querySelector(".pdelete").onclick=()=>deletePersonItem(item);body.appendChild(row)}
     list.appendChild(sec)}
 }
@@ -1589,54 +1595,12 @@ function resolvedPersonalCategory(selectId,newInputId){
   if(s.value==="__new__")return el(newInputId)?.value.trim()||"";
   return s.value.trim();
 }
-function renderMasterPersonTiles(hostId,selectedIds=[]){
-  const host=el(hostId);if(!host)return;host.innerHTML="";const selected=new Set(selectedIds||[]);
-  for(const p of people){
-    const b=document.createElement("button");b.type="button";b.className="personAssignTile"+(selected.has(p.id)?" selected":"");b.dataset.personId=p.id;b.style.setProperty("--person-color",p.color||"#6b7");b.textContent=p.name;
-    b.onclick=()=>b.classList.toggle("selected");host.appendChild(b)
-  }
-}
-function selectedMasterPeople(hostId){
-  const host=el(hostId);if(!host)return [];
-  return [...host.querySelectorAll(".personAssignTile.selected")].map(b=>b.dataset.personId);
-}
-async function syncMasterPeople(masterItem,selectedIds,{addOnly=false}={}){
-  if(!masterItem?.id)return;
-  const selected=new Set(selectedIds||[]);
-  const existing=personItems.filter(i=>i.linked_master_item_id===masterItem.id);
-  const existingByPerson=new Map(existing.map(i=>[i.person_id,i]));
-  const inserts=[];
-  for(const personId of selected){
-    const ex=existingByPerson.get(personId);
-    if(ex){
-      if(ex.source_master_assignment){
-        const patch={name:masterItem.name,category:masterItem.category};
-        const {data,error}=await sb.from("camping_person_items").update(patch).eq("id",ex.id).select().single();
-        if(error)throw error;
-        const idx=personItems.findIndex(i=>i.id===ex.id);if(idx>=0)personItems[idx]=data;
-      }
-      continue;
-    }
-    inserts.push({person_id:personId,name:masterItem.name,category:masterItem.category,default_quantity:1,quantity_rule:"fixed",linked_master_item_id:masterItem.id,source_master_assignment:true,sort_order:personItems.filter(i=>i.person_id===personId).length});
-  }
-  if(inserts.length){
-    const {data,error}=await sb.from("camping_person_items").insert(inserts).select();if(error)throw error;
-    personItems.push(...(data||[]));
-  }
-  if(!addOnly){
-    for(const ex of existing){
-      if(selected.has(ex.person_id))continue;
-      if(ex.source_master_assignment){
-        const {error}=await sb.from("camping_person_items").delete().eq("id",ex.id);if(error)throw error;
-        personItems=personItems.filter(i=>i.id!==ex.id);personStates.delete(ex.id);
-      }else{
-        const {data,error}=await sb.from("camping_person_items").update({linked_master_item_id:null}).eq("id",ex.id).select().single();if(error)throw error;
-        const idx=personItems.findIndex(i=>i.id===ex.id);if(idx>=0)personItems[idx]=data;
-      }
-    }
-  }
-}
-
+function defaultPersonalCategory(c){return {"Hygiene & Gesundheit":"Hygiene","Baden & Wassersport":"Baden & Strand","Strand":"Baden & Strand","Fahrräder":"Fahrrad","Freizeit & Spiele":"Lesen/Freizeit","Technik":"Technik"}[c]||"Persönliches"}
+function renderMasterPersonTiles(hostId,selectedIds=[]){const host=el(hostId);if(!host)return;host.innerHTML="";const selected=new Set(selectedIds||[]);for(const p of people){const b=document.createElement("button");b.type="button";b.className="personAssignTile"+(selected.has(p.id)?" selected":"");b.dataset.personId=p.id;b.style.setProperty("--person-color",p.color||"#6b7");b.textContent=p.name;b.onclick=()=>b.classList.toggle("selected");host.appendChild(b)}}
+function selectedMasterPeople(hostId){const host=el(hostId);return host?[...host.querySelectorAll(".personAssignTile.selected")].map(b=>b.dataset.personId):[]}
+async function syncMasterPeople(masterItem,selectedIds,{addOnly=false}={}){if(!masterItem?.id)return;const selected=new Set(selectedIds||[]),existing=itemPeople.filter(x=>x.item_id===masterItem.id),old=new Set(existing.map(x=>x.person_id));const add=[...selected].filter(id=>!old.has(id)).map(person_id=>({item_id:masterItem.id,person_id,personal_category:defaultPersonalCategory(masterItem.category)}));if(add.length){const {data,error}=await sb.from("camping_item_people").insert(add).select();if(error)throw error;itemPeople.push(...(data||[]))}if(!addOnly){for(const x of existing.filter(x=>!selected.has(x.person_id))){const {error}=await sb.from("camping_item_people").delete().eq("item_id",x.item_id).eq("person_id",x.person_id);if(error)throw error}itemPeople=itemPeople.filter(x=>x.item_id!==masterItem.id||selected.has(x.person_id))}}
+function assignedMasterItemsForPerson(pid){const ids=new Set(itemPeople.filter(x=>x.person_id===pid).map(x=>x.item_id));return masterItems.filter(i=>ids.has(i.id))}
+function masterPersonCategory(itemId,pid){return itemPeople.find(x=>x.item_id===itemId&&x.person_id===pid)?.personal_category||"Persönliches"}
 function fillPersonMasterLinks(){
   const s=el("personItemLink");s.innerHTML='<option value="">Nicht verknüpfen</option>';
   for(const i of masterItems.filter(x=>x.is_master)){
@@ -1815,7 +1779,7 @@ function fillMasterCategorySelect(id,{blank=false,selected=""}={}){
   if(selected&&cats.includes(selected))s.value=selected;else if(blank)s.value="";
 }
 function fillCategorySuggestions(){const pc=[...new Set(personItems.map(i=>i.category).filter(Boolean))].sort();const p=el("personCategoryOptions");if(p)p.innerHTML=pc.map(x=>`<option value="${x}">`).join("");fillMasterCategorySelect("masterItemCategory",{selected:el("masterItemCategory")?.value||""});fillMasterCategorySelect("bulkMasterCategory",{selected:el("bulkMasterCategory")?.value||""})}
-function openMasterItem(item=null){editingMasterItem=item;if(item?.category)masterOpenCategory=item.category;fillMasterCategorySelect("masterItemCategory",{selected:item?.category||masterOpenCategory||masterCategories()[0]||""});el("masterItemName").value=item?.name||"";typeChecks("masterItemTypes",item?.trip_types||["all"]);const assigned=item?personItems.filter(pi=>pi.linked_master_item_id===item.id).map(pi=>pi.person_id):[];renderMasterPersonTiles("masterItemPeople",assigned);el("masterItemModal").classList.add("open")}
+function openMasterItem(item=null){editingMasterItem=item;if(item?.category)masterOpenCategory=item.category;fillMasterCategorySelect("masterItemCategory",{selected:item?.category||masterOpenCategory||masterCategories()[0]||""});el("masterItemName").value=item?.name||"";typeChecks("masterItemTypes",item?.trip_types||["all"]);const assigned=item?itemPeople.filter(x=>x.item_id===item.id).map(x=>x.person_id):[];renderMasterPersonTiles("masterItemPeople",assigned);el("masterItemModal").classList.add("open")}
 function renderCats(){
   fillCategorySuggestions();
   const cats=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category))];
