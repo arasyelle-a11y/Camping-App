@@ -1499,7 +1499,7 @@ function renderPeople(){
   for(const p of visiblePeople){const b=document.createElement("button");b.className="personTab"+(currentPerson?.id===p.id?" active":"");b.textContent=p.name;b.style.borderColor=p.color;if(currentPerson?.id===p.id)b.style.background=p.color;b.onclick=()=>{currentPerson=p;localStorage.setItem("camping-person-id",p.id);renderPeople()};tabs.appendChild(b)}
   if(!currentPerson){theme.style.display="none";list.innerHTML='<div class="personEmpty">Für diesen Urlaub ist noch keine Person ausgewählt.</div>';return}
   theme.style.display="block";theme.style.background=currentPerson.color;theme.innerHTML=`${currentPerson.name}s Packliste<small>${currentTrip?.name||""}</small>`;list.classList.add("personTint");list.style.background=`color-mix(in srgb, ${currentPerson.color} 8%, white)`;
-  const baseMine=personItems.filter(i=>i.person_id===currentPerson.id);
+  const baseMine=personItems.filter(i=>i.person_id===currentPerson.id&&!i.linked_master_item_id);
   const masterMine=assignedMasterItemsForPerson(currentPerson.id).map(mi=>({id:"master:"+mi.id,master_item_id:mi.id,person_id:currentPerson.id,name:mi.name,category:masterPersonCategory(mi.id,currentPerson.id),default_quantity:1,quantity_rule:"fixed",quantity_offset:0,must_not_forget:false,is_master_assignment:true}));
   const mine=[...baseMine,...masterMine];if(!mine.length){list.innerHTML=`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel. Mit „🧩 Grundausstattung“ kannst du mehrere auf einmal anlegen.</div>`;return}
   const groups=new Map();for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
