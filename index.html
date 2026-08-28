@@ -372,6 +372,14 @@ button{cursor:pointer}
 .typeTileGrid{display:flex;flex-wrap:wrap;gap:7px}.typeTile{border:1.5px solid var(--line);background:white;color:var(--navy);border-radius:11px;padding:9px 10px;font-size:11px;font-weight:850}
 .typeTile.selected{background:var(--green);border-color:var(--green);color:white}
 
+
+.hiddenField{display:none!important}.hiddenField.show{display:block!important}
+.personNote{font-size:10px;color:var(--brown);line-height:1.35;margin-top:4px;padding:5px 7px;background:var(--cream2);border-radius:7px}
+.masterPeopleHint{font-size:10px;color:var(--muted);line-height:1.35;margin:-2px 0 7px}
+.personAssignGrid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.personAssignTile{border:2px solid var(--person-color,var(--line));background:white;color:var(--navy);border-radius:11px;padding:8px 10px;font-size:11px;font-weight:900}
+.personAssignTile.selected{background:var(--person-color,var(--green));color:white}
+
 </style>
 </head>
 <body>
@@ -575,7 +583,9 @@ button{cursor:pointer}
 <div class="modal" id="bulkPersonItemModal"><div class="sheet">
   <h3>Mehrere Artikel anlegen</h3>
   <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Eine Zeile = ein Artikel.</div>
-  <input id="bulkPersonCategory" list="personCategoryOptions" placeholder="Kategorie auswählen oder neu eingeben">
+  <label class="fieldLabel">Kategorie</label>
+  <select id="bulkPersonCategory"></select>
+  <input id="bulkPersonNewCategory" class="hiddenField" placeholder="Neue Kategorie eingeben">
   <textarea id="bulkPersonItems" rows="10" placeholder="Unterhosen&#10;Socken&#10;T-Shirts&#10;Kurze Hosen&#10;Pullover"></textarea>
   <div id="bulkCount" style="font-size:12px;color:var(--muted);margin-top:5px">0 Artikel erkannt</div>
   <div class="sheetActions"><button class="cancel" id="bulkPersonCancel">Abbrechen</button><button class="save" id="bulkPersonSave">Alle anlegen</button></div>
@@ -605,7 +615,11 @@ button{cursor:pointer}
 <div class="modal" id="personItemModal"><div class="sheet">
   <h3>Persönlichen Artikel anlegen</h3>
   <input id="personItemName" placeholder="z. B. AirPods">
-  <input id="personItemCategory" list="personCategoryOptions" placeholder="Kategorie auswählen oder neu eingeben"><datalist id="personCategoryOptions"></datalist>
+  <label class="fieldLabel">Kategorie</label>
+  <select id="personItemCategory"></select>
+  <input id="personItemNewCategory" class="hiddenField" placeholder="Neue Kategorie eingeben">
+  <label class="fieldLabel">Notiz</label>
+  <textarea id="personItemNote" rows="3" placeholder="z. B. nur das lange Ladekabel mitnehmen"></textarea>
   <label class="fieldLabel">Mengenregel</label>
   <select id="personItemRule">
     <option value="fixed">Feste Menge</option>
@@ -625,12 +639,13 @@ button{cursor:pointer}
   <div class="sheetActions"><button class="cancel" id="personItemCancel">Abbrechen</button><button class="save" id="personItemSave">Anlegen</button></div>
 </div></div>
 
-<div class="modal" id="masterItemModal"><div class="sheet"><h3>Masterartikel</h3><input id="masterItemName" placeholder="Artikel"><select id="masterItemCategory"></select><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="masterItemTypes"></div><div class="sheetActions"><button class="cancel" id="masterItemCancel">Abbrechen</button><button class="save" id="masterItemSave">Speichern</button></div></div></div>
+<div class="modal" id="masterItemModal"><div class="sheet"><h3>Masterartikel</h3><input id="masterItemName" placeholder="Artikel"><select id="masterItemCategory"></select><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="masterItemTypes"></div><label class="fieldLabel">Persönliche Packliste</label><div class="masterPeopleHint">Optional Person(en) auswählen – der Artikel erscheint dann automatisch in deren persönlicher Packliste.</div><div class="personAssignGrid" id="masterItemPeople"></div><div class="sheetActions"><button class="cancel" id="masterItemCancel">Abbrechen</button><button class="save" id="masterItemSave">Speichern</button></div></div></div>
 <div class="modal" id="bulkMasterModal"><div class="sheet"><h3>Mehrere Masterartikel</h3><select id="bulkMasterCategory"></select><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="bulkMasterTypes"></div><textarea id="bulkMasterItems" rows="10" placeholder="Eine Zeile = ein Artikel"></textarea><div id="bulkMasterCount" style="font-size:12px;color:var(--muted);margin:5px 0">0 Artikel erkannt</div><div class="sheetActions"><button class="cancel" id="bulkMasterCancel">Abbrechen</button><button class="save" id="bulkMasterSave">Alle anlegen</button></div></div></div>
 <div class="modal" id="batchMasterModal"><div class="sheet"><h3 id="batchMasterTitle">Masterartikel gemeinsam bearbeiten</h3>
 <div class="batchHint">Nur die Felder ändern, die für alle markierten Artikel gelten sollen.</div>
 <label class="fieldLabel">Kategorie ändern (optional)</label><select id="batchMasterCategory"><option value="">— Kategorie unverändert —</option></select>
 <label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="batchMasterTypes"></div>
+<label class="fieldLabel">Personen hinzufügen (optional)</label><div class="masterPeopleHint">Ausgewählte Personen werden zu allen markierten Artikeln ergänzt. Bestehende Personenzuordnungen bleiben erhalten.</div><div class="personAssignGrid" id="batchMasterPeople"></div>
 <div class="sheetActions"><button class="cancel" id="batchMasterCancel">Abbrechen</button><button class="save" id="batchMasterSave">Auf Auswahl anwenden</button></div></div></div>
 <div id="printArea" style="display:none"></div>
 
@@ -1483,7 +1498,7 @@ function renderPeople(){
   const mine=personItems.filter(i=>i.person_id===currentPerson.id);if(!mine.length){list.innerHTML=`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel. Mit „🧩 Grundausstattung“ kannst du mehrere auf einmal anlegen.</div>`;return}
   const groups=new Map();for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
   for(const [cat,items] of groups){const sec=document.createElement("section");sec.className="personCategory";sec.innerHTML=`<div class="personCatHead" style="background:color-mix(in srgb, ${currentPerson.color} 18%, white);border-left:7px solid ${currentPerson.color}"><span class="pcTitle">${cat}</span><span class="pcCount">${items.length}</span><span>▾</span></div><div class="personCatBody"></div>`;const head=sec.querySelector(".personCatHead"),body=sec.querySelector(".personCatBody");head.onclick=()=>sec.classList.toggle("closed");
-    for(const item of items){const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id),row=document.createElement("div");row.className="personItem";row.style.borderLeftColor=currentPerson.color;row.innerHTML=`<input class="pselect" type="checkbox" ${s.selected?"checked":""}><div><b>${item.name}</b>${item.must_not_forget?'<span class="starBadge">⭐ Darf nicht fehlen</span>':""}${linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:""}<div class="ruleHint">${quantityRuleLabel(item)}${item.quantity_offset?` · persönlich ${item.quantity_offset>0?"+":""}${item.quantity_offset}`:""}${s.quantity_manual?" · manuell":""}</div><div class="personMiniActions"><button class="needp ${s.needs_purchase?"on":""}">🔎 ${s.needs_purchase?"Suchen/Kaufen":"fehlt?"}</button>${s.quantity_manual?'<button class="resetq">↺ Vorschlag</button>':""}<button class="pedit">Bearbeiten</button><button class="pdelete">Löschen</button></div></div><div class="qtyBox"><button class="minus" style="border-color:${currentPerson.color}">−</button><span class="qty">${s.quantity}</span><button class="plus" style="border-color:${currentPerson.color}">＋</button></div>`;
+    for(const item of items){const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id),row=document.createElement("div");row.className="personItem";row.style.borderLeftColor=currentPerson.color;row.innerHTML=`<input class="pselect" type="checkbox" ${s.selected?"checked":""}><div><b>${item.name}</b>${item.must_not_forget?'<span class="starBadge">⭐ Darf nicht fehlen</span>':""}${linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:""}${item.note?`<div class="personNote">📝 ${item.note}</div>`:""}<div class="ruleHint">${quantityRuleLabel(item)}${item.quantity_offset?` · persönlich ${item.quantity_offset>0?"+":""}${item.quantity_offset}`:""}${s.quantity_manual?" · manuell":""}</div><div class="personMiniActions"><button class="needp ${s.needs_purchase?"on":""}">🔎 ${s.needs_purchase?"Suchen/Kaufen":"fehlt?"}</button>${s.quantity_manual?'<button class="resetq">↺ Vorschlag</button>':""}<button class="pedit">Bearbeiten</button><button class="pdelete">Löschen</button></div></div><div class="qtyBox"><button class="minus" style="border-color:${currentPerson.color}">−</button><span class="qty">${s.quantity}</span><button class="plus" style="border-color:${currentPerson.color}">＋</button></div>`;
       row.querySelector(".pselect").onchange=e=>savePersonState(item,{selected:e.target.checked});row.querySelector(".minus").onclick=()=>savePersonState(item,{quantity:Math.max(0,s.quantity-1),quantity_manual:true});row.querySelector(".plus").onclick=()=>savePersonState(item,{quantity:s.quantity+1,quantity_manual:true});row.querySelector(".needp").onclick=()=>savePersonState(item,{needs_purchase:!s.needs_purchase});const reset=row.querySelector(".resetq");if(reset)reset.onclick=()=>savePersonState(item,{quantity:suggestedQuantity(item),quantity_manual:false});row.querySelector(".pedit").onclick=()=>openEditPersonItem(item);row.querySelector(".pdelete").onclick=()=>deletePersonItem(item);body.appendChild(row)}
     list.appendChild(sec)}
 }
@@ -1555,6 +1570,73 @@ async function addSelectedModules(){
   let updated=0;try{updated=await reconcilePersonBasics(currentPerson.id)}catch(e){console.error(e)}
   el("modulesModal").classList.remove("open");renderPeople();toast(`${added} neu · ${updated} Standardartikel aktualisiert`);
 }
+
+function personalCategories(){
+  const moduleCats=PERSON_MODULES.flatMap(m=>m.items.map(i=>i[1]));
+  return [...new Set([...moduleCats,...personItems.map(i=>i.category).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,"de"));
+}
+function fillPersonalCategorySelect(selectId,newInputId,selected=""){
+  const s=el(selectId),n=el(newInputId);if(!s)return;
+  const cats=personalCategories();s.innerHTML="";
+  for(const c of cats){const o=document.createElement("option");o.value=o.textContent=c;s.appendChild(o)}
+  const add=document.createElement("option");add.value="__new__";add.textContent="＋ Neue Kategorie anlegen";s.appendChild(add);
+  if(selected&&cats.includes(selected))s.value=selected;else if(selected){s.value="__new__";if(n){n.value=selected;n.classList.add("show")}}else if(cats.length)s.value=cats[0];
+  s.onchange=()=>{if(!n)return;n.classList.toggle("show",s.value==="__new__");if(s.value!=="__new__")n.value=""};
+  if(n&&!selected)n.classList.remove("show");
+}
+function resolvedPersonalCategory(selectId,newInputId){
+  const s=el(selectId);if(!s)return "Sonstiges";
+  if(s.value==="__new__")return el(newInputId)?.value.trim()||"";
+  return s.value.trim();
+}
+function renderMasterPersonTiles(hostId,selectedIds=[]){
+  const host=el(hostId);if(!host)return;host.innerHTML="";const selected=new Set(selectedIds||[]);
+  for(const p of people){
+    const b=document.createElement("button");b.type="button";b.className="personAssignTile"+(selected.has(p.id)?" selected":"");b.dataset.personId=p.id;b.style.setProperty("--person-color",p.color||"#6b7");b.textContent=p.name;
+    b.onclick=()=>b.classList.toggle("selected");host.appendChild(b)
+  }
+}
+function selectedMasterPeople(hostId){
+  const host=el(hostId);if(!host)return [];
+  return [...host.querySelectorAll(".personAssignTile.selected")].map(b=>b.dataset.personId);
+}
+async function syncMasterPeople(masterItem,selectedIds,{addOnly=false}={}){
+  if(!masterItem?.id)return;
+  const selected=new Set(selectedIds||[]);
+  const existing=personItems.filter(i=>i.linked_master_item_id===masterItem.id);
+  const existingByPerson=new Map(existing.map(i=>[i.person_id,i]));
+  const inserts=[];
+  for(const personId of selected){
+    const ex=existingByPerson.get(personId);
+    if(ex){
+      if(ex.source_master_assignment){
+        const patch={name:masterItem.name,category:masterItem.category};
+        const {data,error}=await sb.from("camping_person_items").update(patch).eq("id",ex.id).select().single();
+        if(error)throw error;
+        const idx=personItems.findIndex(i=>i.id===ex.id);if(idx>=0)personItems[idx]=data;
+      }
+      continue;
+    }
+    inserts.push({person_id:personId,name:masterItem.name,category:masterItem.category,default_quantity:1,quantity_rule:"fixed",linked_master_item_id:masterItem.id,source_master_assignment:true,sort_order:personItems.filter(i=>i.person_id===personId).length});
+  }
+  if(inserts.length){
+    const {data,error}=await sb.from("camping_person_items").insert(inserts).select();if(error)throw error;
+    personItems.push(...(data||[]));
+  }
+  if(!addOnly){
+    for(const ex of existing){
+      if(selected.has(ex.person_id))continue;
+      if(ex.source_master_assignment){
+        const {error}=await sb.from("camping_person_items").delete().eq("id",ex.id);if(error)throw error;
+        personItems=personItems.filter(i=>i.id!==ex.id);personStates.delete(ex.id);
+      }else{
+        const {data,error}=await sb.from("camping_person_items").update({linked_master_item_id:null}).eq("id",ex.id).select().single();if(error)throw error;
+        const idx=personItems.findIndex(i=>i.id===ex.id);if(idx>=0)personItems[idx]=data;
+      }
+    }
+  }
+}
+
 function fillPersonMasterLinks(){
   const s=el("personItemLink");s.innerHTML='<option value="">Nicht verknüpfen</option>';
   for(const i of masterItems.filter(x=>x.is_master)){
@@ -1566,7 +1648,8 @@ function openEditPersonItem(item){
   fillPersonMasterLinks();
   el("personItemModal").querySelector("h3").textContent="Persönlichen Artikel bearbeiten";
   el("personItemName").value=item.name||"";
-  el("personItemCategory").value=item.category||"";
+  fillPersonalCategorySelect("personItemCategory","personItemNewCategory",item.category||"");
+  el("personItemNote").value=item.note||"";
   el("personItemQty").value=item.default_quantity??1;
   el("personItemRule").value=item.quantity_rule||"fixed";
   el("personItemOffset").value=item.quantity_offset||0;
@@ -1593,7 +1676,7 @@ function printCurrentPerson(){
   let html=`<h1 style="border-bottom:4px solid ${currentPerson.color};padding-bottom:3mm">${currentPerson.name} – Packliste</h1><div>${currentTrip?.name||""}${currentTrip?.start_date?" · "+fmtDate(currentTrip.start_date):""}${currentTrip?.end_date?" – "+fmtDate(currentTrip.end_date):""}</div>`;
   for(const [cat,items] of groups){
     html+=`<h2 style="border-color:${currentPerson.color}">${cat}</h2>`;
-    for(const i of items)html+=`<div class="printRow"><span class="printCheck"></span><span>${i.name}${i.must_not_forget?" ⭐":""}</span><span class="printQty">${personState(i).quantity}×</span></div>`;
+    for(const i of items)html+=`<div class="printRow"><span class="printCheck"></span><span>${i.name}${i.must_not_forget?" ⭐":""}${i.note?`<small style="display:block;font-weight:400">📝 ${i.note}</small>`:""}</span><span class="printQty">${personState(i).quantity}×</span></div>`;
   }
   const critical=mine.filter(i=>i.must_not_forget);
   if(critical.length){
@@ -1732,7 +1815,7 @@ function fillMasterCategorySelect(id,{blank=false,selected=""}={}){
   if(selected&&cats.includes(selected))s.value=selected;else if(blank)s.value="";
 }
 function fillCategorySuggestions(){const pc=[...new Set(personItems.map(i=>i.category).filter(Boolean))].sort();const p=el("personCategoryOptions");if(p)p.innerHTML=pc.map(x=>`<option value="${x}">`).join("");fillMasterCategorySelect("masterItemCategory",{selected:el("masterItemCategory")?.value||""});fillMasterCategorySelect("bulkMasterCategory",{selected:el("bulkMasterCategory")?.value||""})}
-function openMasterItem(item=null){editingMasterItem=item;if(item?.category)masterOpenCategory=item.category;fillMasterCategorySelect("masterItemCategory",{selected:item?.category||masterOpenCategory||masterCategories()[0]||""});el("masterItemName").value=item?.name||"";typeChecks("masterItemTypes",item?.trip_types||["all"]);el("masterItemModal").classList.add("open")}
+function openMasterItem(item=null){editingMasterItem=item;if(item?.category)masterOpenCategory=item.category;fillMasterCategorySelect("masterItemCategory",{selected:item?.category||masterOpenCategory||masterCategories()[0]||""});el("masterItemName").value=item?.name||"";typeChecks("masterItemTypes",item?.trip_types||["all"]);const assigned=item?personItems.filter(pi=>pi.linked_master_item_id===item.id).map(pi=>pi.person_id):[];renderMasterPersonTiles("masterItemPeople",assigned);el("masterItemModal").classList.add("open")}
 function renderCats(){
   fillCategorySuggestions();
   const cats=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category))];
@@ -1746,6 +1829,7 @@ document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySel
 el("addMasterItemBtn").onclick=()=>openMasterItem();el("masterItemCancel").onclick=()=>el("masterItemModal").classList.remove("open");
 el("masterItemSave").onclick=async()=>{
   const name=el("masterItemName").value.trim(),category=el("masterItemCategory").value.trim(),trip_types=checkedTypes("masterItemTypes");
+  const assignedPeople=selectedMasterPeople("masterItemPeople");
   if(!name||!category)return toast("Bitte Artikel und Kategorie eingeben");
   masterOpenCategory=category;
   const original=editingMasterItem?{...editingMasterItem}:null;
@@ -1753,24 +1837,19 @@ el("masterItemSave").onclick=async()=>{
   const patch={name,category,trip_types};
   editingMasterItem=null;
   el("masterItemModal").classList.remove("open");
-  if(editingId){
-    const local=masterItems.find(i=>i.id===editingId);if(local)Object.assign(local,patch);
-    renderMaster();
-  }
+  if(editingId){const local=masterItems.find(i=>i.id===editingId);if(local)Object.assign(local,patch);renderMaster()}
   beginBackgroundSave("Masterartikel wird gespeichert …");
   try{
     let data,error;
     if(editingId)({data,error}=await sb.from("camping_items").update(patch).eq("id",editingId).select().single());
     else ({data,error}=await sb.from("camping_items").insert({...patch,icon:iconForCategory(category),is_master:true}).select().single());
     if(error)throw error;
-    await loadItems();render();
+    await syncMasterPeople(data,assignedPeople);
+    await loadItems();render();renderPeople();saveCache();
     finishBackgroundSave("Masterartikel gespeichert");
   }catch(error){
     console.error(error);
-    if(original){
-      const local=masterItems.find(i=>i.id===original.id);if(local)Object.assign(local,original);
-      renderMaster();
-    }
+    if(original){const local=masterItems.find(i=>i.id===original.id);if(local)Object.assign(local,original);renderMaster()}
     failBackgroundSave("Masterartikel nicht gespeichert");
   }
 };
@@ -1800,6 +1879,7 @@ el("masterBatchEditBtn").onclick=()=>{
   el("batchMasterTitle").textContent=`${masterSelectedIds.size} Masterartikel gemeinsam bearbeiten`;
   fillMasterCategorySelect("batchMasterCategory",{blank:true});
   typeChecks("batchMasterTypes",[]);
+  renderMasterPersonTiles("batchMasterPeople",[]);
   // Für Sammelbearbeitung startet bewusst nichts vorausgewählt: Auswahl = neue gemeinsame Zuordnung.
   el("batchMasterModal").classList.add("open");
 };
@@ -1809,6 +1889,7 @@ el("batchMasterSave").onclick=async()=>{
   const category=el("batchMasterCategory").value;
   const trip_types=checkedTypes("batchMasterTypes");
   const ids=[...masterSelectedIds];
+  const addPeople=selectedMasterPeople("batchMasterPeople");
   const originals=new Map(ids.map(id=>[id,{...masterItems.find(i=>i.id===id)}]));
   const patch={trip_types};if(category)patch.category=category;
   if(category)masterOpenCategory=category;
@@ -1820,7 +1901,13 @@ el("batchMasterSave").onclick=async()=>{
   try{
     const {error}=await sb.from("camping_items").update(patch).in("id",ids);
     if(error)throw error;
-    await loadItems();render();
+    if(addPeople.length){
+      for(const id of ids){
+        const item=masterItems.find(i=>i.id===id);
+        if(item)await syncMasterPeople(item,addPeople,{addOnly:true});
+      }
+    }
+    await loadItems();render();renderPeople();saveCache();
     finishBackgroundSave(`${ids.length} Artikel gespeichert`);
   }catch(error){
     console.error(error);
@@ -1879,7 +1966,7 @@ el("bulkPersonItems").addEventListener("input",()=>{
 });
 el("bulkPersonItemBtn").onclick=()=>{
   if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
-  el("bulkPersonCategory").value="";
+  fillPersonalCategorySelect("bulkPersonCategory","bulkPersonNewCategory","");
   el("bulkPersonItems").value="";
   el("bulkCount").textContent="0 Artikel erkannt";
   el("bulkPersonItemModal").classList.add("open");
@@ -1887,7 +1974,7 @@ el("bulkPersonItemBtn").onclick=()=>{
 el("bulkPersonCancel").onclick=()=>el("bulkPersonItemModal").classList.remove("open");
 el("bulkPersonSave").onclick=async()=>{
   if(!currentPerson)return;
-  const category=el("bulkPersonCategory").value.trim()||"Sonstiges";
+  const category=resolvedPersonalCategory("bulkPersonCategory","bulkPersonNewCategory")||"Sonstiges";
   const names=parseBulkPersonNames();
   if(!names.length)return toast("Bitte mindestens einen Artikel eingeben");
   const base=personItems.filter(i=>i.person_id===currentPerson.id).length;
@@ -1936,26 +2023,36 @@ el("addPersonItemBtn").onclick=()=>{
   editingPersonItem=null;
   el("personItemModal").querySelector("h3").textContent="Persönlichen Artikel anlegen";
   el("personItemSave").textContent="Anlegen";
-  el("personItemName").value="";el("personItemCategory").value="";el("personItemQty").value="1";el("personItemRule").value="fixed";el("personItemOffset").value="0";el("personItemStar").checked=false;fillPersonMasterLinks();el("personItemModal").classList.add("open");
+  el("personItemName").value="";fillPersonalCategorySelect("personItemCategory","personItemNewCategory","");el("personItemNote").value="";el("personItemQty").value="1";el("personItemRule").value="fixed";el("personItemOffset").value="0";el("personItemStar").checked=false;fillPersonMasterLinks();el("personItemModal").classList.add("open");
 };
 el("personItemCancel").onclick=()=>{editingPersonItem=null;el("personItemModal").classList.remove("open")};
 el("personItemSave").onclick=async()=>{
   if(!currentPerson)return;
-  const name=el("personItemName").value.trim(),category=el("personItemCategory").value.trim()||"Sonstiges",
+  const personId=currentPerson.id;
+  const name=el("personItemName").value.trim(),category=resolvedPersonalCategory("personItemCategory","personItemNewCategory"),
+    note=el("personItemNote").value.trim()||null,
     default_quantity=Math.max(0,parseInt(el("personItemQty").value||"1")),quantity_rule=el("personItemRule").value||"fixed",
     quantity_offset=parseInt(el("personItemOffset").value||"0"),must_not_forget=el("personItemStar").checked,
     linked_master_item_id=el("personItemLink").value||null;
   if(!name)return toast("Bitte einen Artikelnamen eingeben");
-  const patch={name,category,default_quantity,quantity_rule,quantity_offset,must_not_forget,linked_master_item_id};
-  if(editingPersonItem){
-    const {data,error}=await sb.from("camping_person_items").update(patch).eq("id",editingPersonItem.id).select().single();
-    if(error){console.error(error);return toast("Artikel konnte nicht geändert werden")}
-    const idx=personItems.findIndex(i=>i.id===editingPersonItem.id);if(idx>=0)personItems[idx]=data;
-    editingPersonItem=null;el("personItemModal").classList.remove("open");renderPeople();render();toast("Artikel gespeichert");
-  }else{
-    const {data,error}=await sb.from("camping_person_items").insert({...patch,person_id:currentPerson.id,sort_order:personItems.filter(i=>i.person_id===currentPerson.id).length}).select().single();
-    if(error){console.error(error);return toast("Artikel konnte nicht angelegt werden")}
-    personItems.push(data);el("personItemModal").classList.remove("open");renderPeople();render();toast("Artikel angelegt");
+  if(!category)return toast("Bitte eine Kategorie auswählen oder eingeben");
+  const patch={name,category,note,default_quantity,quantity_rule,quantity_offset,must_not_forget,linked_master_item_id};
+  const editingId=editingPersonItem?.id||null;
+  const original=editingPersonItem?{...editingPersonItem}:null;
+  editingPersonItem=null;el("personItemModal").classList.remove("open");
+  if(editingId){const idx=personItems.findIndex(i=>i.id===editingId);if(idx>=0)personItems[idx]={...personItems[idx],...patch};renderPeople();render()}
+  beginBackgroundSave("Persönlicher Artikel wird gespeichert …");
+  try{
+    let data,error;
+    if(editingId)({data,error}=await sb.from("camping_person_items").update(patch).eq("id",editingId).select().single());
+    else ({data,error}=await sb.from("camping_person_items").insert({...patch,person_id:personId,sort_order:personItems.filter(i=>i.person_id===personId).length}).select().single());
+    if(error)throw error;
+    if(editingId){const idx=personItems.findIndex(i=>i.id===editingId);if(idx>=0)personItems[idx]=data}else personItems.push(data);
+    renderPeople();render();saveCache();finishBackgroundSave(editingId?"Artikel gespeichert":"Artikel angelegt");
+  }catch(error){
+    console.error(error);
+    if(original){const idx=personItems.findIndex(i=>i.id===original.id);if(idx>=0)personItems[idx]=original}
+    renderPeople();render();failBackgroundSave("Persönlicher Artikel nicht gespeichert");
   }
 };
 el("printPersonBtn").onclick=printCurrentPerson;
