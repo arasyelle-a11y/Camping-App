@@ -677,7 +677,17 @@ button{cursor:pointer}
   </div>
 </div>
 
-<div id="personCategoryModal" class="modal"><div class="modalCard"><h3 id="personCategoryTitle">Kategorie ändern</h3><label>Kategorie<select id="personCategorySelect"></select></label><div class="modalActions"><button type="button" id="personCategoryCancel" class="secondary">Abbrechen</button><button type="button" id="personCategorySave">Speichern</button></div></div></div>
+<div id="personCategoryModal" class="modal"><div class="sheet">
+  <h3 id="personCategoryTitle">Persönliche Zuordnung bearbeiten</h3>
+  <div class="masterPeopleHint" id="personCategoryItemHint"></div>
+  <label class="fieldLabel">Kategorie in der persönlichen Liste</label>
+  <select id="personCategorySelect"></select>
+  <button type="button" id="personCategoryOpenMaster" class="secondary" style="width:100%;margin-top:12px">📚 Masterartikel öffnen</button>
+  <div class="sheetActions">
+    <button type="button" class="cancel" id="personCategoryCancel">Abbrechen</button>
+    <button type="button" class="save" id="personCategorySave">Speichern</button>
+  </div>
+</div></div>
 <script>
 const SUPABASE_URL="https://muujfgwspkoogjxtvcrp.supabase.co";
 const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
@@ -1615,7 +1625,9 @@ function changeMasterPersonalCategory(item){
  const choices=[...new Set([...defaults,...existing])],sel=el("personCategorySelect");sel.innerHTML="";
  for(const c of choices){const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)}
  sel.value=masterPersonCategory(item.master_item_id,currentPerson.id);
- el("personCategoryTitle").textContent=`Kategorie bei ${currentPerson.name}`;el("personCategoryModal").classList.add("open");
+ el("personCategoryTitle").textContent=`Masterartikel bei ${currentPerson.name} bearbeiten`;
+ el("personCategoryItemHint").textContent=item.name;
+ el("personCategoryModal").classList.add("open");
 }
 async function saveMasterPersonalCategory(){
  const item=categoryEditingMasterItem;if(!item)return;const link=itemPeople.find(x=>x.item_id===item.master_item_id&&x.person_id===currentPerson.id);if(!link)return;
@@ -1811,6 +1823,13 @@ function renderCats(){
 el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastRemoved=null;await dbUpsert(x.itemId,x.old);el("undoToast").classList.remove("show")};
 el("personCategoryCancel").onclick=()=>{el("personCategoryModal").classList.remove("open");categoryEditingMasterItem=null};
 el("personCategorySave").onclick=saveMasterPersonalCategory;
+el("personCategoryOpenMaster").onclick=()=>{
+  const item=categoryEditingMasterItem;if(!item)return;
+  const master=masterItems.find(x=>x.id===item.master_item_id);if(!master)return;
+  el("personCategoryModal").classList.remove("open");
+  categoryEditingMasterItem=null;
+  openMasterItem(master);
+};
 el("planModeBtn").onclick=()=>setPackViewMode("plan");
 el("packModeBtn").onclick=()=>setPackViewMode("pack");
 el("toggleOtherItemsBtn").onclick=()=>{showOtherPlanning=!showOtherPlanning;activeCategory=null;render()};
