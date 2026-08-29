@@ -380,7 +380,7 @@ button{cursor:pointer}
 .personAssignTile{border:2px solid var(--person-color,var(--line));background:white;color:var(--navy);border-radius:11px;padding:8px 10px;font-size:11px;font-weight:900}
 .personAssignTile.selected{background:var(--person-color,var(--green));color:white}
 
-</style>
+.reviewStartBtn{width:100%;margin-top:10px;background:#fff7df!important;border:1px solid #d9b55d!important;color:#584719!important;font-weight:800}.reviewSheet{max-width:520px}.reviewProgress{font-size:13px;color:#6f6b63;margin:-3px 0 10px}.reviewItemName{font-size:27px;font-weight:900;color:#18354a;margin:8px 0 4px}.reviewItemMeta{font-size:13px;color:#777;margin-bottom:15px}.reviewLights{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.reviewLight{padding:13px 5px;border-radius:14px;border:2px solid #ddd;background:white;font-weight:800;font-size:13px}.reviewLight.green.on{background:#dff3df;border-color:#63a96a}.reviewLight.yellow.on{background:#fff1bf;border-color:#d6aa32}.reviewLight.red.on{background:#f7d8d8;border-color:#c76a6a}.reviewDeluxe{display:flex;align-items:center;gap:9px;margin:14px 0;padding:10px;border-radius:12px;background:#fffaf0;font-weight:800}.reviewNote{width:100%;min-height:72px;box-sizing:border-box}.reviewNav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.reviewHistoryToggle{display:flex;align-items:center;gap:8px;margin:8px 0 4px;font-size:14px;font-weight:700}.reviewMark{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:6px}.reviewMark.green{background:#63a96a}.reviewMark.yellow{background:#d6aa32}.reviewMark.red{background:#c76a6a}.reviewDeluxeStar{margin-left:5px}</style>
 </head>
 <body>
 <div id="login" class="login">
@@ -430,7 +430,7 @@ button{cursor:pointer}
       <button class="modeBtn" id="packModeBtn">📦 Packen</button>
     </div>
     <div class="packModeHelp" id="packModeHelp">Planung: passende Artikel für diese Urlaubsart zusammenstellen. Nicht passende Dinge bleiben zunächst ausgeblendet.</div>
-    <div class="otherItemsBar" id="otherItemsBar"><button id="toggleOtherItemsBtn">＋ Weitere Masterartikel anzeigen</button></div>
+    <div class="otherItemsBar" id="otherItemsBar"><button id="toggleOtherItemsBtn">＋ Weitere Masterartikel anzeigen</button></div><label class="reviewHistoryToggle"><input type="checkbox" id="showReviewsToggle"> Bewertungen anzeigen</label>
     <div class="filters">
       <button class="filter active" data-filter="all">Alle</button>
       <button class="filter" data-filter="selected">Mitnehmen</button>
@@ -527,7 +527,7 @@ button{cursor:pointer}
       <button class="save" id="editTripSave">Speichern</button>
     </div>
     <div class="sheetActions" style="margin-top:8px">
-      <button class="archiveBtn" id="archiveTripBtn">🗂️ Archivieren</button>
+      <button id="reviewTripBtn" class="reviewStartBtn">🚦 Urlaub bewerten</button><button class="archiveBtn" id="archiveTripBtn">🗂️ Archivieren</button>
       <button class="danger" id="deleteTripBtn">Urlaub löschen</button>
     </div>
   </div>
@@ -688,6 +688,7 @@ button{cursor:pointer}
     <button type="button" class="save" id="personCategorySave">Speichern</button>
   </div>
 </div></div>
+<div class="modal" id="reviewModal"><div class="sheet reviewSheet"><h3>🚦 Urlaubsbewertung</h3><div class="reviewProgress" id="reviewProgress"></div><div class="reviewItemName" id="reviewItemName"></div><div class="reviewItemMeta" id="reviewItemMeta"></div><div class="reviewLights"><button class="reviewLight green" data-review-rating="green">🟢 Wieder mit</button><button class="reviewLight yellow" data-review-rating="yellow">🟡 Kommt drauf an</button><button class="reviewLight red" data-review-rating="red">🔴 Nicht nötig</button></div><label class="reviewDeluxe"><input type="checkbox" id="reviewDeluxe"> ⭐ Deluxeartikel – macht den Urlaub deutlich besser</label><label>Notiz<textarea id="reviewNote" class="reviewNote" placeholder="Was möchtest du dir fürs nächste Mal merken?"></textarea></label><div class="reviewNav"><button type="button" class="secondary" id="reviewSkip">Überspringen</button><button type="button" id="reviewSaveNext">Speichern & weiter</button></div><div class="sheetActions"><button type="button" class="cancel" id="reviewClose">Für jetzt schließen</button></div></div></div>
 <script>
 const SUPABASE_URL="https://muujfgwspkoogjxtvcrp.supabase.co";
 const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
@@ -778,6 +779,7 @@ function renderTripHero(){
 }
 
 let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], itemPeople=[], personStates=new Map(), currentPerson=null;
+let tripReviews=new Map(), reviewItems=[], reviewIndex=0, reviewRating=null, showReviews=false;
 let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all", packViewMode="plan", showOtherPlanning=false, masterSelectedIds=new Set(), masterOpenCategory=null;
 const el=id=>document.getElementById(id);
 
@@ -997,6 +999,7 @@ async function switchTrip(id){
   restorePackViewMode();
   setSync("Lädt …");
   await loadStates();
+  await loadTripReviews();
   await loadPersonStates();
   await loadTripPeople();
   updateTripInfo();
@@ -1288,6 +1291,12 @@ function openItemEditor(item){
   el("permanentNoteHint").textContent=item.note ? "Aktuell dauerhaft gespeichert: "+item.note : "Noch keine dauerhafte Artikelnotiz.";
   el("editModal").classList.add("open");
 }
+async function loadTripReviews(){tripReviews=new Map();if(!currentTrip)return;const {data,error}=await sb.from("camping_trip_item_reviews").select("*").eq("trip_id",currentTrip.id);if(error){console.warn(error);return}for(const x of data||[])tripReviews.set(x.item_id,x)}
+function reviewCandidates(){return masterItems.filter(i=>i.is_master&&state(i.id).selected)}
+function openTripReview(){if(!currentTrip)return;reviewItems=reviewCandidates();reviewIndex=0;if(!reviewItems.length){toast("Noch keine ausgewählten Masterartikel zum Bewerten");return}const first=reviewItems.findIndex(i=>!tripReviews.has(i.id));if(first>=0)reviewIndex=first;el("editTripModal")?.classList.remove("open");el("reviewModal").classList.add("open");renderReviewItem()}
+function renderReviewItem(){if(!reviewItems.length||reviewIndex>=reviewItems.length){el("reviewModal").classList.remove("open");toast("Bewertung abgeschlossen 🚦⭐");render();return}const item=reviewItems[reviewIndex],old=tripReviews.get(item.id);reviewRating=old?.rating||null;el("reviewProgress").textContent=`${reviewIndex+1} von ${reviewItems.length}`;el("reviewItemName").textContent=item.name;el("reviewItemMeta").textContent=item.category||"";el("reviewDeluxe").checked=!!old?.deluxe;el("reviewNote").value=old?.note||"";document.querySelectorAll("[data-review-rating]").forEach(b=>b.classList.toggle("on",b.dataset.reviewRating===reviewRating))}
+async function saveReviewAndNext(){const item=reviewItems[reviewIndex];if(!item)return;const row={trip_id:currentTrip.id,item_id:item.id,rating:reviewRating,deluxe:el("reviewDeluxe").checked,note:el("reviewNote").value.trim()||null,updated_at:new Date().toISOString()};beginBackgroundSave("Bewertung speichert …");const {data,error}=await sb.from("camping_trip_item_reviews").upsert(row,{onConflict:"trip_id,item_id"}).select().single();if(error){console.error(error);failBackgroundSave?.("Fehler");return}tripReviews.set(item.id,data);finishBackgroundSave("Bewertung gespeichert");reviewIndex++;renderReviewItem()}
+function reviewBadgeHtml(item){if(!showReviews)return "";const r=tripReviews.get(item.id);if(!r)return "";return `<span title="Bewertung"><span class="reviewMark ${r.rating||""}"></span>${r.deluxe?'<span class="reviewDeluxeStar">⭐</span>':""}</span>`}
 function render(){
   renderPersonControlPanels();
   renderPackModeUI();
@@ -1830,6 +1839,9 @@ el("personCategoryOpenMaster").onclick=()=>{
   categoryEditingMasterItem=null;
   openMasterItem(master);
 };
+el("reviewTripBtn").onclick=openTripReview;
+document.querySelectorAll("[data-review-rating]").forEach(b=>b.onclick=()=>{reviewRating=b.dataset.reviewRating;document.querySelectorAll("[data-review-rating]").forEach(x=>x.classList.toggle("on",x===b))});
+el("reviewSaveNext").onclick=saveReviewAndNext;el("reviewSkip").onclick=()=>{reviewIndex++;renderReviewItem()};el("reviewClose").onclick=()=>el("reviewModal").classList.remove("open");el("showReviewsToggle").onchange=e=>{showReviews=e.target.checked;render()};
 el("planModeBtn").onclick=()=>setPackViewMode("plan");
 el("packModeBtn").onclick=()=>setPackViewMode("pack");
 el("toggleOtherItemsBtn").onclick=()=>{showOtherPlanning=!showOtherPlanning;activeCategory=null;render()};
@@ -2166,7 +2178,8 @@ el("editTripSave").onclick=async()=>{
 };
 el("archiveTripBtn").onclick=async()=>{
   if(!currentTrip)return;
-  if(!confirm(`„${currentTrip.name}“ wirklich archivieren? Die Packliste bleibt vollständig erhalten und wird im Archiv nur noch lesbar angezeigt.`))return;
+  if(reviewCandidates().length&&!tripReviews.size){if(confirm("Für diesen Urlaub gibt es noch keine Artikelbewertungen. Jetzt zuerst bewerten?")){openTripReview();return}}
+  if(!confirm(`„${currentTrip.name}“ wirklich archivieren? Die Packliste und Bewertungen bleiben erhalten.`))return;
   setSync("Archiviert …");
   const {error}=await sb.from("camping_trips").update({archived:true,memory_text:el("editTripMemory").value.trim()||null}).eq("id",currentTrip.id);
   if(error){console.error(error);toast("Archivieren fehlgeschlagen");setSync("Fehler");return}
