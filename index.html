@@ -401,7 +401,8 @@ button{cursor:pointer}
 .row.review-yellow{background:#fff0bd!important;box-shadow:inset 0 0 0 1px rgba(203,163,48,.30);border-radius:10px}
 .row.review-red{background:#f5d7d7!important;box-shadow:inset 0 0 0 1px rgba(184,82,82,.28);border-radius:10px}
 .reviewExtras{display:inline-flex;align-items:center;gap:3px;margin-left:6px;font-size:12px;vertical-align:middle}
-.reviewDeluxeStar{margin-left:1px}.reviewNoteMini{font-size:12px}</style>
+.reviewDeluxeStar{margin-left:1px}.reviewNoteMini{font-size:12px}.reviewHistoryToggle #reviewCountHint{font-weight:700;color:var(--muted)}
+.reviewHistoryToggle:has(input:checked){color:#18354a}</style>
 </head>
 <body>
 <div id="login" class="login">
@@ -451,7 +452,7 @@ button{cursor:pointer}
       <button class="modeBtn" id="packModeBtn">📦 Packen</button>
     </div>
     <div class="packModeHelp" id="packModeHelp">Planung: passende Artikel für diese Urlaubsart zusammenstellen. Nicht passende Dinge bleiben zunächst ausgeblendet.</div>
-    <div class="otherItemsBar" id="otherItemsBar"><button id="toggleOtherItemsBtn">＋ Weitere Masterartikel anzeigen</button></div><label class="reviewHistoryToggle"><input type="checkbox" id="showReviewsToggle"> Bewertungen anzeigen</label>
+    <div class="otherItemsBar" id="otherItemsBar"><button id="toggleOtherItemsBtn">＋ Weitere Masterartikel anzeigen</button></div><label class="reviewHistoryToggle"><input type="checkbox" id="showReviewsToggle"> Bewertungen anzeigen <span id="reviewCountHint"></span></label>
     <div class="filters">
       <button class="filter active" data-filter="all">Alle</button>
       <button class="filter" data-filter="selected">Mitnehmen</button>
@@ -1080,6 +1081,9 @@ function renderPackModeUI(){
   view.classList.toggle("packTheme",packViewMode==="pack");
   el("planModeBtn")?.classList.toggle("active",packViewMode==="plan");
   el("packModeBtn")?.classList.toggle("active",packViewMode==="pack");
+  const reviewToggle=el("showReviewsToggle"),reviewCountHint=el("reviewCountHint");
+  if(reviewToggle)reviewToggle.checked=showReviews;
+  if(reviewCountHint)reviewCountHint.textContent=tripReviews.size?`(${tripReviews.size})`:"";
   const help=el("packModeHelp"),other=el("otherItemsBar"),toggle=el("toggleOtherItemsBtn");
   if(packViewMode==="pack"){
     help.textContent=currentPackProfile().help;
@@ -1312,7 +1316,13 @@ function openItemEditor(item){
   el("permanentNoteHint").textContent=item.note ? "Aktuell dauerhaft gespeichert: "+item.note : "Noch keine dauerhafte Artikelnotiz.";
   el("editModal").classList.add("open");
 }
-async function loadTripReviews(){tripReviews=new Map();if(!currentTrip)return;const {data,error}=await sb.from("camping_trip_item_reviews").select("*").eq("trip_id",currentTrip.id);if(error){console.warn(error);return}for(const x of data||[])tripReviews.set(x.item_id,x)}
+async function loadTripReviews(){
+  tripReviews=new Map();if(!currentTrip)return;
+  const {data,error}=await sb.from("camping_trip_item_reviews").select("*").eq("trip_id",currentTrip.id);
+  if(error){console.warn(error);return}
+  for(const x of data||[])tripReviews.set(x.item_id,x);
+  showReviews=tripReviews.size>0;
+}
 function reviewCandidates(){return masterItems.filter(i=>i.is_master&&state(i.id).selected)}
 function openTripReview(){if(!currentTrip)return;reviewItems=reviewCandidates();reviewIndex=0;if(!reviewItems.length){toast("Noch keine ausgewählten Masterartikel zum Bewerten");return}const first=reviewItems.findIndex(i=>!tripReviews.has(i.id));if(first>=0)reviewIndex=first;el("editTripModal")?.classList.remove("open");el("reviewModal").classList.add("open");renderReviewItem()}
 function renderReviewItem(){if(!reviewItems.length||reviewIndex>=reviewItems.length){el("reviewModal").classList.remove("open");toast("Bewertung abgeschlossen 🚦⭐");render();return}const item=reviewItems[reviewIndex],old=tripReviews.get(item.id);reviewRating=old?.rating||null;reviewOriginal={rating:reviewRating,deluxe:!!old?.deluxe,note:old?.note||""};el("reviewProgress").textContent=`${reviewIndex+1} von ${reviewItems.length}`;el("reviewItemName").textContent=item.name;el("reviewItemMeta").textContent=item.category||"";el("reviewDeluxe").checked=reviewOriginal.deluxe;el("reviewNote").value=reviewOriginal.note;document.querySelectorAll("[data-review-rating]").forEach(b=>b.classList.toggle("on",b.dataset.reviewRating===reviewRating));el("reviewBack").disabled=reviewIndex===0}
