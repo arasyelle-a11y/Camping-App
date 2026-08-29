@@ -1320,9 +1320,14 @@ function openItemEditor(item){
   el("editModal").classList.add("open");
 }
 async function loadTripReviews(){
-  tripReviews=new Map();if(!currentTrip)return;
-  const {data,error}=await sb.from("camping_trip_item_reviews").select("*").eq("trip_id",currentTrip.id);
-  if(error){console.warn(error);return}
+  tripReviews=new Map();
+  if(!currentTrip?.id){
+    console.warn("Bewertungen: kein aktueller Urlaub mit ID verfügbar");
+    return;
+  }
+  const tripId=currentTrip.id;
+  const {data,error}=await sb.from("camping_trip_item_reviews").select("*").eq("trip_id",tripId);
+  if(error){console.warn("Bewertungen konnten nicht geladen werden",error);return}
   for(const x of data||[])tripReviews.set(x.item_id,x);
   showReviews=tripReviews.size>0;
 }
