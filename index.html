@@ -397,9 +397,9 @@ button{cursor:pointer}
 .reviewCloseRow{margin-top:22px;padding-top:16px;border-top:1px solid #e5e1d8}
 .reviewCloseRow button{width:100%}
 .reviewHistoryToggle{display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-size:14px;font-weight:700}
-.row.review-green{box-shadow:inset 0 0 0 1.5px rgba(83,151,94,.72);border-radius:10px}
-.row.review-yellow{box-shadow:inset 0 0 0 1.5px rgba(203,163,48,.75);border-radius:10px}
-.row.review-red{box-shadow:inset 0 0 0 1.5px rgba(184,82,82,.70);border-radius:10px}
+.row.review-green{background:#dff1df!important;box-shadow:inset 0 0 0 1px rgba(83,151,94,.30);border-radius:10px}
+.row.review-yellow{background:#fff0bd!important;box-shadow:inset 0 0 0 1px rgba(203,163,48,.30);border-radius:10px}
+.row.review-red{background:#f5d7d7!important;box-shadow:inset 0 0 0 1px rgba(184,82,82,.28);border-radius:10px}
 .reviewExtras{display:inline-flex;align-items:center;gap:3px;margin-left:6px;font-size:12px;vertical-align:middle}
 .reviewDeluxeStar{margin-left:1px}.reviewNoteMini{font-size:12px}</style>
 </head>
@@ -800,7 +800,7 @@ function renderTripHero(){
 }
 
 let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], itemPeople=[], personStates=new Map(), currentPerson=null;
-let tripReviews=new Map(), reviewItems=[], reviewIndex=0, reviewRating=null, showReviews=false;
+let tripReviews=new Map(), reviewItems=[], reviewIndex=0, reviewRating=null, reviewOriginal=null, showReviews=false;
 let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all", packViewMode="plan", showOtherPlanning=false, masterSelectedIds=new Set(), masterOpenCategory=null;
 const el=id=>document.getElementById(id);
 
@@ -1315,14 +1315,21 @@ function openItemEditor(item){
 async function loadTripReviews(){tripReviews=new Map();if(!currentTrip)return;const {data,error}=await sb.from("camping_trip_item_reviews").select("*").eq("trip_id",currentTrip.id);if(error){console.warn(error);return}for(const x of data||[])tripReviews.set(x.item_id,x)}
 function reviewCandidates(){return masterItems.filter(i=>i.is_master&&state(i.id).selected)}
 function openTripReview(){if(!currentTrip)return;reviewItems=reviewCandidates();reviewIndex=0;if(!reviewItems.length){toast("Noch keine ausgewählten Masterartikel zum Bewerten");return}const first=reviewItems.findIndex(i=>!tripReviews.has(i.id));if(first>=0)reviewIndex=first;el("editTripModal")?.classList.remove("open");el("reviewModal").classList.add("open");renderReviewItem()}
-function renderReviewItem(){if(!reviewItems.length||reviewIndex>=reviewItems.length){el("reviewModal").classList.remove("open");toast("Bewertung abgeschlossen 🚦⭐");render();return}const item=reviewItems[reviewIndex],old=tripReviews.get(item.id);reviewRating=old?.rating||null;el("reviewProgress").textContent=`${reviewIndex+1} von ${reviewItems.length}`;el("reviewItemName").textContent=item.name;el("reviewItemMeta").textContent=item.category||"";el("reviewDeluxe").checked=!!old?.deluxe;el("reviewNote").value=old?.note||"";document.querySelectorAll("[data-review-rating]").forEach(b=>b.classList.toggle("on",b.dataset.reviewRating===reviewRating));el("reviewBack").disabled=reviewIndex===0}
+function renderReviewItem(){if(!reviewItems.length||reviewIndex>=reviewItems.length){el("reviewModal").classList.remove("open");toast("Bewertung abgeschlossen 🚦⭐");render();return}const item=reviewItems[reviewIndex],old=tripReviews.get(item.id);reviewRating=old?.rating||null;reviewOriginal={rating:reviewRating,deluxe:!!old?.deluxe,note:old?.note||""};el("reviewProgress").textContent=`${reviewIndex+1} von ${reviewItems.length}`;el("reviewItemName").textContent=item.name;el("reviewItemMeta").textContent=item.category||"";el("reviewDeluxe").checked=reviewOriginal.deluxe;el("reviewNote").value=reviewOriginal.note;document.querySelectorAll("[data-review-rating]").forEach(b=>b.classList.toggle("on",b.dataset.reviewRating===reviewRating));el("reviewBack").disabled=reviewIndex===0}
 async function saveCurrentReview(){
   const item=reviewItems[reviewIndex];if(!item)return false;
-  const row={trip_id:currentTrip.id,item_id:item.id,rating:reviewRating,deluxe:el("reviewDeluxe").checked,note:el("reviewNote").value.trim()||null,updated_at:new Date().toISOString()};
+  const current={rating:reviewRating||null,deluxe:el("reviewDeluxe").checked,note:el("reviewNote").value.trim()};
+  const original=reviewOriginal||{rating:null,deluxe:false,note:""};
+  const changed=current.rating!==original.rating || current.deluxe!==original.deluxe || current.note!==original.note.trim();
+  if(!changed)return true;
+  const row={trip_id:currentTrip.id,item_id:item.id,rating:current.rating,deluxe:current.deluxe,note:current.note||null,updated_at:new Date().toISOString()};
   beginBackgroundSave("Bewertung speichert …");
   const {data,error}=await sb.from("camping_trip_item_reviews").upsert(row,{onConflict:"trip_id,item_id"}).select().single();
   if(error){console.error(error);finishBackgroundSave("Fehler");return false}
-  tripReviews.set(item.id,data);finishBackgroundSave("Bewertung gespeichert");return true;
+  tripReviews.set(item.id,data);
+  reviewOriginal={rating:data.rating||null,deluxe:!!data.deluxe,note:data.note||""};
+  finishBackgroundSave("Bewertung gespeichert");
+  return true;
 }
 async function saveReviewAndNext(){if(await saveCurrentReview()){reviewIndex++;renderReviewItem()}}
 async function reviewBack(){if(reviewIndex<=0){toast("Du bist schon beim ersten Artikel");return}if(await saveCurrentReview()){reviewIndex--;renderReviewItem()}}
