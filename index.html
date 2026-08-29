@@ -1086,7 +1086,7 @@ function renderPackModeUI(){
   if(reviewToggle)reviewToggle.checked=showReviews;
   if(reviewCountHint)reviewCountHint.textContent=tripReviews.size?`(${tripReviews.size})`:"";
   const reviewDisplayHint=el("reviewDisplayHint");
-  if(reviewDisplayHint)reviewDisplayHint.textContent=showReviews&&tripReviews.size?`${tripReviews.size} Bewertungen dieses Urlaubs werden farbig angezeigt.`:"";
+  if(reviewDisplayHint)reviewDisplayHint.textContent=tripReviews.size?`${tripReviews.size} Bewertungen geladen.`:"Keine Bewertungen für diesen Urlaub geladen.";
   const help=el("packModeHelp"),other=el("otherItemsBar"),toggle=el("toggleOtherItemsBtn");
   if(packViewMode==="pack"){
     help.textContent=currentPackProfile().help;
