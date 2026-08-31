@@ -397,13 +397,15 @@ button{cursor:pointer}
 .reviewCloseRow{margin-top:22px;padding-top:16px;border-top:1px solid #e5e1d8}
 .reviewCloseRow button{width:100%}
 .reviewHistoryToggle{display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-size:14px;font-weight:700}
-.row.review-green{background:#dff1df!important;box-shadow:inset 0 0 0 1px rgba(83,151,94,.30);border-radius:10px}
-.row.review-yellow{background:#fff0bd!important;box-shadow:inset 0 0 0 1px rgba(203,163,48,.30);border-radius:10px}
-.row.review-red{background:#f5d7d7!important;box-shadow:inset 0 0 0 1px rgba(184,82,82,.28);border-radius:10px}
+.row.review-green{background:#dff1df!important;box-shadow:inset 0 0 0 1px rgba(83,151,94,.30)}
+.row.review-yellow{background:#fff0bd!important;box-shadow:inset 0 0 0 1px rgba(203,163,48,.30)}
+.row.review-red{background:#f5d7d7!important;box-shadow:inset 0 0 0 1px rgba(184,82,82,.28)}
 .reviewExtras{display:inline-flex;align-items:center;gap:3px;margin-left:6px;font-size:12px;vertical-align:middle}
 .reviewDeluxeStar{margin-left:1px}.reviewNoteMini{font-size:12px}.reviewHistoryToggle #reviewCountHint{font-weight:700;color:var(--muted)}
 .reviewHistoryToggle:has(input:checked){color:#18354a}.reviewDisplayHint{font-size:12px;color:var(--muted);margin:-2px 0 8px 24px}.reviewDisplayHint:empty{display:none}
-</style>
+.reviewSourceWrap{display:none;align-items:center;gap:8px;margin:4px 0 8px 24px;font-size:13px}.reviewSourceWrap.show{display:flex}.reviewSourceWrap label{font-weight:800;white-space:nowrap}.reviewSourceWrap select{min-width:0;max-width:260px;padding:7px 9px;border:1px solid #d8d3c8;border-radius:8px;background:white}
+.row.review-unselected{opacity:.58}
+.archiveNotesList{display:flex;flex-direction:column;gap:8px;margin-top:12px}.archiveNoteItem{padding:10px 12px;background:var(--cream2);border-radius:8px}.archiveNoteItem b{display:block;margin-bottom:4px;color:var(--navy)}</style>
 </head>
 <body>
 <div id="login" class="login">
@@ -453,7 +455,9 @@ button{cursor:pointer}
       <button class="modeBtn" id="packModeBtn">📦 Packen</button>
     </div>
     <div class="packModeHelp" id="packModeHelp">Planung: passende Artikel für diese Urlaubsart zusammenstellen. Nicht passende Dinge bleiben zunächst ausgeblendet.</div>
-    <div class="otherItemsBar" id="otherItemsBar"><button id="toggleOtherItemsBtn">＋ Weitere Masterartikel anzeigen</button></div><label class="reviewHistoryToggle"><input type="checkbox" id="showReviewsToggle"> Bewertungen anzeigen <span id="reviewCountHint"></span></label><div id="reviewDisplayHint" class="reviewDisplayHint"></div>
+    <div class="otherItemsBar" id="otherItemsBar"><button id="toggleOtherItemsBtn">＋ Weitere Masterartikel anzeigen</button></div><label class="reviewHistoryToggle"><input type="checkbox" id="showReviewsToggle"> Bewertungen anzeigen <span id="reviewCountHint"></span></label>
+    <div id="reviewSourceWrap" class="reviewSourceWrap"><label for="reviewSourceTrip">Bewertungen von</label><select id="reviewSourceTrip"></select></div>
+    <div id="reviewDisplayHint" class="reviewDisplayHint"></div>
     <div class="filters">
       <button class="filter active" data-filter="all">Alle</button>
       <button class="filter" data-filter="selected">Mitnehmen</button>
@@ -802,7 +806,7 @@ function renderTripHero(){
 }
 
 let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], itemPeople=[], personStates=new Map(), currentPerson=null;
-let tripReviews=new Map(), reviewItems=[], reviewIndex=0, reviewRating=null, reviewOriginal=null, showReviews=false;
+let tripReviews=new Map(), comparisonReviews=new Map(), reviewTrips=[], reviewItems=[], reviewIndex=0, reviewRating=null, reviewOriginal=null, showReviews=false, comparisonTripId=null;
 let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all", packViewMode="plan", showOtherPlanning=false, masterSelectedIds=new Set(), masterOpenCategory=null;
 const el=id=>document.getElementById(id);
 
@@ -834,12 +838,14 @@ function failBackgroundSave(message="Speichern fehlgeschlagen"){
   showSaveStatus("error","⚠️ "+message);setSync("Fehler beim Speichern");toast(message);
 }
 function iconForCategory(cat){
-  const aliases=cat==="Baden & Wassersport"?["Baden & Wassersport","Strand"]:[cat];
+  if(cat==="Baden & Wassersport"||cat==="Strand")return "🏖️";
+  if(cat==="Freizeit & Spiele")return "🎲";
+  if(cat==="Fahrräder & Mobilität"||cat==="Fahrräder")return "🚲";
+  const aliases=[cat];
   const x=masterItems.find(i=>aliases.includes(i.category)&&i.icon);
   if(x?.icon)return x.icon;
   if(cat==="Vorräte")return "🥫";
   if(cat==="Dokumente & Tickets")return "📄";
-  if(cat==="Baden & Wassersport")return "🏊";
   return "🏕️"
 }
 function state(id){return states.get(id)||{selected:false,seen:false,in_box:false,in_car:false,need:false}}
@@ -1021,8 +1027,15 @@ async function switchTrip(id){
   localStorage.setItem("camping-trip-id",id);
   restorePackViewMode();
   setSync("Lädt …");
+  comparisonTripId=null;comparisonReviews=new Map();
   await loadStates();
   await loadTripReviews();
+  await loadReviewTrips();
+  if(showReviews){
+    const saved=localStorage.getItem("camping-review-source-"+currentTrip.id);
+    const source=reviewTrips.some(x=>x.id===saved)?saved:(reviewTrips.find(x=>x.id!==currentTrip.id)?.id||reviewTrips[0]?.id||null);
+    await loadComparisonReviews(source);
+  }
   await loadPersonStates();
   await loadTripPeople();
   updateTripInfo();
@@ -1057,8 +1070,9 @@ function itemFitsCurrentTrip(item){
 function planningItems(){
   const all=currentItems();
   if(showOtherPlanning)return all;
-  // Manuell bereits gewählte Artikel bleiben sichtbar, auch wenn sie nicht zur Reiseart gehören.
-  return all.filter(i=>itemFitsCurrentTrip(i)||state(i.id).selected);
+  const reviews=activeReviewMap();
+  // Passende, bereits gewählte und bei eingeblendeten früheren Bewertungen auch damals bewertete Artikel.
+  return all.filter(i=>itemFitsCurrentTrip(i)||state(i.id).selected||(showReviews&&reviews.has(i.id)));
 }
 function modeItems(){
   if(packViewMode==="pack")return currentItems().filter(i=>state(i.id).selected);
@@ -1082,11 +1096,24 @@ function renderPackModeUI(){
   view.classList.toggle("packTheme",packViewMode==="pack");
   el("planModeBtn")?.classList.toggle("active",packViewMode==="plan");
   el("packModeBtn")?.classList.toggle("active",packViewMode==="pack");
-  const reviewToggle=el("showReviewsToggle"),reviewCountHint=el("reviewCountHint");
+  const reviewToggle=el("showReviewsToggle"),reviewCountHint=el("reviewCountHint"),sourceWrap=el("reviewSourceWrap"),sourceSel=el("reviewSourceTrip");
   if(reviewToggle)reviewToggle.checked=showReviews;
-  if(reviewCountHint)reviewCountHint.textContent=tripReviews.size?`(${tripReviews.size})`:"";
+  const reviewMap=activeReviewMap();
+  if(reviewCountHint)reviewCountHint.textContent=showReviews&&reviewMap.size?`(${reviewMap.size})`:"";
+  if(sourceWrap)sourceWrap.classList.toggle("show",showReviews&&reviewTrips.length>0);
+  if(sourceSel){
+    const oldValue=comparisonTripId||sourceSel.value;
+    sourceSel.innerHTML="";
+    for(const rt of reviewTrips){const o=document.createElement("option");o.value=rt.id;o.textContent=rt.name;sourceSel.appendChild(o)}
+    if(reviewTrips.length){
+      const saved=currentTrip?localStorage.getItem("camping-review-source-"+currentTrip.id):null;
+      const wanted=reviewTrips.some(x=>x.id===oldValue)?oldValue:(reviewTrips.some(x=>x.id===saved)?saved:(reviewTrips.find(x=>x.id!==currentTrip?.id)?.id||reviewTrips[0].id));
+      sourceSel.value=wanted;
+    }
+  }
   const reviewDisplayHint=el("reviewDisplayHint");
-  if(reviewDisplayHint)reviewDisplayHint.textContent=tripReviews.size?`${tripReviews.size} Bewertungen geladen.`:"Keine Bewertungen für diesen Urlaub geladen.";
+  const srcTrip=reviewTrips.find(x=>x.id===comparisonTripId);
+  if(reviewDisplayHint)reviewDisplayHint.textContent=showReviews&&reviewMap.size?`${reviewMap.size} Bewertungen${srcTrip?" aus „"+srcTrip.name+"“":""} werden angezeigt.`:"";
   const help=el("packModeHelp"),other=el("otherItemsBar"),toggle=el("toggleOtherItemsBtn");
   if(packViewMode==="pack"){
     help.textContent=currentPackProfile().help;
@@ -1102,7 +1129,7 @@ function setPackViewMode(mode){
   packViewMode=mode;
   showOtherPlanning=false;
   if(currentTrip)localStorage.setItem("camping-pack-mode-"+currentTrip.id,mode);
-  activeCategory=null;
+  activeCategory="__ALL__";
   render();
 }
 function restorePackViewMode(){
@@ -1213,44 +1240,44 @@ function attachSwipe(row,item){
 function renderCategoryTabs(items){
   const tabs=el("categoryTabs");tabs.innerHTML="";
   const cats=grouped(items);
-  if(!cats.length){activeCategory=null;return}
-  if(!activeCategory || (activeCategory!=="__ALL__" && !cats.some(c=>c.name===activeCategory))) activeCategory=cats[0].name;
+  if(!cats.length){activeCategory="__ALL__";return}
+  if(!activeCategory || (activeCategory!=="__ALL__" && !cats.some(c=>c.name===activeCategory))) activeCategory="__ALL__";
 
+  const all=document.createElement("button");
+  all.className="categoryTab"+(activeCategory==="__ALL__"?" active":"");
+  all.dataset.category="__ALL__";
+  all.innerHTML='<span class="tabIcon">📋</span><span>Alle</span>';
+  tabs.appendChild(all);
   cats.forEach(cat=>{
     const b=document.createElement("button");
     b.className="categoryTab"+(cat.name===activeCategory?" active":"");
     b.dataset.category=cat.name;
     b.innerHTML=`<span class="tabIcon">${cat.icon}</span><span>${cat.name}</span>`;
-    b.onclick=()=>{activeCategory=cat.name;render()};
     tabs.appendChild(b);
   });
-  const all=document.createElement("button");
-  all.className="categoryTab"+(activeCategory==="__ALL__"?" active":"");
-  all.dataset.category="__ALL__";
-  all.innerHTML='<span class="tabIcon">📋</span><span>Alle</span>';
-  all.onclick=()=>{activeCategory="__ALL__";render()};
-  tabs.appendChild(all);
 
-  let touched=null;
-  const mark=(x,y)=>{
-    const hit=document.elementFromPoint(x,y)?.closest(".categoryTab");
-    tabs.querySelectorAll(".categoryTab.peek").forEach(b=>b.classList.remove("peek"));
-    if(hit && tabs.contains(hit)){hit.classList.add("peek");touched=hit}else touched=null;
-  };
-  tabs.ontouchstart=e=>{const t=e.touches[0];mark(t.clientX,t.clientY)};
-  tabs.ontouchmove=e=>{const t=e.touches[0];mark(t.clientX,t.clientY)};
-  tabs.ontouchend=()=>{
-    const chosen=touched;
-    tabs.querySelectorAll(".categoryTab.peek").forEach(b=>b.classList.remove("peek"));
-    touched=null;
-    if(chosen){activeCategory=chosen.dataset.category;render()}
-  };
-  tabs.ontouchcancel=()=>{
-    tabs.querySelectorAll(".categoryTab.peek").forEach(b=>b.classList.remove("peek"));
-    touched=null;
+  // Kategorien wechseln nur bei einem bewussten Tippen; Scrollbewegungen lösen nichts aus.
+  let touchStart=null;
+  tabs.addEventListener("touchstart",e=>{
+    const x=e.touches[0],button=e.target.closest(".categoryTab");
+    touchStart=button?{button,x:x.clientX,y:x.clientY,moved:false}:null;
+  },{passive:true});
+  tabs.addEventListener("touchmove",e=>{
+    if(!touchStart)return;const x=e.touches[0];
+    if(Math.hypot(x.clientX-touchStart.x,x.clientY-touchStart.y)>12)touchStart.moved=true;
+  },{passive:true});
+  tabs.addEventListener("touchend",e=>{
+    if(!touchStart)return;
+    const x=touchStart;touchStart=null;
+    if(x.moved)return;
+    activeCategory=x.button.dataset.category;render();
+  });
+  tabs.onclick=e=>{
+    if("ontouchstart" in window)return;
+    const b=e.target.closest(".categoryTab");if(!b)return;
+    activeCategory=b.dataset.category;render();
   };
 }
-
 async function setAllSelected(selected){
   if(!currentTrip)return;
   const targets=packViewMode==="plan"?planningItems():currentItems().filter(i=>state(i.id).selected);
@@ -1329,7 +1356,23 @@ async function loadTripReviews(){
   const {data,error}=await sb.from("camping_trip_item_reviews").select("*").eq("trip_id",tripId);
   if(error){console.warn("Bewertungen konnten nicht geladen werden",error);return}
   for(const x of data||[])tripReviews.set(x.item_id,x);
-  showReviews=tripReviews.size>0;
+}
+async function loadReviewTrips(){
+  const {data,error}=await sb.from("camping_trip_item_reviews").select("trip_id");
+  if(error){console.warn("Bewertungsurlaube konnten nicht geladen werden",error);reviewTrips=[];return}
+  const ids=[...new Set((data||[]).map(x=>x.trip_id))];
+  reviewTrips=[...trips,...archivedTrips].filter(x=>ids.includes(x.id));
+}
+async function loadComparisonReviews(tripId){
+  comparisonReviews=new Map();comparisonTripId=tripId||null;
+  if(!tripId)return;
+  const {data,error}=await sb.from("camping_trip_item_reviews").select("*").eq("trip_id",tripId);
+  if(error){console.warn("Vergleichsbewertungen konnten nicht geladen werden",error);return}
+  for(const x of data||[])comparisonReviews.set(x.item_id,x);
+  if(currentTrip)localStorage.setItem("camping-review-source-"+currentTrip.id,tripId);
+}
+function activeReviewMap(){
+  return comparisonTripId?comparisonReviews:tripReviews;
 }
 function reviewCandidates(){return masterItems.filter(i=>i.is_master&&state(i.id).selected)}
 function openTripReview(){if(!currentTrip)return;reviewItems=reviewCandidates();reviewIndex=0;if(!reviewItems.length){toast("Noch keine ausgewählten Masterartikel zum Bewerten");return}const first=reviewItems.findIndex(i=>!tripReviews.has(i.id));if(first>=0)reviewIndex=first;el("editTripModal")?.classList.remove("open");el("reviewModal").classList.add("open");renderReviewItem()}
@@ -1353,13 +1396,14 @@ async function saveReviewAndNext(){if(await saveCurrentReview()){reviewIndex++;r
 async function reviewBack(){if(reviewIndex<=0){toast("Du bist schon beim ersten Artikel");return}if(await saveCurrentReview()){reviewIndex--;renderReviewItem()}}
 function reviewBadgeHtml(item){
   if(!showReviews)return "";
-  const r=tripReviews.get(item.id);if(!r||(!r.deluxe&&!r.note))return "";
-  return `<span class="reviewExtras" title="Bewertung dieses Urlaubs">${r.deluxe?'<span class="reviewDeluxeStar">⭐</span>':""}${r.note?'<span class="reviewNoteMini">📝</span>':""}</span>`;
+  const r=activeReviewMap().get(item.id);if(!r||(!r.deluxe&&!r.note))return "";
+  return `<span class="reviewExtras" title="Frühere Bewertung">${r.deluxe?'<span class="reviewDeluxeStar">⭐</span>':""}${r.note?'<span class="reviewNoteMini">📝</span>':""}</span>`;
 }
 function reviewRowClass(item){
   if(!showReviews)return "";
-  const r=tripReviews.get(item.id);
-  return r?.rating?` review-${r.rating}`:"";
+  const r=activeReviewMap().get(item.id);
+  if(!r)return "";
+  return (r.rating?` review-${r.rating}`:"")+(state(item.id).selected?"":" review-unselected");
 }
 function render(){
   renderPersonControlPanels();
@@ -1799,15 +1843,32 @@ async function openArchivedTrip(trip){
   };
   setSync("Synchronisiert");
 }
+async function openArchivedNotes(trip){
+  setSync("Notizen werden geladen …");
+  const [{data:itemsData,error:itemsError},{data:reviewsData,error:reviewsError}]=await Promise.all([
+    sb.from("camping_trip_items").select("item_id,note").eq("trip_id",trip.id),
+    sb.from("camping_trip_item_reviews").select("item_id,note,rating,deluxe").eq("trip_id",trip.id)
+  ]);
+  if(itemsError||reviewsError){console.error(itemsError||reviewsError);toast("Notizen konnten nicht geladen werden");return}
+  const byId=new Map();
+  for(const x of itemsData||[])if(x.note)byId.set(x.item_id,{tripNote:x.note});
+  for(const x of reviewsData||[])if(x.note){const v=byId.get(x.item_id)||{};v.reviewNote=x.note;v.rating=x.rating;v.deluxe=x.deluxe;byId.set(x.item_id,v)}
+  const host=el("archiveList");host.innerHTML="";
+  const card=document.createElement("div");card.className="archiveCard";
+  const entries=[...byId.entries()].map(([id,v])=>({item:masterItems.find(i=>i.id===id),...v})).filter(x=>x.item);
+  card.innerHTML=`<h3>📝 ${trip.name} – Notizen</h3><div class="archiveMeta">${entries.length} Artikel mit Notizen</div><div class="archiveNotesList">${entries.length?entries.map(x=>`<div class="archiveNoteItem"><b>${x.item.name}${x.deluxe?" ⭐":""}</b>${x.tripNote?`<div>🕓 ${x.tripNote}</div>`:""}${x.reviewNote?`<div>🚦 ${x.reviewNote}</div>`:""}</div>`).join(""):'<div class="empty">Keine Artikelnotizen gespeichert.</div>'}</div><div class="archiveActions"><button class="close">Zurück</button></div>`;
+  host.appendChild(card);card.querySelector(".close").onclick=()=>renderArchive();setSync("Synchronisiert");
+}
 function renderArchive(){
   const host=el("archiveList");if(!host)return;host.innerHTML="";
   if(!archivedTrips.length){host.innerHTML='<div class="personCard">Noch keine archivierten Urlaube.</div>';return}
   for(const trip of archivedTrips){
     const place=places.find(p=>p.id===trip.place_id);
     const c=document.createElement("div");c.className="archiveCard";
-    c.innerHTML=`<h3>${trip.name}</h3><div class="archiveMeta">${place?.name||""}${trip.start_date?" · "+fmtDate(trip.start_date):""}${trip.end_date?" – "+fmtDate(trip.end_date):""}</div>${trip.photo_path?'<img class="memoryPhoto archiveThumb" alt="Urlaubserinnerung">':""}${trip.memory_text?`<div class="memoryBox">${trip.memory_text}</div>`:""}<div class="archiveActions"><button>Urlaub ansehen</button></div>`;
+    c.innerHTML=`<h3>${trip.name}</h3><div class="archiveMeta">${place?.name||""}${trip.start_date?" · "+fmtDate(trip.start_date):""}${trip.end_date?" – "+fmtDate(trip.end_date):""}</div>${trip.photo_path?'<img class="memoryPhoto archiveThumb" alt="Urlaubserinnerung">':""}${trip.memory_text?`<div class="memoryBox">${trip.memory_text}</div>`:""}<div class="archiveActions"><button class="viewTrip">Urlaub ansehen</button><button class="viewNotes">📝 Notizen</button></div>`;
     if(trip.photo_path)signedMemoryPhoto(trip.photo_path).then(url=>{const img=c.querySelector(".archiveThumb");if(img&&url)img.src=url});
-    c.querySelector("button").onclick=()=>openArchivedTrip(trip);
+    c.querySelector(".viewTrip").onclick=()=>openArchivedTrip(trip);
+    c.querySelector(".viewNotes").onclick=()=>openArchivedNotes(trip);
     host.appendChild(c);
   }
 }
@@ -1905,7 +1966,18 @@ el("personCategoryOpenMaster").onclick=()=>{
 };
 el("reviewTripBtn").onclick=openTripReview;
 document.querySelectorAll("[data-review-rating]").forEach(b=>b.onclick=()=>{reviewRating=b.dataset.reviewRating;document.querySelectorAll("[data-review-rating]").forEach(x=>x.classList.toggle("on",x===b))});
-el("reviewSaveNext").onclick=saveReviewAndNext;el("reviewBack").onclick=reviewBack;el("reviewSkip").onclick=()=>{reviewIndex++;renderReviewItem()};el("reviewClose").onclick=()=>el("reviewModal").classList.remove("open");el("showReviewsToggle").onchange=e=>{showReviews=e.target.checked;render()};
+el("reviewSaveNext").onclick=saveReviewAndNext;el("reviewBack").onclick=reviewBack;el("reviewSkip").onclick=()=>{reviewIndex++;renderReviewItem()};el("reviewClose").onclick=()=>el("reviewModal").classList.remove("open");
+el("showReviewsToggle").onchange=async e=>{
+  showReviews=e.target.checked;
+  if(showReviews){
+    await loadReviewTrips();
+    const saved=currentTrip?localStorage.getItem("camping-review-source-"+currentTrip.id):null;
+    const source=reviewTrips.some(x=>x.id===saved)?saved:(reviewTrips.find(x=>x.id!==currentTrip?.id)?.id||reviewTrips[0]?.id||null);
+    await loadComparisonReviews(source);
+  }else{comparisonTripId=null;comparisonReviews=new Map()}
+  activeCategory="__ALL__";render();
+};
+el("reviewSourceTrip").onchange=async e=>{await loadComparisonReviews(e.target.value);activeCategory="__ALL__";render()};
 el("planModeBtn").onclick=()=>setPackViewMode("plan");
 el("packModeBtn").onclick=()=>setPackViewMode("pack");
 el("toggleOtherItemsBtn").onclick=()=>{showOtherPlanning=!showOtherPlanning;activeCategory=null;render()};
@@ -2333,7 +2405,7 @@ el("tripSave").onclick=async()=>{
     currentTrip=trips.find(t=>t.id===data.id)||data;
     currentPlace=places.find(p=>p.id===currentTrip.place_id)||place;
     el("tripSelect").value=currentTrip.id;
-    await loadStates();subscribeTrip();updateTripInfo();render();
+    await loadStates();await loadTripReviews();subscribeTrip();updateTripInfo();render();
     el("tripModal").classList.remove("open");
     setSync("Synchronisiert");toast("Urlaub angelegt 🏕️");
   }catch(error){
@@ -2468,6 +2540,9 @@ async function boot(){
 
       if(!hadCache)setSync("Lädt Packliste …");
       await loadStates();
+      await loadTripReviews();
+      await loadReviewTrips();
+      comparisonTripId=null;comparisonReviews=new Map();
       await loadPersonStates();
       await loadTripPeople();
 
