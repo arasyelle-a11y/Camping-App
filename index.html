@@ -404,8 +404,12 @@ button{cursor:pointer}
 .reviewDeluxeStar{margin-left:1px}.reviewNoteMini{font-size:12px}.reviewHistoryToggle #reviewCountHint{font-weight:700;color:var(--muted)}
 .reviewHistoryToggle:has(input:checked){color:#18354a}.reviewDisplayHint{font-size:12px;color:var(--muted);margin:-2px 0 8px 24px}.reviewDisplayHint:empty{display:none}
 .reviewSourceWrap{display:none;align-items:center;gap:8px;margin:4px 0 8px 24px;font-size:13px}.reviewSourceWrap.show{display:flex}.reviewSourceWrap label{font-weight:800;white-space:nowrap}.reviewSourceWrap select{min-width:0;max-width:260px;padding:7px 9px;border:1px solid #d8d3c8;border-radius:8px;background:white}
-.row.review-unselected{opacity:.58}
-.archiveNotesList{display:flex;flex-direction:column;gap:8px;margin-top:12px}.archiveNoteItem{padding:10px 12px;background:var(--cream2);border-radius:8px}.archiveNoteItem b{display:block;margin-bottom:4px;color:var(--navy)}</style>
+.row.review-unselected{background:#ecebe6!important;opacity:1}
+.archiveNotesList{display:flex;flex-direction:column;gap:8px;margin-top:12px}.archiveNoteItem{padding:10px 12px;background:var(--cream2);border-radius:8px}.archiveNoteItem b{display:block;margin-bottom:4px;color:var(--navy)}.row.review-green.review-unselected{background:#ecebe6!important;border-left:5px solid #5f9f69}
+.row.review-yellow.review-unselected{background:#ecebe6!important;border-left:5px solid #d2a62f}
+.row.review-red.review-unselected{background:#ecebe6!important;border-left:5px solid #b85c5c}
+.row.review-unselected .name{color:#6f736f}
+</style>
 </head>
 <body>
 <div id="login" class="login">
