@@ -1580,7 +1580,18 @@ const TRIP_PRESETS={
   city:{includeCategories:["Technik","Hygiene & Gesundheit","Sarah"],includeNames:["Picknickdecke"]}
 };
 function presetSelects(item,type){const tt=Array.isArray(item.trip_types)?item.trip_types:[];if(tt.length)return tt.includes("all")||tt.includes(type);const p=TRIP_PRESETS[type]||TRIP_PRESETS.camping;let on=(p.includeCategories||[]).includes(item.category)||(p.includeNames||[]).includes(item.name);if((p.excludeNames||[]).includes(item.name))on=false;return on}
-async function applyTripPreset(trip,type){const targets=masterItems.filter(i=>i.is_master);const rows=targets.map(item=>({trip_id:trip.id,item_id:item.id,selected:presetSelects(item,type),seen:false,in_box:false,in_car:false,need:false,note:null,updated_at:new Date().toISOString()}));if(rows.length){const {error}=await sb.from("camping_trip_items").upsert(rows,{onConflict:"trip_id,item_id"});if(error)throw error}}
+async function applyTripPreset(trip,type){
+  // Reiseprofil bestimmt nur, welche Masterartikel vorgeschlagen/angezeigt werden.
+  // "Mitnehmen" wird ausschließlich durch eine bewusste Auswahl gesetzt.
+  const targets=masterItems.filter(i=>i.is_master);
+  const rows=targets.map(item=>({
+    trip_id:trip.id,item_id:item.id,selected:false,seen:false,in_box:false,in_car:false,need:false,note:null,updated_at:new Date().toISOString()
+  }));
+  if(rows.length){
+    const {error}=await sb.from("camping_trip_items").upsert(rows,{onConflict:"trip_id,item_id"});
+    if(error)throw error;
+  }
+}
 async function reconcilePersonBasics(personId){
   const mine=personItems.filter(i=>i.person_id===personId),byKey=new Map(mine.map(i=>[`${i.category.toLowerCase()}|${i.name.toLowerCase()}`,i]));let n=0;
   for(const m of PERSON_MODULES){for(const [name,category,default_quantity,quantity_rule] of m.items){const existing=byKey.get(`${category.toLowerCase()}|${name.toLowerCase()}`);if(!existing)continue;if((existing.quantity_rule||"fixed")!==quantity_rule||existing.default_quantity!==default_quantity||existing.module_key!==m.key){const {data,error}=await sb.from("camping_person_items").update({default_quantity,quantity_rule,module_key:m.key}).eq("id",existing.id).select().single();if(error)throw error;const idx=personItems.findIndex(i=>i.id===existing.id);if(idx>=0)personItems[idx]=data;n++}}}
