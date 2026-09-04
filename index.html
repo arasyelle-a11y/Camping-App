@@ -409,6 +409,7 @@ button{cursor:pointer}
 .row.review-yellow.review-unselected{background:#ecebe6!important;border-left:5px solid #d2a62f}
 .row.review-red.review-unselected{background:#ecebe6!important;border-left:5px solid #b85c5c}
 .row.review-unselected .name{color:#6f736f}
+.reviewNoteMini{border:0;background:transparent;padding:0 2px;margin:0;font:inherit;line-height:1;cursor:pointer}
 </style>
 </head>
 <body>
@@ -1401,7 +1402,7 @@ async function reviewBack(){if(reviewIndex<=0){toast("Du bist schon beim ersten 
 function reviewBadgeHtml(item){
   if(!showReviews)return "";
   const r=activeReviewMap().get(item.id);if(!r||(!r.deluxe&&!r.note))return "";
-  return `<span class="reviewExtras" title="Frühere Bewertung">${r.deluxe?'<span class="reviewDeluxeStar">⭐</span>':""}${r.note?'<span class="reviewNoteMini">📝</span>':""}</span>`;
+  return `<span class="reviewExtras" title="Frühere Bewertung">${r.deluxe?'<span class="reviewDeluxeStar">⭐</span>':""}${r.note?`<button class="reviewNoteMini" type="button" data-review-note="${item.id}" title="Bewertungsnotiz anzeigen">📝</button>`:""}</span>`;
 }
 function reviewRowClass(item){
   if(!showReviews)return "";
@@ -1473,6 +1474,16 @@ function render(){
       if(noteBtn)noteBtn.onclick=e=>{
         e.stopPropagation();
         openNoteViewer(item);
+      };
+      const reviewNoteBtn=row.querySelector("[data-review-note]");
+      if(reviewNoteBtn)reviewNoteBtn.onclick=e=>{
+        e.stopPropagation();
+        const r=activeReviewMap().get(item.id);
+        if(!r?.note)return;
+        const source=reviewTrips.find(x=>x.id===comparisonTripId);
+        el("noteTitle").textContent=item.name+" – Bewertungsnotiz";
+        el("noteViewText").textContent=(source?`🚦 ${source.name}:\n`:"🚦 Bewertungsnotiz:\n")+r.note;
+        el("noteModal").classList.add("open");
       };
 
       wrap.appendChild(edit);wrap.appendChild(del);wrap.appendChild(row);body.appendChild(wrap);
