@@ -410,6 +410,7 @@ button{cursor:pointer}
 .row.review-red.review-unselected{background:#ecebe6!important;border-left:5px solid #b85c5c}
 .row.review-unselected .name{color:#6f736f}
 .reviewNoteMini{border:0;background:transparent;padding:0 2px;margin:0;font:inherit;line-height:1;cursor:pointer}
+.personModeSwitch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 12px 8px}.personModeSwitch button{padding:11px;border-radius:12px;border:1px solid #ddd3c1;background:white;font-weight:900;color:var(--navy)}.personModeSwitch button.active{background:var(--olive);color:white;border-color:var(--olive)}.personModeHint{margin:0 16px 10px;color:var(--muted);font-size:12px}.personPackDone{opacity:.55;text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -498,7 +499,9 @@ button{cursor:pointer}
       <button class="iconbtn" id="modulesBtn">🧩 Grundausstattung</button><button class="iconbtn" id="addPersonItemBtn">＋ Artikel</button><button class="iconbtn" id="bulkPersonItemBtn">＋ Mehrere</button><button class="iconbtn" id="copyPersonListBtn">⧉ Liste kopieren</button>
       <button class="iconbtn" id="printPersonBtn">🖨️ Drucken</button>
     </div>
-    <div id="personTheme" class="personTheme" style="display:none"></div><div class="personList" id="personList"></div>
+    <div id="personTheme" class="personTheme" style="display:none"></div>
+<div class="personModeSwitch"><button id="personPlanBtn" class="active">🧭 Planen</button><button id="personPackBtn">📦 Packen</button></div>
+<div id="personModeHint" class="personModeHint"></div><div class="personList" id="personList"></div>
   </section>
   <section class="view" id="view-archive">
     <div class="top"><h2 style="margin:5px 0">🗂️ Urlaubsarchiv</h2><div style="font-size:12px;color:var(--muted)">Abgeschlossene Urlaube mit damaliger Packliste und Erinnerungen.</div></div>
@@ -810,7 +813,7 @@ function renderTripHero(){
   setTripHeroTitle(title,currentTrip.name||"Urlaub");
 }
 
-let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], itemPeople=[], personStates=new Map(), currentPerson=null;
+let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], itemPeople=[], personStates=new Map(), masterPersonStates=new Map(), personViewMode="plan", currentPerson=null;
 let tripReviews=new Map(), comparisonReviews=new Map(), reviewTrips=[], reviewItems=[], reviewIndex=0, reviewRating=null, reviewOriginal=null, showReviews=false, comparisonTripId=null;
 let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all", packViewMode="plan", showOtherPlanning=false, masterSelectedIds=new Set(), masterOpenCategory=null;
 const el=id=>document.getElementById(id);
@@ -1041,7 +1044,7 @@ async function switchTrip(id){
     const source=reviewTrips.some(x=>x.id===saved)?saved:(reviewTrips.find(x=>x.id!==currentTrip.id)?.id||reviewTrips[0]?.id||null);
     await loadComparisonReviews(source);
   }
-  await loadPersonStates();
+  await loadPersonStates();await loadMasterPersonStates();
   await loadTripPeople();
   updateTripInfo();
   render();
@@ -1634,14 +1637,30 @@ async function loadPersonStates(){
   if(error)throw error;
   for(const x of data||[])personStates.set(x.person_item_id,x);
 }
+async function loadMasterPersonStates(){
+  masterPersonStates=new Map();if(!currentTrip)return;
+  const {data,error}=await sb.from("camping_trip_item_people").select("*").eq("trip_id",currentTrip.id);
+  if(error)throw error;
+  for(const x of data||[])masterPersonStates.set(`${x.item_id}:${x.person_id}`,x);
+}
+function masterPersonState(item){return masterPersonStates.get(`${item.master_item_id}:${item.person_id}`)||{selected:false,packed:false,needs_purchase:false,final_checked:false}}
+async function saveMasterPersonState(item,patch){
+  const old=masterPersonState(item);
+  const row={trip_id:currentTrip.id,item_id:item.master_item_id,person_id:item.person_id,selected:!!old.selected,packed:!!old.packed,needs_purchase:!!old.needs_purchase,final_checked:!!old.final_checked,...patch,updated_at:new Date().toISOString()};
+  if(row.packed)row.selected=true;if(!row.selected)row.packed=false;
+  const {data,error}=await sb.from("camping_trip_item_people").upsert(row,{onConflict:"trip_id,item_id,person_id"}).select().single();
+  if(error){console.error(error);return toast("Änderung konnte nicht gespeichert werden")}
+  masterPersonStates.set(`${item.master_item_id}:${item.person_id}`,data);renderPeople();renderNeed();
+}
 function personState(item){
-  if(item.is_master_assignment)return {selected:true,quantity:1,packed:false,note:null,needs_purchase:false,final_checked:false,quantity_manual:false};
+  if(item.is_master_assignment)return {...masterPersonState(item),quantity:1,note:null,quantity_manual:false};
   const saved=personStates.get(item.id);
   if(!saved)return {selected:false,quantity:suggestedQuantity(item),packed:false,note:null,needs_purchase:false,final_checked:false,quantity_manual:false};
   return saved;
 }
 async function savePersonState(item,patch){
   if(!currentTrip)return;
+  if(item.is_master_assignment)return saveMasterPersonState(item,patch);
   const old=personState(item);
   const row={trip_id:currentTrip.id,person_item_id:item.id,selected:old.selected,quantity:old.quantity,packed:old.packed,note:old.note,
     needs_purchase:old.needs_purchase||false,final_checked:old.final_checked||false,quantity_manual:old.quantity_manual||false,...patch,updated_at:new Date().toISOString()};
@@ -1652,6 +1671,8 @@ async function savePersonState(item,patch){
 }
 function renderPeople(){
   const tabs=el("personTabs"),list=el("personList"),theme=el("personTheme");if(!tabs||!list)return;
+  el("personPlanBtn")?.classList.toggle("active",personViewMode==="plan");el("personPackBtn")?.classList.toggle("active",personViewMode==="pack");
+  if(el("personModeHint"))el("personModeHint").textContent=personViewMode==="plan"?"Planen: Was soll für diesen Urlaub mit?":"Packen: Nur ausgewählte Dinge – Häkchen bedeutet eingepackt.";
   tabs.innerHTML="";list.innerHTML="";const visiblePeople=participantPeople();
   if(currentPerson&&!visiblePeople.some(p=>p.id===currentPerson.id))currentPerson=visiblePeople[0]||null;
   for(const p of visiblePeople){const b=document.createElement("button");b.className="personTab"+(currentPerson?.id===p.id?" active":"");b.textContent=p.name;b.style.borderColor=p.color;if(currentPerson?.id===p.id)b.style.background=p.color;b.onclick=()=>{currentPerson=p;localStorage.setItem("camping-person-id",p.id);renderPeople()};tabs.appendChild(b)}
@@ -1659,11 +1680,12 @@ function renderPeople(){
   theme.style.display="block";theme.style.background=currentPerson.color;theme.innerHTML=`${currentPerson.name}s Packliste<small>${currentTrip?.name||""}</small>`;list.classList.add("personTint");list.style.background=`color-mix(in srgb, ${currentPerson.color} 8%, white)`;
   const baseMine=personItems.filter(i=>i.person_id===currentPerson.id&&!i.linked_master_item_id);
   const masterMine=assignedMasterItemsForPerson(currentPerson.id).map(mi=>({id:"master:"+mi.id,master_item_id:mi.id,person_id:currentPerson.id,name:mi.name,category:masterPersonCategory(mi.id,currentPerson.id),default_quantity:1,quantity_rule:"fixed",quantity_offset:0,must_not_forget:false,is_master_assignment:true}));
-  const mine=[...baseMine,...masterMine];if(!mine.length){list.innerHTML=`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel. Mit „🧩 Grundausstattung“ kannst du mehrere auf einmal anlegen.</div>`;return}
+  const mineAll=[...baseMine,...masterMine],mine=personViewMode==="pack"?mineAll.filter(i=>personState(i).selected):mineAll;
+  if(!mine.length){list.innerHTML=personViewMode==="pack"?`<div class="personEmpty">Für ${currentPerson.name} ist noch nichts ausgewählt. Wechsel zu „Planen“.</div>`:`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel.</div>`;return}
   const groups=new Map();for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
   for(const [cat,items] of groups){const sec=document.createElement("section");sec.className="personCategory";sec.innerHTML=`<div class="personCatHead" style="background:color-mix(in srgb, ${currentPerson.color} 18%, white);border-left:7px solid ${currentPerson.color}"><span class="pcTitle">${cat}</span><span class="pcCount">${items.length}</span><span>▾</span></div><div class="personCatBody"></div>`;const head=sec.querySelector(".personCatHead"),body=sec.querySelector(".personCatBody");head.onclick=()=>sec.classList.toggle("closed");
-    for(const item of items){const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id),row=document.createElement("div");row.className="personItem";row.style.borderLeftColor=currentPerson.color;row.innerHTML=`<input class="pselect" type="checkbox" ${s.selected?"checked":""}><div><b>${item.name}</b>${item.must_not_forget?'<span class="starBadge">⭐ Darf nicht fehlen</span>':""}${item.is_master_assignment?`<span class="linkBadge" style="color:${currentPerson.color}">Masterartikel · ${currentPerson.name}</span>`:(linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:"")}${item.note?`<div class="personNote">📝 ${item.note}</div>`:""}<div class="ruleHint">${quantityRuleLabel(item)}${item.quantity_offset?` · persönlich ${item.quantity_offset>0?"+":""}${item.quantity_offset}`:""}${s.quantity_manual?" · manuell":""}</div><div class="personMiniActions"><button class="needp ${s.needs_purchase?"on":""}">🔎 ${s.needs_purchase?"Suchen/Kaufen":"fehlt?"}</button>${s.quantity_manual?'<button class="resetq">↺ Vorschlag</button>':""}${item.is_master_assignment?'<button class="pcategory">Kategorie ändern</button>':'<button class="pedit">Bearbeiten</button><button class="pdelete">Löschen</button>'}</div></div><div class="qtyBox"><button class="minus" style="border-color:${currentPerson.color}">−</button><span class="qty">${s.quantity}</span><button class="plus" style="border-color:${currentPerson.color}">＋</button></div>`;
-      row.querySelector(".pselect").onchange=e=>savePersonState(item,{selected:e.target.checked});row.querySelector(".minus").onclick=()=>savePersonState(item,{quantity:Math.max(0,s.quantity-1),quantity_manual:true});row.querySelector(".plus").onclick=()=>savePersonState(item,{quantity:s.quantity+1,quantity_manual:true});row.querySelector(".needp").onclick=()=>savePersonState(item,{needs_purchase:!s.needs_purchase});const reset=row.querySelector(".resetq");if(reset)reset.onclick=()=>savePersonState(item,{quantity:suggestedQuantity(item),quantity_manual:false});const catBtn=row.querySelector(".pcategory");if(catBtn)catBtn.onclick=()=>changeMasterPersonalCategory(item);const editBtn=row.querySelector(".pedit");if(editBtn)editBtn.onclick=()=>openEditPersonItem(item);const delBtn=row.querySelector(".pdelete");if(delBtn)delBtn.onclick=()=>deletePersonItem(item);body.appendChild(row)}
+    for(const item of items){const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id),row=document.createElement("div");row.className="personItem"+(personViewMode==="pack"&&s.packed?" personPackDone":"");row.style.borderLeftColor=currentPerson.color;row.innerHTML=`<input class="pselect" type="checkbox" ${(personViewMode==="plan"?s.selected:s.packed)?"checked":""}><div><b>${item.name}</b>${item.must_not_forget?'<span class="starBadge">⭐ Darf nicht fehlen</span>':""}${item.is_master_assignment?`<span class="linkBadge" style="color:${currentPerson.color}">Masterartikel · ${currentPerson.name}</span>`:(linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:"")}${item.note?`<div class="personNote">📝 ${item.note}</div>`:""}<div class="ruleHint">${quantityRuleLabel(item)}${item.quantity_offset?` · persönlich ${item.quantity_offset>0?"+":""}${item.quantity_offset}`:""}${s.quantity_manual?" · manuell":""}</div><div class="personMiniActions"><button class="needp ${s.needs_purchase?"on":""}">🔎 ${s.needs_purchase?"Suchen/Kaufen":"fehlt?"}</button>${s.quantity_manual?'<button class="resetq">↺ Vorschlag</button>':""}${item.is_master_assignment?'<button class="pcategory">Kategorie ändern</button>':'<button class="pedit">Bearbeiten</button><button class="pdelete">Löschen</button>'}</div></div><div class="qtyBox"><button class="minus" style="border-color:${currentPerson.color}">−</button><span class="qty">${s.quantity}</span><button class="plus" style="border-color:${currentPerson.color}">＋</button></div>`;
+      row.querySelector(".pselect").onchange=e=>personViewMode==="plan"?savePersonState(item,{selected:e.target.checked}):savePersonState(item,{packed:e.target.checked});row.querySelector(".minus").onclick=()=>savePersonState(item,{quantity:Math.max(0,s.quantity-1),quantity_manual:true});row.querySelector(".plus").onclick=()=>savePersonState(item,{quantity:s.quantity+1,quantity_manual:true});row.querySelector(".needp").onclick=()=>savePersonState(item,{needs_purchase:!s.needs_purchase});const reset=row.querySelector(".resetq");if(reset)reset.onclick=()=>savePersonState(item,{quantity:suggestedQuantity(item),quantity_manual:false});const catBtn=row.querySelector(".pcategory");if(catBtn)catBtn.onclick=()=>changeMasterPersonalCategory(item);const editBtn=row.querySelector(".pedit");if(editBtn)editBtn.onclick=()=>openEditPersonItem(item);const delBtn=row.querySelector(".pdelete");if(delBtn)delBtn.onclick=()=>deletePersonItem(item);body.appendChild(row)}
     list.appendChild(sec)}
 }
 function renderPersonControlPanels(){
@@ -2128,6 +2150,8 @@ el("deletePersonBtn").onclick=async()=>{
 el("modulesBtn").onclick=openModulesModal;
 el("modulesCancel").onclick=()=>el("modulesModal").classList.remove("open");
 el("modulesSave").onclick=addSelectedModules;
+el("personPlanBtn").onclick=()=>{personViewMode="plan";renderPeople()};
+el("personPackBtn").onclick=()=>{personViewMode="pack";renderPeople()};
 el("addPersonBtn").onclick=()=>{el("personName").value="";chosenPersonColor=PERSON_COLORS[people.length%PERSON_COLORS.length];renderPersonColors();el("personModal").classList.add("open")};
 el("personCancel").onclick=()=>el("personModal").classList.remove("open");
 el("personSave").onclick=async()=>{
@@ -2573,7 +2597,7 @@ async function boot(){
       await loadTripReviews();
       await loadReviewTrips();
       comparisonTripId=null;comparisonReviews=new Map();
-      await loadPersonStates();
+      await loadPersonStates();await loadMasterPersonStates();
       await loadTripPeople();
 
       updateTripInfo();
