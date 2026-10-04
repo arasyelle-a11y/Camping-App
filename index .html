@@ -1,0 +1,2643 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#55692F">
+<title>Familie Bosbach – Camping</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --cream:#FDF7EE;--cream2:#F6EEDF;--paper:#FFFEFB;--green:#55692F;--green2:#7C8F55;
+  --navy:#1A364A;--teal:#3F717C;--brown:#6B4E31;--orange:#C4562A;--red:#B43A32;
+  --line:#E4DAC5;--muted:#7A756A;--shadow:0 8px 28px rgba(26,54,74,.08)
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--navy);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:760px;margin:auto;min-height:100vh;padding-bottom:88px}
+.banner{width:100%;display:block;border-bottom:3px solid var(--green);max-height:190px;object-fit:cover}
+.top{padding:14px 14px 8px;position:sticky;top:0;z-index:10;background:rgba(253,247,238,.96);backdrop-filter:blur(10px)}
+.tripbar{display:flex;gap:8px;align-items:center}
+.tripbar select{flex:1;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--paper);color:var(--navy);font-weight:800}
+.iconbtn{border:0;border-radius:12px;background:var(--green);color:white;padding:11px 13px;font-weight:800}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:9px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 3px;text-align:center}
+.stat b{display:block;font-size:17px}.stat span{font-size:8px;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.quickadd{display:grid;grid-template-columns:1fr 120px auto;gap:7px;padding:10px 14px 4px}
+.quickadd input,.quickadd select,.sheet input,.sheet select,.loginCard input{min-width:0;border:1px solid var(--line);background:white;border-radius:11px;padding:11px}
+.quickadd button{border:0;border-radius:11px;background:var(--navy);color:white;padding:0 14px;font-weight:800}
+.filters,.masterToolbar{display:flex;gap:7px;padding:8px 14px;overflow:auto}.categoryTabs{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px;padding:7px 8px 9px;position:sticky;top:123px;z-index:9;background:rgba(253,247,238,.97);backdrop-filter:blur(10px)}.categoryTab{min-width:0;min-height:42px;border:1px solid var(--line);background:var(--paper);color:var(--brown);border-radius:10px;padding:4px 2px;font-size:8px;line-height:1.05;font-weight:850;text-align:center;white-space:normal;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;transform-origin:center;position:relative;z-index:1}.categoryTab .tabIcon{display:block;font-size:15px;line-height:1.1;margin-bottom:2px}.categoryTab.active{background:var(--green);border-color:var(--green);color:white;box-shadow:0 3px 10px rgba(26,54,74,.16)}.categoryTab.peek{transform:scale(1.38);z-index:30;box-shadow:0 8px 22px rgba(26,54,74,.28);background:white;border-color:var(--green);color:var(--navy)}.categoryTab.active.peek{background:var(--green);color:white}
+.categoryBulk{display:flex;gap:7px;padding:9px 10px 10px;border-top:1px solid var(--line);background:var(--cream2)}
+.categoryBulk button{flex:1;border:1px solid var(--green);border-radius:10px;padding:9px 6px;background:white;color:var(--green);font-size:10px;font-weight:850}
+.categoryBulk button:last-child{border-color:var(--line);color:var(--brown)}
+.allBulk{display:flex;gap:7px;padding:8px 12px 2px}
+.allBulk button{flex:1;border:1px solid var(--navy);border-radius:10px;padding:10px 7px;background:white;color:var(--navy);font-size:11px;font-weight:900}
+.allBulk button:last-child{border-color:var(--line);color:var(--brown)}
+
+@media(max-width:420px){.categoryTabs{grid-template-columns:repeat(9,minmax(0,1fr));gap:3px;padding-left:5px;padding-right:5px}.categoryTab{font-size:7px;min-height:40px}.categoryTab .tabIcon{font-size:14px}}
+.filter,.masterToolbar button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 11px;font-size:11px;font-weight:800;white-space:nowrap;color:var(--brown)}
+.filter.active,.masterToolbar button.active{background:var(--green);color:white;border-color:var(--green)}
+.content{padding:0 12px}
+.category{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin:11px 0;box-shadow:var(--shadow)}
+.cathead{width:100%;border:0;background:linear-gradient(135deg,var(--green),#485925);color:white;padding:13px 14px;display:flex;align-items:center;gap:10px;text-align:left}
+.cathead .emoji{font-size:20px}.cathead strong{font-size:16px;flex:1}.cathead small{opacity:.85;font-weight:700}
+.category.closed .catbody{display:none}
+.swipeWrap{position:relative;overflow:hidden;border-top:1px solid #eee4d2}
+.swipeDelete{position:absolute;right:0;top:0;bottom:0;width:92px;border:0;background:var(--red);color:white;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center}.swipeEdit{position:absolute;left:0;top:0;bottom:0;width:92px;border:0;background:var(--teal);color:white;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center}.row.swipedRight{transform:translateX(92px)}
+.row{padding:10px;position:relative;transition:transform .18s ease;touch-action:pan-y;background:var(--paper);z-index:1}
+.row:nth-child(even){background:var(--cream2)}.row.swiped{transform:translateX(-92px)}
+.row.dragging{transform:scale(1.045);box-shadow:0 14px 34px rgba(26,54,74,.32);border:2px solid var(--green);border-radius:14px;z-index:30;opacity:.98;background:#fffdf7}
+.swipeWrap.dragTarget{outline:3px dashed var(--green);outline-offset:-3px;background:#eef3e4}
+.dragHint{font-size:9px;color:var(--muted);font-weight:800;margin-left:auto;white-space:nowrap} body.dragMode,body.dragMode *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
+.nameLine{display:flex;align-items:center;gap:9px}.name{font-size:14px;font-weight:700;flex:1;line-height:1.2}
+.tripOnly{font-size:9px;padding:3px 6px;border-radius:999px;background:#EEE8FA;color:#65539A;font-weight:800}.noteIcon{border:0;background:transparent;padding:2px 4px;font-size:16px;line-height:1;flex:0 0 auto}.sheet textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;font:inherit;color:var(--navy)}.fieldLabel{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}.danger{background:#8f3f36!important;color:white!important}.archiveBtn{background:#355f4b!important;color:white!important}.archiveCard{margin:10px 12px;padding:14px;border:1px solid var(--line);border-radius:15px;background:white}.archiveCard h3{margin:0 0 4px;color:var(--navy)}.archiveMeta{font-size:11px;color:var(--muted);margin-bottom:10px}.archiveActions{display:flex;gap:7px;flex-wrap:wrap}.archiveActions button{border:1px solid var(--line);background:white;border-radius:10px;padding:8px 10px;font-weight:800;color:var(--navy)}.memoryBox{white-space:pre-wrap;background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;line-height:1.45}.memoryPhoto{width:100%;max-height:320px;object-fit:cover;border-radius:14px;margin:8px 0 10px;border:1px solid var(--line)}.photoPreview{width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px;display:none}.historyRow{padding:10px 12px;border-bottom:1px solid var(--line);background:white}.historyTop{display:flex;align-items:center;gap:8px}.historyStatus{font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px}.historyStatus.yes{background:#dfeee5;color:#28533e}.historyStatus.no{background:#eee;color:#666}.historyName{font-weight:850;flex:1}.historyNote{font-size:12px;margin:6px 0 0 0;padding-left:4px;color:var(--brown)}.checkLine{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:750;color:var(--navy)}.noteViewText{white-space:pre-wrap;background:var(--cream2);border:1px solid var(--line);border-radius:12px;padding:14px;line-height:1.45;color:var(--navy);font-size:14px;min-height:70px}
+.take{appearance:none;width:24px;height:24px;border:2px solid var(--green);border-radius:7px;background:white;display:grid;place-content:center;flex:0 0 auto}
+.take:checked{background:var(--green)}.take:checked:after{content:"✓";color:white;font-weight:900}
+.actions{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:8px}
+.stage{border:1.5px solid var(--line);border-radius:9px;background:white;padding:7px 2px;font-size:9px;font-weight:800;color:var(--muted)}
+.stage.on[data-stage="seen"]{background:#E5EDD4;border-color:var(--green);color:var(--green)}
+.stage.on[data-stage="box"]{background:#DDECF0;border-color:var(--teal);color:var(--teal)}
+.stage.on[data-stage="car"]{background:#DFE6EC;border-color:var(--navy);color:var(--navy)}
+.stage.on[data-stage="need"]{background:#F8E3D7;border-color:var(--orange);color:var(--orange)}
+.row:not(.selected) .actions{opacity:.35;pointer-events:none}
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,254,251,.98);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+.nav{width:min(760px,100%);display:grid;grid-template-columns:repeat(5,1fr)}
+.nav button{border:0;background:transparent;padding:11px 4px 9px;color:var(--muted);font-weight:800;font-size:10px}
+.nav button.active{color:var(--green)}.nav .nicon{display:block;font-size:19px;margin-bottom:2px}
+.view{display:none}.view.active{display:block}
+.needCard,.personCard{margin:10px 12px;background:white;border:1px solid var(--line);border-radius:14px;padding:12px}
+.needItem,.masterRow{display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid #eee}
+.needItem:last-child,.masterRow:last-child{border-bottom:0}.needItem b,.masterName{flex:1}.masterName{font-weight:700;font-size:14px}
+.badge{font-size:9px;background:#F8E3D7;color:var(--orange);padding:5px 7px;border-radius:999px;font-weight:800}
+.masterRow button{border:1px solid var(--line);border-radius:9px;padding:7px 8px;background:white;font-weight:800;font-size:10px}
+.masterRow button.addBack{background:#E5EDD4;color:var(--green);border-color:var(--green)}
+.tripTypeChecks{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:8px 0 12px}.tripTypeChecks label{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:10px;padding:8px;background:white;font-size:11px;font-weight:800}.masterActions{display:flex;gap:5px;flex-wrap:wrap}.masterTypeBadge{display:inline-block;font-size:9px;padding:3px 6px;border-radius:999px;background:var(--cream2);margin:3px 3px 0 0;color:var(--brown);font-weight:800}.masterAddBar{display:flex;gap:7px;padding:8px 14px}.masterAddBar button{flex:1;border:0;border-radius:11px;background:var(--navy);color:white;padding:10px;font-weight:850}.masterTypeFilters{display:flex;gap:6px;padding:0 14px 8px;overflow:auto}.masterTypeFilters button{border:1px solid var(--line);background:white;border-radius:999px;padding:7px 9px;white-space:nowrap;font-size:10px;font-weight:800}.masterTypeFilters button.active{background:var(--green);color:white;border-color:var(--green)}
+.empty{padding:34px 20px;text-align:center;color:var(--muted)}
+.modal{position:fixed;inset:0;background:rgba(15,30,40,.42);display:none;align-items:flex-end;z-index:50}
+.modal.open{display:flex}.sheet{width:100%;max-width:760px;margin:0 auto;background:var(--paper);border-radius:20px 20px 0 0;padding:18px}
+.sheet h3{margin:0 0 12px}.sheet input,.sheet select{width:100%;margin-bottom:9px}
+.sheetActions,.addChoice{display:flex;gap:8px}.sheetActions button,.addChoice button{flex:1;border:0;border-radius:11px;padding:11px;font-weight:800}
+.cancel{background:var(--cream2);color:var(--brown)}.save{background:var(--green);color:white}.save:disabled{opacity:.55;cursor:default}
+.addChoice{margin:3px 0 12px}.addChoice button{border:1px solid var(--line);background:white;color:var(--brown)}
+.addChoice button.active{background:var(--green);color:white;border-color:var(--green)}
+.toast{position:fixed;left:50%;bottom:83px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;z-index:90;background:var(--navy);color:white;border-radius:12px;padding:11px 14px;box-shadow:var(--shadow);font-size:12px;font-weight:800;transition:.2s;display:flex;gap:13px;align-items:center;max-width:92vw}
+.toast.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}.toast button{border:0;background:transparent;color:#F6D88A;font-weight:900;padding:0}
+.login{position:fixed;inset:0;z-index:100;background:linear-gradient(180deg,#DCE6D2,var(--cream));display:flex;align-items:center;justify-content:center;padding:18px}
+.login.hidden{display:none}.loginCard{width:min(430px,100%);background:white;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+.loginCard h1{margin:0 0 4px;color:var(--green);font-size:24px}.loginCard p{margin:0 0 15px;color:var(--muted);font-size:13px}
+.loginCard input{width:100%;margin-bottom:9px}.loginCard button{width:100%;border:0;border-radius:11px;padding:12px;background:var(--green);color:white;font-weight:900}.loginErr{font-size:11px;color:var(--red);min-height:18px;margin-top:8px}
+.tripInfo{padding:7px 14px 0;font-size:12px;color:var(--brown);display:flex;justify-content:space-between;gap:10px;align-items:center}.tripInfo strong{color:var(--navy)}.countdown{font-size:10px;font-weight:900;color:var(--green);text-align:right}.tripForm label{display:block;font-size:10px;font-weight:850;color:var(--muted);margin:8px 0 4px}.tripForm input,.tripForm select{width:100%}.sync{font-size:10px;color:var(--muted);padding:4px 14px 0;text-align:right}
+@media(max-width:520px){.stat b{font-size:14px}.stat span{font-size:7px}.quickadd{grid-template-columns:1fr 102px auto}.actions{gap:4px}.stage{font-size:8px}}
+
+.personToolbar{padding:12px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.personTabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.personTabs::-webkit-scrollbar{display:none}
+.personTab{border:2px solid transparent;border-radius:999px;padding:9px 13px;background:white;font-weight:850;white-space:nowrap;color:var(--navy)}
+.personTab.active{color:white;box-shadow:0 4px 12px rgba(26,54,74,.15)}
+.personList{padding:0 12px 20px}
+.personCategory{margin:10px 0;border:1px solid var(--line);border-radius:15px;overflow:hidden;background:white}
+.personCatHead{padding:10px 12px;background:var(--cream2);font-weight:900}
+.personItem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:11px 12px;border-top:1px solid var(--line)}
+.qtyBox{display:flex;align-items:center;gap:5px}
+.qtyBox button{width:28px;height:28px;border:1px solid var(--line);border-radius:8px;background:white;font-weight:900}
+.qty{min-width:28px;text-align:center;font-weight:900}
+.linkBadge{font-size:9px;font-weight:850;border:1px solid currentColor;border-radius:999px;padding:3px 6px;margin-left:5px}
+.colorPalette{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:8px 0 12px}
+.colorChoice{height:38px;border-radius:11px;border:3px solid transparent}
+.colorChoice.active{outline:3px solid var(--navy);outline-offset:2px}
+.personEmpty{padding:24px;text-align:center;color:var(--muted)}
+@media print{
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{position:absolute;left:0;top:0;width:100%;background:white;color:#111;padding:10mm}
+  #printArea h1{font-size:22pt;margin:0 0 3mm}
+  #printArea h2{font-size:14pt;margin:6mm 0 2mm;border-bottom:2px solid #555;padding-bottom:1mm}
+  .printRow{display:grid;grid-template-columns:9mm 1fr 22mm;align-items:center;min-height:10mm;border-bottom:1px solid #ddd;font-size:13pt}
+  .printCheck{width:6mm;height:6mm;border:1.5px solid #111}
+  .printQty{text-align:right;font-weight:700}
+}
+
+.personControlPanel{margin:10px 12px;padding:12px;border:1px solid var(--line);border-radius:15px;background:white}
+.personControlPanel h3{margin:0 0 8px;font-size:15px}
+.controlItem{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.controlItem:first-of-type{border-top:0}
+.personDot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.starBadge{display:inline-block;margin-left:5px;font-size:11px;font-weight:900;color:#9b6d00}
+.ruleHint{font-size:10px;color:var(--muted);margin-top:3px}
+.personMiniActions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.personMiniActions button{border:1px solid var(--line);background:white;border-radius:8px;padding:4px 7px;font-size:10px;font-weight:800}
+.personMiniActions button.on{background:var(--cream2)}
+.moduleGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.moduleChoice{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:11px;padding:9px;background:white;font-size:12px;font-weight:800}
+.ruleFields{display:grid;grid-template-columns:1fr 100px;gap:8px}
+.criticalPrint{margin-top:9mm;padding-top:4mm;border-top:3px solid #444}
+.criticalPrint h2{margin-top:0}
+
+.personTheme{margin:0 12px 10px;border-radius:16px;padding:12px 14px;color:white;font-weight:900;box-shadow:0 6px 18px rgba(0,0,0,.10)}
+.personTheme small{display:block;font-size:10px;font-weight:700;opacity:.9;margin-top:2px}
+.personCategory .personCatHead{display:flex;align-items:center;gap:8px;cursor:pointer}
+.personCategory .personCatHead .pcTitle{flex:1}
+.personCategory .personCatHead .pcCount{font-size:10px;opacity:.75}
+.personCategory.closed .personCatBody{display:none}
+.personList.personTint{border-radius:18px;margin:0 8px 16px;padding-top:4px}
+.personItem{border-left:4px solid transparent}
+.tripPeopleGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 12px}
+.tripPersonChoice{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:11px;padding:9px;background:white;font-size:12px;font-weight:800}
+.tripPersonChoice input{width:auto!important;margin:0!important}
+.tripTypeHint{font-size:10px;color:var(--muted);margin-top:-4px;margin-bottom:8px}
+.personSyncHint{font-size:10px;color:var(--muted);padding:0 14px 6px}
+
+.packModeBar{display:flex;gap:7px;padding:8px 14px 3px;align-items:center}
+.packModeBar .modeBtn{flex:1;border:1px solid var(--line);background:white;color:var(--navy);border-radius:12px;padding:10px 8px;font-weight:900;font-size:12px}
+.packModeBar .modeBtn.active{background:var(--navy);color:white;border-color:var(--navy)}
+.packModeHelp{padding:3px 14px 6px;font-size:10px;color:var(--muted);line-height:1.35}
+.otherItemsBar{padding:5px 14px 3px;display:none}
+.otherItemsBar.show{display:block}
+.otherItemsBar button{width:100%;border:1px dashed var(--line);background:var(--paper);color:var(--brown);border-radius:11px;padding:9px;font-size:10px;font-weight:850}
+.packMode .filters{display:none}
+.packMode .categoryBulk{display:none}
+.packMode .allBulk{display:none}
+
+.tripHero{height:150px;position:relative;overflow:hidden;border-bottom:3px solid var(--green);background:#f7f0e3;display:flex;align-items:stretch}
+.tripHeroText{position:relative;z-index:2;flex:1;padding:22px 10px 14px 18px;display:flex;flex-direction:column;justify-content:center;min-width:46%}
+.tripHeroEyebrow{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--green);margin-bottom:5px}
+.tripHeroTitle{font-family:Georgia,serif;font-size:25px;font-weight:900;color:var(--navy);line-height:1.05}
+.tripHeroSub{font-size:10px;color:var(--brown);font-weight:750;margin-top:6px}
+.tripHeroArt{width:58%;background-position:right center;background-repeat:no-repeat;background-size:cover}
+.tripProfileMini{font-size:10px;color:var(--muted);font-weight:800;margin-top:2px}
+.profileChoiceGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:5px 0 11px}
+.profileChoice{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:white;border-radius:11px;padding:9px;font-size:11px;font-weight:800}
+.profileChoice input{width:auto!important;margin:0!important}
+.activityGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:5px 0 11px}
+.activityChoice{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:white;border-radius:11px;padding:9px;font-size:11px;font-weight:800}
+.activityChoice input{width:auto!important;margin:0!important}
+#view-pack.planTheme{--green:#657640;--green2:#89985f;--navy:#273e46;--teal:#668a82;--cream:#fdf7ee;--cream2:#f4ead8}
+#view-pack.packTheme{--green:#446d71;--green2:#5f8c91;--navy:#173b51;--teal:#347a84;--cream:#eef5f5;--cream2:#ddeaea}
+#view-pack.packTheme .top{background:rgba(238,245,245,.96)}
+#view-pack.packTheme .categoryTabs{background:rgba(238,245,245,.97)}
+#view-pack.planTheme .actions{display:none!important}
+#view-pack.planTheme .dragHint{display:none}
+#view-pack.planTheme .row{padding-top:12px;padding-bottom:12px}
+#view-pack.planTheme .nameLine{min-height:28px}
+.modeBtn{transition:.18s ease}
+#view-pack.planTheme #planModeBtn{background:#657640;color:white;border-color:#657640}
+#view-pack.packTheme #packModeBtn{background:#173b51;color:white;border-color:#173b51}
+@media(max-width:520px){
+ .tripHero{height:132px}
+ .tripHeroText{padding-left:14px;min-width:50%}
+ .tripHeroTitle{font-size:21px}
+ .tripHeroArt{width:55%}
+}
+
+
+/* Hotfix: lange Dialoge (Urlaub anlegen/bearbeiten) vollständig scrollbar */
+.modal.open{
+  overflow:hidden;
+}
+.sheet{
+  max-height:calc(100dvh - max(12px, env(safe-area-inset-top)));
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding-top:max(18px, env(safe-area-inset-top));
+  padding-bottom:max(18px, calc(18px + env(safe-area-inset-bottom)));
+}
+#tripModal .sheet,
+#editTripModal .sheet{
+  max-height:calc(100dvh - 8px);
+}
+
+
+/* Finaler Header */
+.tripHero{
+  height:158px;
+  position:relative;
+  overflow:hidden;
+  border-bottom:3px solid var(--green);
+  background:var(--cream);
+  display:block;
+}
+.tripHeroArt{
+  position:absolute;
+  inset:0;
+  width:100%;
+  background-position:center 62%;
+  background-repeat:no-repeat;
+  background-size:cover;
+}
+.tripHeroShade{display:none!important}
+.tripHeroText{
+  position:absolute;
+  left:0;
+  top:15px;
+  bottom:0;
+  width:50%;
+  padding:0;
+  margin:0;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  pointer-events:none;
+  transform:none;
+  min-width:0;
+}
+.tripHeroTitle{
+  width:100%;
+  max-width:none;
+  margin:0 0 0 4px;
+  padding:0;
+  font-family:"Chewy", cursive;
+  font-size:29px;
+  white-space:normal;
+  font-weight:400;
+  line-height:1.04;
+  color:var(--navy);
+  text-shadow:none;
+  text-align:left;
+  white-space:normal;
+  overflow-wrap:break-word;
+  word-break:normal;
+  hyphens:auto;
+}
+.compactTripInfo{
+  padding:8px 14px 2px;
+  min-height:34px;
+  align-items:center;
+}
+.compactTripInfo .tripProfileMini{
+  flex:1;
+  margin:0;
+  font-size:10.5px;
+  line-height:1.35;
+  color:var(--brown);
+  font-weight:800;
+}
+.tripInfoRight{display:flex;gap:7px;align-items:center;flex-shrink:0}
+.tripEditBtn{padding:6px 8px!important;font-size:11px!important}
+@media(max-width:520px){
+  .tripHero{height:145px}
+  .tripHeroText{
+    left:0;
+    top:15px;
+    bottom:0;
+    width:52%;
+    padding:0;
+    margin:0;
+    transform:none;
+  }
+  .tripHeroTitle{
+    width:100%;
+    max-width:none;
+    margin-left:4px;
+    font-size:26px;
+  }
+}
+
+
+/* Pack mode: Auswahl ist bereits im Planmodus erfolgt */
+#view-pack.packMode .take{display:none!important}
+#view-pack.packMode .nameLine{padding-left:2px}
+
+
+/* Modal stabilisieren: nur vertikal scrollen, kein seitliches "Schwimmen" */
+.modal{
+  overflow-x:hidden;
+}
+.modal .sheet{
+  width:100%;
+  max-width:760px;
+  overflow-x:hidden;
+  overscroll-behavior-x:none;
+  touch-action:pan-y;
+}
+.modal .sheet > *{
+  max-width:100%;
+}
+.tripForm,
+.tripForm input,
+.tripForm select,
+.tripForm textarea,
+.activityGrid,
+.tripPeopleGrid{
+  min-width:0;
+  max-width:100%;
+}
+
+
+.masterBatchBar{display:none;align-items:center;gap:7px;padding:7px 14px;background:var(--cream2);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:8}
+.masterBatchBar.show{display:flex}.masterBatchBar span{font-size:11px;font-weight:900;color:var(--navy);margin-right:auto}.masterBatchBar button{border:0;border-radius:9px;padding:8px 9px;font-size:10px;font-weight:850;background:var(--navy);color:white}.masterBatchBar button:last-child{background:white;color:var(--muted);border:1px solid var(--line)}
+.masterSelect{appearance:none;width:22px;height:22px;border:2px solid var(--green);border-radius:6px;background:white;display:grid;place-content:center;flex:0 0 auto;margin-right:8px}.masterSelect:checked{background:var(--green)}.masterSelect:checked:after{content:"✓";color:white;font-weight:900;font-size:13px}
+.masterRow.selecting{background:var(--cream2)}
+.batchHint{font-size:11px;color:var(--muted);margin:-4px 0 12px;line-height:1.4}
+
+
+.globalSaveStatus{
+  position:fixed;right:12px;bottom:84px;z-index:95;
+  display:flex;align-items:center;gap:8px;
+  padding:9px 12px;border-radius:999px;
+  background:var(--navy);color:white;
+  box-shadow:0 8px 24px rgba(26,54,74,.22);
+  font-size:11px;font-weight:900;
+  opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:.2s;
+}
+.globalSaveStatus.show{opacity:1;transform:translateY(0)}
+.globalSaveStatus.saved{background:#355f4b}
+.globalSaveStatus.error{background:var(--red)}
+.saveSpinner{
+  width:13px;height:13px;border:2px solid rgba(255,255,255,.45);
+  border-top-color:white;border-radius:50%;
+  animation:saveSpin .75s linear infinite;
+}
+.globalSaveStatus.saved .saveSpinner,
+.globalSaveStatus.error .saveSpinner{display:none}
+@keyframes saveSpin{to{transform:rotate(360deg)}}
+
+
+.masterLegacyHint{margin:7px 14px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px;background:var(--cream2);font-size:10px;color:var(--muted);line-height:1.35}
+
+
+.masterRow{cursor:pointer;transition:background .15s,box-shadow .15s}
+.masterRow.selecting{background:#e5edd4!important;box-shadow:inset 4px 0 0 var(--green)}
+.masterRow.selecting .masterName{color:var(--green)}
+.tripTypeChecks{display:block!important}
+.typeGroup{margin:10px 0 13px}.typeGroupTitle{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.typeTileGrid{display:flex;flex-wrap:wrap;gap:7px}.typeTile{border:1.5px solid var(--line);background:white;color:var(--navy);border-radius:11px;padding:9px 10px;font-size:11px;font-weight:850}
+.typeTile.selected{background:var(--green);border-color:var(--green);color:white}
+
+
+.hiddenField{display:none!important}.hiddenField.show{display:block!important}
+.personNote{font-size:10px;color:var(--brown);line-height:1.35;margin-top:4px;padding:5px 7px;background:var(--cream2);border-radius:7px}
+.masterPeopleHint{font-size:10px;color:var(--muted);line-height:1.35;margin:-2px 0 7px}
+.personAssignGrid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.personAssignTile{border:2px solid var(--person-color,var(--line));background:white;color:var(--navy);border-radius:11px;padding:8px 10px;font-size:11px;font-weight:900}
+.personAssignTile.selected{background:var(--person-color,var(--green));color:white}
+
+.reviewStartBtn{width:100%;margin-top:10px;background:#fff7df!important;border:1px solid #d9b55d!important;color:#584719!important;font-weight:800}
+.reviewSheet{max-width:520px}
+.reviewProgress{font-size:13px;color:#6f6b63;margin:-3px 0 10px}
+.reviewItemName{font-size:27px;font-weight:900;color:#18354a;margin:8px 0 4px}
+.reviewItemMeta{font-size:13px;color:#777;margin-bottom:15px}
+.reviewLights{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.reviewLight{padding:14px 6px;border-radius:14px;border:3px solid transparent;font-weight:900;font-size:13px;opacity:.58;transition:.12s;box-shadow:none}
+.reviewLight.green{background:#5da768;color:#fff}
+.reviewLight.yellow{background:#e2b93e;color:#3c3214}
+.reviewLight.red{background:#c96767;color:#fff}
+.reviewLight.on{opacity:1;border-color:#18354a;box-shadow:0 0 0 2px #fff inset,0 2px 8px #0002;transform:translateY(-1px)}
+.reviewDeluxe{display:flex;align-items:center;gap:9px;margin:16px 0;padding:11px;border-radius:12px;background:#fff8e8;font-weight:800}
+.reviewNote{width:100%;min-height:72px;box-sizing:border-box}
+.reviewNav{display:grid;grid-template-columns:1fr 1fr 1.35fr;gap:8px;margin-top:16px}
+.reviewCloseRow{margin-top:22px;padding-top:16px;border-top:1px solid #e5e1d8}
+.reviewCloseRow button{width:100%}
+.reviewHistoryToggle{display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-size:14px;font-weight:700}
+.row.review-green{background:#dff1df!important;box-shadow:inset 0 0 0 1px rgba(83,151,94,.30)}
+.row.review-yellow{background:#fff0bd!important;box-shadow:inset 0 0 0 1px rgba(203,163,48,.30)}
+.row.review-red{background:#f5d7d7!important;box-shadow:inset 0 0 0 1px rgba(184,82,82,.28)}
+.reviewExtras{display:inline-flex;align-items:center;gap:3px;margin-left:6px;font-size:12px;vertical-align:middle}
+.reviewDeluxeStar{margin-left:1px}.reviewNoteMini{font-size:12px}.reviewHistoryToggle #reviewCountHint{font-weight:700;color:var(--muted)}
+.reviewHistoryToggle:has(input:checked){color:#18354a}.reviewDisplayHint{font-size:12px;color:var(--muted);margin:-2px 0 8px 24px}.reviewDisplayHint:empty{display:none}
+.reviewSourceWrap{display:none;align-items:center;gap:8px;margin:4px 0 8px 24px;font-size:13px}.reviewSourceWrap.show{display:flex}.reviewSourceWrap label{font-weight:800;white-space:nowrap}.reviewSourceWrap select{min-width:0;max-width:260px;padding:7px 9px;border:1px solid #d8d3c8;border-radius:8px;background:white}
+.row.review-unselected{background:#ecebe6!important;opacity:1}
+.archiveNotesList{display:flex;flex-direction:column;gap:8px;margin-top:12px}.archiveNoteItem{padding:10px 12px;background:var(--cream2);border-radius:8px}.archiveNoteItem b{display:block;margin-bottom:4px;color:var(--navy)}.row.review-green.review-unselected{background:#ecebe6!important;border-left:5px solid #5f9f69}
+.row.review-yellow.review-unselected{background:#ecebe6!important;border-left:5px solid #d2a62f}
+.row.review-red.review-unselected{background:#ecebe6!important;border-left:5px solid #b85c5c}
+.row.review-unselected .name{color:#6f736f}
+.reviewNoteMini{border:0;background:transparent;padding:0 2px;margin:0;font:inherit;line-height:1;cursor:pointer}
+.personModeSwitch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 12px 8px}.personModeSwitch button{padding:11px;border-radius:12px;border:1px solid #ddd3c1;background:white;font-weight:900;color:var(--navy)}.personModeSwitch button.active{background:var(--olive);color:white;border-color:var(--olive)}.personModeSwitch button.packActive{background:#3979a8;color:white;border-color:#3979a8}.personModePack{background:#eaf4fb;border:1px solid #c5dfee;border-radius:12px;padding:7px 10px;margin:0 12px 10px}.personModeHint{margin:0 16px 10px;color:var(--muted);font-size:12px}.personPackDone{opacity:.55;text-decoration:line-through}
+</style>
+</head>
+<body>
+<div id="login" class="login">
+  <div class="loginCard">
+    <h1>🏕️ Camping</h1>
+    <p>Mit eurem Familienzugang anmelden. Die Packliste wird danach mit Supabase synchronisiert.</p>
+    <input id="loginEmail" type="email" autocomplete="username" placeholder="E-Mail">
+    <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Passwort">
+    <button id="loginBtn">Anmelden</button>
+    <div id="loginErr" class="loginErr"></div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="tripHero" id="tripHero">
+  <div class="tripHeroArt" id="tripHeroArt"></div>
+  <div class="tripHeroText">
+    <div class="tripHeroTitle" id="tripHeroTitle">Reise planen</div>
+  </div>
+</div>
+  <section class="view active" id="view-pack">
+    <div class="top">
+      <div class="tripbar">
+        <select id="tripSelect"></select>
+        <button class="iconbtn" id="newTripBtn">＋ Urlaub</button>
+      </div>
+      <div class="tripInfo compactTripInfo">
+  <div class="tripProfileMini" id="tripProfileMini"></div>
+  <div class="tripInfoRight"><span class="countdown" id="tripCountdown"></span><button id="editTripBtn" class="iconbtn tripEditBtn">✏️</button></div>
+</div>
+      <div class="stats">
+        <div class="stat"><b id="sTake">0</b><span>Mitnehmen</span></div>
+        <div class="stat"><b id="sSeen">0</b><span>Gesichtet</span></div>
+        <div class="stat"><b id="sBox">0</b><span>In Kiste</span></div>
+        <div class="stat"><b id="sCar">0</b><span>Im Auto</span></div>
+        <div class="stat"><b id="sNeed">0</b><span>Suchen</span></div>
+      </div>
+      <div class="sync" id="syncText">Synchronisiert</div>
+    </div>
+    <div class="quickadd">
+      <input id="quickName" placeholder="Was fällt dir noch ein?">
+      <select id="quickCat"></select>
+      <button id="quickAdd">＋</button>
+    </div>
+    <div class="packModeBar">
+      <button class="modeBtn active" id="planModeBtn">🧭 Planen</button>
+      <button class="modeBtn" id="packModeBtn">📦 Packen</button>
+    </div>
+    <div class="packModeHelp" id="packModeHelp">Planung: passende Artikel für diese Urlaubsart zusammenstellen. Nicht passende Dinge bleiben zunächst ausgeblendet.</div>
+    <div class="otherItemsBar" id="otherItemsBar"><button id="toggleOtherItemsBtn">＋ Weitere Masterartikel anzeigen</button></div><label class="reviewHistoryToggle"><input type="checkbox" id="showReviewsToggle"> Bewertungen anzeigen <span id="reviewCountHint"></span></label>
+    <div id="reviewSourceWrap" class="reviewSourceWrap"><label for="reviewSourceTrip">Bewertungen von</label><select id="reviewSourceTrip"></select></div>
+    <div id="reviewDisplayHint" class="reviewDisplayHint"></div>
+    <div class="filters">
+      <button class="filter active" data-filter="all">Alle</button>
+      <button class="filter" data-filter="selected">Mitnehmen</button>
+      <button class="filter" data-filter="open">Noch offen</button>
+      <button class="filter" data-filter="need">Suchen/Kaufen</button>
+    </div>
+    <div id="personControlPanels"></div><div class="categoryTabs" id="categoryTabs"></div><main class="content" id="list"></main>
+  </section>
+
+  <section class="view" id="view-need">
+    <div class="top"><h2 style="margin:5px 0">🔎 Suchen & Kaufen</h2></div>
+    <div id="needList"></div>
+  </section>
+
+  <section class="view" id="view-master">
+    <div class="top"><h2 style="margin:5px 0">📚 Masterliste</h2><div style="font-size:12px;color:var(--muted)">Zentrale Campingliste in Supabase.</div></div>
+    <div class="masterToolbar">
+      <button class="active" data-mf="all">Alle</button>
+      <button data-mf="in">Dabei</button>
+      <button data-mf="out">Nicht dabei</button>
+    </div>
+    <div class="masterTypeFilters" id="masterTypeFilters"></div>
+    <div class="masterBatchBar" id="masterBatchBar"><span id="masterBatchCount">0 markiert</span><button id="masterBatchEditBtn">✏️ Gemeinsam bearbeiten</button><button id="masterBatchClearBtn">Auswahl aufheben</button></div>
+    <div class="masterAddBar"><button id="addMasterItemBtn">＋ Artikel</button><button id="bulkMasterItemBtn">＋ Mehrere</button></div>
+    <main class="content" id="masterList"></main>
+  </section>
+
+  <section class="view" id="view-person">
+    <div class="top"><h2 style="margin:5px 0">👤 Persönliche Listen</h2><div style="font-size:12px;color:var(--muted)">Eigene Packliste pro Person – mit Menge und Verknüpfung zur Familienliste.</div></div>
+    <div class="personToolbar">
+      <div class="personTabs" id="personTabs"></div>
+      <button class="iconbtn" id="addPersonBtn">＋ Person</button><button class="iconbtn" id="editPersonBtn">✏️ Person</button>
+      <button class="iconbtn" id="modulesBtn">🧩 Grundausstattung</button><button class="iconbtn" id="addPersonItemBtn">＋ Artikel</button><button class="iconbtn" id="bulkPersonItemBtn">＋ Mehrere</button><button class="iconbtn" id="copyPersonListBtn">⧉ Liste kopieren</button>
+      <button class="iconbtn" id="printPersonBtn">🖨️ Drucken</button>
+    </div>
+    <div id="personTheme" class="personTheme" style="display:none"></div>
+<div class="personModeSwitch"><button id="personPlanBtn" class="active">🧭 Planen</button><button id="personPackBtn">📦 Packen</button></div>
+<div id="personModeHint" class="personModeHint"></div><div class="personList" id="personList"></div>
+  </section>
+  <section class="view" id="view-archive">
+    <div class="top"><h2 style="margin:5px 0">🗂️ Urlaubsarchiv</h2><div style="font-size:12px;color:var(--muted)">Abgeschlossene Urlaube mit damaliger Packliste und Erinnerungen.</div></div>
+    <main class="content" id="archiveList"></main>
+  </section>
+
+
+  <nav class="bottom"><div class="nav">
+    <button class="active" data-view="pack"><span class="nicon">🏕️</span>Packliste</button>
+    <button data-view="need"><span class="nicon">🔎</span>Suchen</button>
+    <button data-view="master"><span class="nicon">📚</span>Master</button>
+    <button data-view="person"><span class="nicon">👤</span>Personen</button><button data-view="archive"><span class="nicon">🗂️</span>Archiv</button>
+  </div></nav>
+</div>
+
+<div id="globalSaveStatus" class="globalSaveStatus" aria-live="polite"><span class="saveSpinner"></span><span id="globalSaveText">Speichert …</span></div>
+<div class="toast" id="undoToast"><span id="undoText">Artikel entfernt</span><button id="undoBtn">Rückgängig</button></div>
+
+<div class="modal" id="editTripModal">
+  <div class="sheet tripForm">
+    <h3>Urlaub bearbeiten</h3>
+    <label for="editTripPlace">Ziel</label>
+    <select id="editTripPlace"></select>
+    <label for="editTripName">Urlaubsname</label>
+    <input id="editTripName" placeholder="z. B. Le Gurp 2028">
+    <label for="editTripAccommodation">Unterkunft</label>
+    <select id="editTripAccommodation">
+      <option value="tent">⛺ Zelt</option>
+      <option value="tent_power">⚡ Zelt + Strom</option>
+      <option value="camper">🚐 Camper / Wohnmobil</option>
+      <option value="holiday_home">🏡 Ferienhaus / Ferienwohnung</option>
+      <option value="hotel">🏨 Hotel</option>
+    </select>
+    <label for="editTripTransport">Anreise</label>
+    <select id="editTripTransport">
+      <option value="car">🚗 Auto</option>
+      <option value="plane">✈️ Flugzeug</option>
+      <option value="train">🚆 Bahn</option>
+    </select>
+    <label>Was habt ihr vor?</label>
+    <div class="activityGrid" id="tripActivitiesEdit"></div>
+    <div class="tripTypeHint">Alles kann nachträglich geändert werden. „Vorschlag anwenden“ setzt nur die Familienauswahl neu – persönliche Listen bleiben bestehen.</div>
+    <button type="button" id="applyTripTypeBtn" class="iconbtn" style="width:100%;margin:0 0 10px">✨ Planungsvorschlag neu anwenden</button>
+    <label>Wer kommt mit?</label>
+    <div id="tripPeopleEdit" class="tripPeopleGrid"></div>
+    <label for="editTripStart">Anreise</label>
+    <input id="editTripStart" type="date">
+    <label for="editTripEnd">Abreise</label>
+    <input id="editTripEnd" type="date">
+    <label for="editTripMemory">Urlaubserinnerung</label>
+    <textarea id="editTripMemory" placeholder="Mit wem wart ihr da? Stellplatz, was hat sich bewährt, was nächstes Mal anders?"></textarea>
+    <label for="editTripPhoto">Erinnerungsfoto</label>
+    <input id="editTripPhoto" type="file" accept="image/*">
+    <img id="editTripPhotoPreview" class="photoPreview" alt="Erinnerungsfoto">
+    <label class="checkLine" id="removeTripPhotoLine" style="display:none"><input id="removeTripPhoto" type="checkbox"> Foto entfernen</label>
+    <div class="sheetActions" style="margin-top:14px">
+      <button class="cancel" id="editTripCancel">Abbrechen</button>
+      <button class="save" id="editTripSave">Speichern</button>
+    </div>
+    <div class="sheetActions" style="margin-top:8px">
+      <button id="reviewTripBtn" class="reviewStartBtn">🚦 Urlaub bewerten</button><button class="archiveBtn" id="archiveTripBtn">🗂️ Archivieren</button>
+      <button class="danger" id="deleteTripBtn">Urlaub löschen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="tripModal">
+  <div class="sheet tripForm">
+    <h3>Neuen Urlaub anlegen</h3>
+    <label for="tripPlace">Wohin geht es?</label>
+    <select id="tripPlace"></select>
+    <label for="tripNewPlace">Oder neues Ziel</label>
+    <input id="tripNewPlace" placeholder="z. B. Bretagne">
+    <label for="tripNameInput">Name des Urlaubs</label>
+    <input id="tripNameInput" placeholder="z. B. Le Gurp 2028">
+    <label for="tripAccommodation">Unterkunft</label>
+    <select id="tripAccommodation">
+      <option value="tent">⛺ Zelt</option>
+      <option value="tent_power">⚡ Zelt + Strom</option>
+      <option value="camper">🚐 Camper / Wohnmobil</option>
+      <option value="holiday_home">🏡 Ferienhaus / Ferienwohnung</option>
+      <option value="hotel">🏨 Hotel</option>
+    </select>
+    <label for="tripTransport">Anreise</label>
+    <select id="tripTransport">
+      <option value="car">🚗 Auto</option>
+      <option value="plane">✈️ Flugzeug</option>
+      <option value="train">🚆 Bahn</option>
+    </select>
+    <label>Was habt ihr vor?</label>
+    <div class="activityGrid" id="tripActivitiesNew"></div>
+    <div class="tripTypeHint">Unterkunft, Anreise und Aktivitäten steuern die Planung. Du kannst später jederzeit alles ändern.</div>
+    <label>Wer kommt mit?</label>
+    <div id="tripPeopleNew" class="tripPeopleGrid"></div>
+    <label for="tripStart">Anreise</label>
+    <input id="tripStart" type="date">
+    <label for="tripEnd">Abreise</label>
+    <input id="tripEnd" type="date">
+    <div class="sheetActions" style="margin-top:14px">
+      <button class="cancel" id="tripCancel">Abbrechen</button>
+      <button class="save" id="tripSave">Urlaub anlegen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="personModal"><div class="sheet">
+  <h3>Person anlegen</h3>
+  <input id="personName" placeholder="Name">
+  <label class="fieldLabel">Farbe</label>
+  <div class="colorPalette" id="personColors"></div>
+  <div class="sheetActions"><button class="cancel" id="personCancel">Abbrechen</button><button class="save" id="personSave">Anlegen</button></div>
+</div></div>
+
+<div class="modal" id="bulkPersonItemModal"><div class="sheet">
+  <h3>Mehrere Artikel anlegen</h3>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Eine Zeile = ein Artikel.</div>
+  <label class="fieldLabel">Kategorie</label>
+  <select id="bulkPersonCategory"></select>
+  <input id="bulkPersonNewCategory" class="hiddenField" placeholder="Neue Kategorie eingeben">
+  <textarea id="bulkPersonItems" rows="10" placeholder="Unterhosen&#10;Socken&#10;T-Shirts&#10;Kurze Hosen&#10;Pullover"></textarea>
+  <div id="bulkCount" style="font-size:12px;color:var(--muted);margin-top:5px">0 Artikel erkannt</div>
+  <div class="sheetActions"><button class="cancel" id="bulkPersonCancel">Abbrechen</button><button class="save" id="bulkPersonSave">Alle anlegen</button></div>
+</div></div>
+
+<div class="modal" id="copyPersonModal"><div class="sheet">
+  <h3>Persönliche Liste kopieren</h3>
+  <div id="copyPersonInfo" style="margin-bottom:10px"></div>
+  <label class="fieldLabel">Zielperson</label>
+  <select id="copyPersonTarget"></select>
+  <div class="sheetActions"><button class="cancel" id="copyPersonCancel">Abbrechen</button><button class="save" id="copyPersonSave">Liste kopieren</button></div>
+</div></div>
+
+<div class="modal" id="editPersonModal"><div class="sheet">
+<h3>Person bearbeiten</h3><input id="editPersonName" placeholder="Name"><label class="fieldLabel">Farbe</label>
+<div class="colorPalette" id="editPersonColors"></div>
+<button id="deletePersonBtn" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;border:1px solid #d9a3a3;background:#fff4f4;color:#a33;font-weight:900">Person löschen</button>
+<div class="sheetActions"><button class="cancel" id="editPersonCancel">Abbrechen</button><button class="save" id="editPersonSave">Speichern</button></div>
+</div></div>
+<div class="modal" id="modulesModal"><div class="sheet">
+  <h3>Grundausstattung & Module</h3>
+  <div style="font-size:12px;color:var(--muted)">Wähle die Bausteine, die für <b id="modulesPersonName"></b> angelegt werden sollen. Bereits vorhandene Artikel werden nicht doppelt angelegt.</div>
+  <div class="moduleGrid" id="moduleGrid"></div>
+  <div class="sheetActions"><button class="cancel" id="modulesCancel">Abbrechen</button><button class="save" id="modulesSave">Auswahl hinzufügen</button></div>
+</div></div>
+
+<div class="modal" id="personItemModal"><div class="sheet">
+  <h3>Persönlichen Artikel anlegen</h3>
+  <input id="personItemName" placeholder="z. B. AirPods">
+  <label class="fieldLabel">Kategorie</label>
+  <select id="personItemCategory"></select>
+  <input id="personItemNewCategory" class="hiddenField" placeholder="Neue Kategorie eingeben">
+  <label class="fieldLabel">Notiz</label>
+  <textarea id="personItemNote" rows="3" placeholder="z. B. nur das lange Ladekabel mitnehmen"></textarea>
+  <label class="fieldLabel">Mengenregel</label>
+  <select id="personItemRule">
+    <option value="fixed">Feste Menge</option>
+    <option value="underwear">Unterhosen: Tage + 1, max. 10</option>
+    <option value="tshirts">T-Shirts: 2 je angefangene 3 Tage, max. 8</option>
+    <option value="shorts">Kurze Hosen: 1 je angefangene 5 Tage, max. 4</option>
+    <option value="socks">Socken: Standard 4</option>
+    <option value="sleep">Schlafsachen: kurz 1, ab 7 Tagen 2</option>
+  </select>
+  <div class="ruleFields">
+    <div><label class="fieldLabel">Grundmenge</label><input id="personItemQty" type="number" min="0" value="1"></div>
+    <div><label class="fieldLabel">Persönlich +/−</label><input id="personItemOffset" type="number" value="0"></div>
+  </div>
+  <label class="checkLine"><input id="personItemStar" type="checkbox"> ⭐ Darf nicht fehlen</label>
+  <label class="fieldLabel">Optional mit Familien-Masterartikel verknüpfen</label>
+  <select id="personItemLink"><option value="">Nicht verknüpfen</option></select>
+  <div class="sheetActions"><button class="cancel" id="personItemCancel">Abbrechen</button><button class="save" id="personItemSave">Anlegen</button></div>
+</div></div>
+
+<div class="modal" id="masterItemModal"><div class="sheet"><h3>Masterartikel</h3><input id="masterItemName" placeholder="Artikel"><select id="masterItemCategory"></select><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="masterItemTypes"></div><label class="fieldLabel">Persönliche Packliste</label><div class="masterPeopleHint">Optional Person(en) auswählen – der Artikel erscheint dann automatisch in deren persönlicher Packliste.</div><div class="personAssignGrid" id="masterItemPeople"></div><div class="sheetActions"><button class="cancel" id="masterItemCancel">Abbrechen</button><button class="save" id="masterItemSave">Speichern</button></div></div></div>
+<div class="modal" id="bulkMasterModal"><div class="sheet"><h3>Mehrere Masterartikel</h3><select id="bulkMasterCategory"></select><label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="bulkMasterTypes"></div><textarea id="bulkMasterItems" rows="10" placeholder="Eine Zeile = ein Artikel"></textarea><div id="bulkMasterCount" style="font-size:12px;color:var(--muted);margin:5px 0">0 Artikel erkannt</div><div class="sheetActions"><button class="cancel" id="bulkMasterCancel">Abbrechen</button><button class="save" id="bulkMasterSave">Alle anlegen</button></div></div></div>
+<div class="modal" id="batchMasterModal"><div class="sheet"><h3 id="batchMasterTitle">Masterartikel gemeinsam bearbeiten</h3>
+<div class="batchHint">Nur die Felder ändern, die für alle markierten Artikel gelten sollen.</div>
+<label class="fieldLabel">Kategorie ändern (optional)</label><select id="batchMasterCategory"><option value="">— Kategorie unverändert —</option></select>
+<label class="fieldLabel">Geeignet für</label><div class="tripTypeChecks" id="batchMasterTypes"></div>
+<label class="fieldLabel">Personen hinzufügen (optional)</label><div class="masterPeopleHint">Ausgewählte Personen werden zu allen markierten Artikeln ergänzt. Bestehende Personenzuordnungen bleiben erhalten.</div><div class="personAssignGrid" id="batchMasterPeople"></div>
+<div class="sheetActions"><button class="cancel" id="batchMasterCancel">Abbrechen</button><button class="save" id="batchMasterSave">Auf Auswahl anwenden</button></div></div></div>
+<div id="printArea" style="display:none"></div>
+
+<div class="modal" id="noteModal">
+  <div class="sheet">
+    <h3 id="noteTitle">Notiz</h3>
+    <div class="noteViewText" id="noteViewText"></div>
+    <div class="sheetActions" style="margin-top:12px">
+      <button class="cancel" id="noteClose">Schließen</button>
+      <button class="save" id="noteEdit">Bearbeiten</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="editModal"><div class="sheet"><h3>Artikel bearbeiten</h3><input id="editName" placeholder="Artikel"><select id="editCat"></select><label class="fieldLabel" for="editNote">Notiz für diesen Urlaub</label><textarea id="editNote" placeholder="z. B. Luftmatratze verliert Luft – flicken oder ersetzen"></textarea><label class="checkLine"><input id="notePermanent" type="checkbox"> 📌 Auch dauerhaft beim Artikel merken</label><div id="permanentNoteHint" style="font-size:10px;color:var(--muted);margin-top:6px"></div><div class="sheetActions"><button class="cancel" id="editCancel">Abbrechen</button><button class="save" id="editSave">Speichern</button></div></div></div>
+<div class="modal" id="addModal">
+  <div class="sheet">
+    <h3>Artikel hinzufügen</h3>
+    <input id="addName" placeholder="Artikel">
+    <select id="addCat"></select>
+    <div class="addChoice">
+      <button class="active" data-scope="trip">Nur dieser Urlaub</button>
+      <button data-scope="master">Zur Masterliste</button>
+    </div>
+    <div class="sheetActions">
+      <button class="cancel" id="addCancel">Abbrechen</button>
+      <button class="save" id="addSave">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<div id="personCategoryModal" class="modal"><div class="sheet">
+  <h3 id="personCategoryTitle">Persönliche Zuordnung bearbeiten</h3>
+  <div class="masterPeopleHint" id="personCategoryItemHint"></div>
+  <label class="fieldLabel">Kategorie in der persönlichen Liste</label>
+  <select id="personCategorySelect"></select>
+  <button type="button" id="personCategoryOpenMaster" class="secondary" style="width:100%;margin-top:12px">📚 Masterartikel öffnen</button>
+  <div class="sheetActions">
+    <button type="button" class="cancel" id="personCategoryCancel">Abbrechen</button>
+    <button type="button" class="save" id="personCategorySave">Speichern</button>
+  </div>
+</div></div>
+<div class="modal" id="reviewModal"><div class="sheet reviewSheet"><h3>🚦 Urlaubsbewertung</h3><div class="reviewProgress" id="reviewProgress"></div><div class="reviewItemName" id="reviewItemName"></div><div class="reviewItemMeta" id="reviewItemMeta"></div><div class="reviewLights"><button class="reviewLight green" data-review-rating="green">🟢 Wieder mit</button><button class="reviewLight yellow" data-review-rating="yellow">🟡 Kommt drauf an</button><button class="reviewLight red" data-review-rating="red">🔴 Nicht nötig</button></div><label class="reviewDeluxe"><input type="checkbox" id="reviewDeluxe"> ⭐ Deluxeartikel – macht den Urlaub deutlich besser</label><label>Notiz<textarea id="reviewNote" class="reviewNote" placeholder="Was möchtest du dir fürs nächste Mal merken?"></textarea></label><div class="reviewNav"><button type="button" class="secondary" id="reviewBack">← Zurück</button><button type="button" class="secondary" id="reviewSkip">Überspringen</button><button type="button" id="reviewSaveNext">Speichern & weiter</button></div><div class="reviewCloseRow"><button type="button" class="cancel" id="reviewClose">Für jetzt schließen</button></div></div></div>
+<script>
+const SUPABASE_URL="https://muujfgwspkoogjxtvcrp.supabase.co";
+const SUPABASE_KEY="sb_publishable_F6Q3yYsgbdiOBmo1u4Ar_Q_9SF6WrHx";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+
+
+function setTripHeroTitle(element,name){
+  const safe=String(name||"Reise planen").trim();
+  const m=safe.match(/^(.*?)(?:\s+)((?:19|20)\d{2})$/);
+  element.replaceChildren();
+  if(m){
+    element.append(document.createTextNode(m[1]));
+    element.append(document.createElement("br"));
+    element.append(document.createTextNode(m[2]));
+  }else{
+    element.append(document.createTextNode(safe));
+  }
+}
+
+const HEADER_IMAGES={
+  tent:"header-zelt.png",
+  tent_power:"header-zelt-strom.png",
+  camper:"header-camper.png",
+  holiday_home:"header-ferienhaus.png",
+  hotel:"header-hotel.png",
+  city:"header-stadt.png",
+  mountain:"header-bergwandern.png"
+};
+const ACCOMMODATION_LABELS={
+  tent:"⛺ Zelt",tent_power:"⚡ Zelt + Strom",camper:"🚐 Camper / Wohnmobil",
+  holiday_home:"🏡 Ferienhaus",hotel:"🏨 Hotel"
+};
+const TRANSPORT_LABELS={car:"🚗 Auto",plane:"✈️ Flugzeug",train:"🚆 Bahn"};
+const ACTIVITY_LABELS={beach:"🏖️ Strand",bike:"🚲 Fahrrad",hiking:"🥾 Wandern",mountain:"⛰️ Bergwandern",city:"🏙️ Stadt",sport:"🏃 Sport",swim:"🏊 Schwimmen",ski:"🎿 Ski / Wintersport"};
+
+function normalizedTripProfile(trip){
+  if(!trip)return {accommodation:"tent",transport:"car",activities:[]};
+  let accommodation=trip.accommodation_type;
+  let activities=Array.isArray(trip.activities)?[...trip.activities]:[];
+  if(!accommodation){
+    if(trip.trip_type==="camping_power")accommodation="tent_power";
+    else if(trip.trip_type==="holiday_home")accommodation="holiday_home";
+    else if(trip.trip_type==="city"){accommodation="hotel";if(!activities.includes("city"))activities.push("city")}
+    else accommodation="tent";
+  }
+  return {accommodation,transport:trip.transport_type||"car",activities};
+}
+function legacyTripTypeForProfile(profile){
+  if(profile.activities?.includes("city") && profile.accommodation==="hotel")return "city";
+  if(profile.accommodation==="tent_power")return "camping_power";
+  if(profile.accommodation==="holiday_home")return "holiday_home";
+  if(profile.accommodation==="hotel")return "city";
+  if(profile.accommodation==="camper")return "camping_power";
+  return "camping";
+}
+function renderActivityPicker(hostId,selected=[]){
+  const host=el(hostId);if(!host)return;host.innerHTML="";
+  for(const [key,label] of Object.entries(ACTIVITY_LABELS)){
+    const l=document.createElement("label");l.className="activityChoice";
+    l.innerHTML=`<input type="checkbox" value="${key}" ${selected.includes(key)?"checked":""}> ${label}`;
+    host.appendChild(l);
+  }
+}
+function selectedActivities(hostId){
+  const host=el(hostId);if(!host)return [];
+  return [...host.querySelectorAll('input:checked')].map(x=>x.value);
+}
+function headerImageKey(profile){
+  if(profile.activities?.includes("mountain"))return "mountain";
+  if(profile.activities?.includes("city"))return "city";
+  return profile.accommodation||"tent";
+}
+
+function plainProfileLabel(label){
+  return String(label||"").replace(/^[^A-Za-zÀ-ž0-9]+\s*/u,"").trim();
+}
+function renderTripHero(){
+  const art=el("tripHeroArt"),title=el("tripHeroTitle");
+  if(!art||!title)return;
+  if(!currentTrip){
+    art.style.backgroundImage=`url("${HEADER_IMAGES.tent}")`;
+    setTripHeroTitle(title,"Reise planen");
+    return;
+  }
+  const p=normalizedTripProfile(currentTrip),key=headerImageKey(p);
+  art.style.backgroundImage=`url("${HEADER_IMAGES[key]||HEADER_IMAGES.tent}")`;
+  setTripHeroTitle(title,currentTrip.name||"Urlaub");
+}
+
+let masterItems=[], places=[], trips=[], archivedTrips=[], states=new Map(), currentTrip=null, currentPlace=null, people=[], personItems=[], itemPeople=[], personStates=new Map(), masterPersonStates=new Map(), personViewMode="plan", currentPerson=null;
+let tripReviews=new Map(), comparisonReviews=new Map(), reviewTrips=[], reviewItems=[], reviewIndex=0, reviewRating=null, reviewOriginal=null, showReviews=false, comparisonTripId=null;
+let filter="all", masterFilter="all", addScope="trip", lastRemoved=null, channel=null, addingItem=false, editingItem=null, noteViewingItem=null, activeCategory=null, booting=false, chosenPersonColor="#C96F5B", editPersonColor="#C96F5B", editingPersonItem=null, currentTripPeople=new Set(), editingMasterItem=null, masterTypeFilter="all", packViewMode="plan", showOtherPlanning=false, masterSelectedIds=new Set(), masterOpenCategory=null;
+const el=id=>document.getElementById(id);
+
+function toast(msg,undo=false){
+  el("undoText").textContent=msg;el("undoBtn").style.display=undo?"block":"none";el("undoToast").classList.add("show");
+  clearTimeout(toast.t);toast.t=setTimeout(()=>el("undoToast").classList.remove("show"),4500);
+}
+function setSync(msg){el("syncText").textContent=msg}
+let backgroundSaves=0,saveStatusTimer=null;
+function showSaveStatus(kind="saving",text="Speichert …"){
+  const box=el("globalSaveStatus"),label=el("globalSaveText");if(!box||!label)return;
+  clearTimeout(saveStatusTimer);
+  box.classList.remove("saved","error");
+  if(kind==="saved")box.classList.add("saved");
+  if(kind==="error")box.classList.add("error");
+  label.textContent=text;box.classList.add("show");
+  if(kind!=="saving")saveStatusTimer=setTimeout(()=>box.classList.remove("show"),2200);
+}
+function beginBackgroundSave(label="Speichert …"){
+  backgroundSaves++;showSaveStatus("saving",label);setSync(label);
+}
+function finishBackgroundSave(message="Gespeichert"){
+  backgroundSaves=Math.max(0,backgroundSaves-1);
+  if(backgroundSaves>0){showSaveStatus("saving",`${backgroundSaves} Änderungen werden gespeichert …`);return}
+  showSaveStatus("saved","✓ "+message);setSync("Synchronisiert");
+}
+function failBackgroundSave(message="Speichern fehlgeschlagen"){
+  backgroundSaves=Math.max(0,backgroundSaves-1);
+  showSaveStatus("error","⚠️ "+message);setSync("Fehler beim Speichern");toast(message);
+}
+function iconForCategory(cat){
+  if(cat==="Baden & Wassersport"||cat==="Strand")return "🏖️";
+  if(cat==="Freizeit & Spiele")return "🎲";
+  if(cat==="Fahrräder & Mobilität"||cat==="Fahrräder")return "🚲";
+  const aliases=[cat];
+  const x=masterItems.find(i=>aliases.includes(i.category)&&i.icon);
+  if(x?.icon)return x.icon;
+  if(cat==="Vorräte")return "🥫";
+  if(cat==="Dokumente & Tickets")return "📄";
+  return "🏕️"
+}
+function state(id){return states.get(id)||{selected:false,seen:false,in_box:false,in_car:false,need:false}}
+function currentItems(){
+  return masterItems.filter(i=>i.is_master || states.has(i.id));
+}
+function grouped(items){
+  const map=new Map();
+  for(const i of items){
+    const category=i.category==="Strand"?"Baden & Wassersport":i.category;
+    if(!map.has(category))map.set(category,[]);
+    map.get(category).push(i)
+  }
+  return [...map.entries()].map(([name,items])=>({name,icon:iconForCategory(name),items}));
+}
+async function dbUpsert(itemId,patch){
+  if(!currentTrip)return;
+  const old=state(itemId);
+  const row={trip_id:currentTrip.id,item_id:itemId,selected:old.selected,seen:old.seen,in_box:old.in_box,in_car:old.in_car,need:old.need,note:old.note||null,...patch,updated_at:new Date().toISOString()};
+  states.set(itemId,row);render();setSync("Speichert …");
+  const {error}=await sb.from("camping_trip_items").upsert(row,{onConflict:"trip_id,item_id"});
+  if(error){toast("Speichern fehlgeschlagen");console.error(error)}else setSync("Synchronisiert");
+}
+const CACHE_KEY="camping-app-cache-v1";
+
+function saveCache(){
+  try{
+    localStorage.setItem(CACHE_KEY,JSON.stringify({
+      savedAt:Date.now(),
+      masterItems,places,trips,archivedTrips,people,personItems,
+      currentTripId:currentTrip?.id||localStorage.getItem("camping-trip-id")||null,
+      states:[...states.entries()],personStates:[...personStates.entries()],
+      currentTripPeople:[...currentTripPeople]
+    }));
+  }catch(e){console.warn("Cache konnte nicht gespeichert werden",e)}
+}
+
+function restoreCache(){
+  try{
+    const raw=localStorage.getItem(CACHE_KEY);
+    if(!raw)return false;
+    const c=JSON.parse(raw);
+    if(!Array.isArray(c.masterItems)||!c.masterItems.length)return false;
+
+    masterItems=c.masterItems||[];
+    places=c.places||[];
+    trips=c.trips||[];
+    archivedTrips=c.archivedTrips||[];
+    people=c.people||[];
+    personItems=c.personItems||[];
+    states=new Map(c.states||[]);
+    personStates=new Map(c.personStates||[]);
+    currentTripPeople=new Set(c.currentTripPeople||[]);
+
+    const wanted=localStorage.getItem("camping-trip-id")||c.currentTripId;
+    currentTrip=trips.find(t=>t.id===wanted)||trips[0]||null;
+    currentPlace=currentTrip?places.find(p=>p.id===currentTrip.place_id)||null:null;
+
+    // Dropdowns aus dem Cache aufbauen.
+    const sel=el("tripSelect"); sel.innerHTML="";
+    for(const t of trips){
+      const o=document.createElement("option");
+      o.value=t.id;o.textContent=t.name||"Urlaub";sel.appendChild(o);
+    }
+    if(currentTrip)sel.value=currentTrip.id;
+
+    for(const id of ["tripPlace","editTripPlace"]){
+      const s=el(id); if(!s)continue; s.innerHTML="";
+      for(const p of places){
+        const o=document.createElement("option");
+        o.value=p.id;o.textContent=p.name;s.appendChild(o);
+      }
+    }
+
+    updateTripInfo();
+    render();
+    renderPeople();
+    renderArchive();
+
+    const age=c.savedAt?Math.max(0,Math.round((Date.now()-c.savedAt)/60000)):null;
+    setSync(age===null?"Gespeicherte Daten":"Gespeicherte Daten · "+(age<1?"gerade eben":`vor ${age} Min.`));
+    return true;
+  }catch(e){
+    console.warn("Cache konnte nicht geladen werden",e);
+    return false;
+  }
+}
+
+async function loadItems(){
+  const {data,error}=await sb.from("camping_items").select("id,name,category,icon,is_master,is_active,household_item_id,category_order,item_order,note,trip_types").eq("is_active",true).order("category_order",{ascending:true}).order("item_order",{ascending:true});
+  if(error)throw error;masterItems=data||[];saveCache();
+}
+async function loadPlaces(){
+  const {data,error}=await sb.from("camping_places").select("*").order("name");
+  if(error)throw error;
+  places=data||[];
+  el("tripPlace").innerHTML="";
+  el("editTripPlace").innerHTML="";
+  for(const p of places){
+    const t=document.createElement("option");
+    t.value=p.id;t.textContent=p.name;el("tripPlace").appendChild(t);
+    const e=document.createElement("option");
+    e.value=p.id;e.textContent=p.name;el("editTripPlace").appendChild(e);
+  }
+  saveCache();
+}
+async function loadTrips(){
+  const {data,error}=await sb.from("camping_trips").select("*").eq("archived",false).order("created_at",{ascending:true});
+  if(error)throw error;
+  trips=data||[];
+  const sel=el("tripSelect");
+  sel.innerHTML="";
+  for(const t of trips){
+    const o=document.createElement("option");
+    o.value=t.id;
+    o.textContent=t.name||"Urlaub";
+    sel.appendChild(o);
+  }
+  const saved=localStorage.getItem("camping-trip-id");
+  currentTrip=trips.find(t=>t.id===saved)||trips[0]||null;
+  currentPlace=currentTrip?places.find(p=>p.id===currentTrip.place_id)||null:null;
+  if(currentTrip)sel.value=currentTrip.id;
+  restorePackViewMode();
+  saveCache();
+}
+async function loadArchivedTrips(){
+  const {data,error}=await sb.from("camping_trips").select("*").eq("archived",true).order("end_date",{ascending:false}).order("created_at",{ascending:false});
+  if(error)throw error;
+  archivedTrips=data||[];
+  renderArchive();
+  saveCache();
+}
+function updateTripInfo(){
+  if(!currentTrip){
+    el("tripCountdown").textContent="";
+    if(el("tripProfileMini"))el("tripProfileMini").textContent="";
+    renderTripHero();
+    return;
+  }
+
+  renderTripHero();
+  const prof=normalizedTripProfile(currentTrip);
+  const accommodation=plainProfileLabel(ACCOMMODATION_LABELS[prof.accommodation]||"");
+  const transport=plainProfileLabel(TRANSPORT_LABELS[prof.transport]||"");
+  const acts=(prof.activities||[]).map(a=>plainProfileLabel(ACTIVITY_LABELS[a])).join(" · ");
+  el("tripProfileMini").textContent=`${accommodation} · ${transport}${acts?" · "+acts:""}`;
+
+  if(!currentTrip.start_date){
+    el("tripCountdown").textContent="";
+    return;
+  }
+
+  const today=new Date();
+  today.setHours(0,0,0,0);
+
+  const start=new Date(currentTrip.start_date+"T00:00:00");
+  const end=currentTrip.end_date ? new Date(currentTrip.end_date+"T00:00:00") : null;
+  const days=Math.ceil((start-today)/86400000);
+
+  if(days>1) el("tripCountdown").textContent=`Noch ${days} Tage bis zur Abfahrt`;
+  else if(days===1) el("tripCountdown").textContent="Morgen geht’s los! 🏕️";
+  else if(days===0) el("tripCountdown").textContent="Heute geht’s los! 🏕️";
+  else if(end && today<=end) el("tripCountdown").textContent="Urlaub läuft 🌲";
+  else el("tripCountdown").textContent="";
+}
+
+async function ensureTrip(place){ return currentTrip; }
+async function loadStates(){
+  states=new Map();
+  if(!currentTrip)return;
+  const {data,error}=await sb.from("camping_trip_items").select("*").eq("trip_id",currentTrip.id);
+  if(error)throw error;(data||[]).forEach(x=>states.set(x.item_id,x));
+  saveCache();
+}
+async function switchTrip(id){
+  currentTrip=trips.find(t=>t.id===id)||null;
+  if(!currentTrip)return;
+  currentPlace=places.find(p=>p.id===currentTrip.place_id)||null;
+  localStorage.setItem("camping-trip-id",id);
+  restorePackViewMode();
+  setSync("Lädt …");
+  comparisonTripId=null;comparisonReviews=new Map();
+  await loadStates();
+  await loadTripReviews();
+  await loadReviewTrips();
+  if(showReviews){
+    const saved=localStorage.getItem("camping-review-source-"+currentTrip.id);
+    const source=reviewTrips.some(x=>x.id===saved)?saved:(reviewTrips.find(x=>x.id!==currentTrip.id)?.id||reviewTrips[0]?.id||null);
+    await loadComparisonReviews(source);
+  }
+  await loadPersonStates();await loadMasterPersonStates();
+  await loadTripPeople();
+  updateTripInfo();
+  render();
+  renderPeople();
+  try{subscribeTrip()}catch(e){console.warn("Realtime konnte nicht gestartet werden",e)}
+  setSync("Synchronisiert");
+}
+function subscribeTrip(){
+  if(channel)sb.removeChannel(channel);
+  if(!currentTrip)return;
+  channel=sb.channel("camping-"+currentTrip.id)
+   .on("postgres_changes",{event:"*",schema:"public",table:"camping_trip_items",filter:"trip_id=eq."+currentTrip.id},async()=>{await loadStates();render();setSync("Synchronisiert")})
+   .subscribe();
+}
+function itemFitsCurrentTrip(item){
+  if(!currentTrip)return true;
+  const p=normalizedTripProfile(currentTrip);
+  const tt=Array.isArray(item.trip_types)&&item.trip_types.length?item.trip_types:["all"];
+  if(tt.includes("all"))return true;
+  const keys=new Set(p.activities||[]);
+  keys.add(p.accommodation);
+  keys.add(p.transport);
+  if(p.accommodation==="tent")keys.add("camping");
+  if(p.accommodation==="tent_power"){keys.add("camping");keys.add("camping_power")}
+  if(p.accommodation==="holiday_home")keys.add("holiday_home");
+  if(p.accommodation==="hotel")keys.add("hotel");
+  if(p.accommodation==="camper")keys.add("camper");
+  if((p.activities||[]).includes("city"))keys.add("city");
+  return tt.some(t=>keys.has(t));
+}
+function planningItems(){
+  const all=currentItems();
+  if(showOtherPlanning)return all;
+  const reviews=activeReviewMap();
+  // Passende, bereits gewählte und bei eingeblendeten früheren Bewertungen auch damals bewertete Artikel.
+  return all.filter(i=>itemFitsCurrentTrip(i)||state(i.id).selected||(showReviews&&reviews.has(i.id)));
+}
+function modeItems(){
+  if(packViewMode==="pack")return currentItems().filter(i=>state(i.id).selected);
+  return planningItems();
+}
+function currentPackProfile(){
+  const p=normalizedTripProfile(currentTrip);
+  if((p.activities||[]).includes("mountain"))return {seen:"✓ Gesichtet",box:"🎒 Rucksack",car:"⚖️ Gewicht",help:"Bergwandern: Rucksack und Gewicht werden vorbereitet; die detaillierte Gewichtsrechnung folgt später."};
+  if(p.transport==="plane")return {seen:"✓ Gesichtet",box:"🧳 Koffer",car:"🎒 Handgepäck",help:"Flugreise: Koffer oder Handgepäck zuordnen. Gepäck-Gewichtskontrolle folgt später."};
+  if(p.accommodation==="camper")return {seen:"✓ Gesichtet",box:"📦 Kiste",car:"🚐 Camper",help:"Packen: Gesichtet, Kiste oder Camper."};
+  if(p.accommodation==="hotel" || (p.activities||[]).includes("city"))return {seen:"✓ Gesichtet",box:"🧳 Koffer",car:"🚗 Auto",help:"Packen: Gesichtet, Koffer und Auto."};
+  if(p.accommodation==="holiday_home")return {seen:"✓ Gesichtet",box:"📦 Gepackt",car:"🚗 Auto",help:"Packen: Gesichtet, gepackt und im Auto."};
+  return {seen:"✓ Gesichtet",box:"📦 Kiste",car:"🚗 Auto",help:"Packen: Gesichtet, Kiste und Auto."};
+}
+
+function renderPackModeUI(){
+  const view=el("view-pack");
+  if(!view)return;
+  view.classList.toggle("packMode",packViewMode==="pack");
+  view.classList.toggle("planTheme",packViewMode==="plan");
+  view.classList.toggle("packTheme",packViewMode==="pack");
+  el("planModeBtn")?.classList.toggle("active",packViewMode==="plan");
+  el("packModeBtn")?.classList.toggle("active",packViewMode==="pack");
+  const reviewToggle=el("showReviewsToggle"),reviewCountHint=el("reviewCountHint"),sourceWrap=el("reviewSourceWrap"),sourceSel=el("reviewSourceTrip");
+  if(reviewToggle)reviewToggle.checked=showReviews;
+  const reviewMap=activeReviewMap();
+  if(reviewCountHint)reviewCountHint.textContent=showReviews&&reviewMap.size?`(${reviewMap.size})`:"";
+  if(sourceWrap)sourceWrap.classList.toggle("show",showReviews&&reviewTrips.length>0);
+  if(sourceSel){
+    const oldValue=comparisonTripId||sourceSel.value;
+    sourceSel.innerHTML="";
+    for(const rt of reviewTrips){const o=document.createElement("option");o.value=rt.id;o.textContent=rt.name;sourceSel.appendChild(o)}
+    if(reviewTrips.length){
+      const saved=currentTrip?localStorage.getItem("camping-review-source-"+currentTrip.id):null;
+      const wanted=reviewTrips.some(x=>x.id===oldValue)?oldValue:(reviewTrips.some(x=>x.id===saved)?saved:(reviewTrips.find(x=>x.id!==currentTrip?.id)?.id||reviewTrips[0].id));
+      sourceSel.value=wanted;
+    }
+  }
+  const reviewDisplayHint=el("reviewDisplayHint");
+  const srcTrip=reviewTrips.find(x=>x.id===comparisonTripId);
+  if(reviewDisplayHint)reviewDisplayHint.textContent=showReviews&&reviewMap.size?`${reviewMap.size} Bewertungen${srcTrip?" aus „"+srcTrip.name+"“":""} werden angezeigt.`:"";
+  const help=el("packModeHelp"),other=el("otherItemsBar"),toggle=el("toggleOtherItemsBtn");
+  if(packViewMode==="pack"){
+    help.textContent=currentPackProfile().help;
+    other.classList.remove("show");
+  }else{
+    help.textContent="Planen: Was soll überhaupt mit? Packstatus-Felder bleiben hier bewusst verborgen.";
+    other.classList.add("show");
+    toggle.textContent=showOtherPlanning?"− Weitere Masterartikel wieder ausblenden":"＋ Weitere Masterartikel anzeigen";
+  }
+  renderTripHero();
+}
+function setPackViewMode(mode){
+  packViewMode=mode;
+  showOtherPlanning=false;
+  if(currentTrip)localStorage.setItem("camping-pack-mode-"+currentTrip.id,mode);
+  activeCategory="__ALL__";
+  render();
+}
+function restorePackViewMode(){
+  packViewMode=currentTrip?localStorage.getItem("camping-pack-mode-"+currentTrip.id)||"plan":"plan";
+  showOtherPlanning=false;
+}
+function visible(i){
+  const s=state(i.id);
+  if(packViewMode==="pack")return s.selected;
+  if(filter==="selected")return s.selected;
+  if(filter==="open")return s.selected&&!s.in_car;
+  if(filter==="need")return s.need;
+  return true;
+}
+async function persistCategoryOrder(category){
+  const ordered=[...document.querySelectorAll(".swipeWrap")].filter(w=>w.dataset.category===category).map((w,idx)=>({id:w.dataset.itemId,item_order:idx+1}));
+  if(!ordered.length)return;
+  setSync("Reihenfolge speichert …");
+  for(const x of ordered){
+    const {error}=await sb.from("camping_items").update({item_order:x.item_order}).eq("id",x.id);
+    if(error){console.error(error);toast("Reihenfolge konnte nicht gespeichert werden");setSync("Fehler");return}
+    const local=masterItems.find(i=>i.id===x.id);if(local)local.item_order=x.item_order;
+  }
+  setSync("Synchronisiert");
+}
+function enableLongPressDrag(wrap,row,item){
+  let timer=null,dragging=false,startY=0;
+  const start=e=>{
+    if(e.target.closest("button,input"))return;
+    const t=e.touches?.[0];if(!t)return;startY=t.clientY;
+    timer=setTimeout(()=>{dragging=true;row.classList.add("dragging");document.body.classList.add("dragMode");navigator.vibrate?.(25)},480);
+  };
+  const move=e=>{
+    const t=e.touches?.[0];if(!t)return;
+    if(!dragging){if(Math.abs(t.clientY-startY)>10){clearTimeout(timer);timer=null}return}
+    e.preventDefault();
+    const hit=document.elementFromPoint(t.clientX,t.clientY)?.closest(".swipeWrap");
+    if(!hit||hit===wrap||hit.dataset.category!==wrap.dataset.category)return;
+    document.querySelectorAll(".swipeWrap.dragTarget").forEach(x=>x.classList.remove("dragTarget"));hit.classList.add("dragTarget");
+    const rect=hit.getBoundingClientRect(),parent=hit.parentNode;
+    if(t.clientY<rect.top+rect.height/2)parent.insertBefore(wrap,hit);else parent.insertBefore(wrap,hit.nextSibling);
+  };
+  const end=async()=>{
+    clearTimeout(timer);timer=null;document.querySelectorAll(".swipeWrap.dragTarget").forEach(x=>x.classList.remove("dragTarget"));
+    if(dragging){dragging=false;row.classList.remove("dragging");document.body.classList.remove("dragMode");await persistCategoryOrder(item.category);await loadItems();render()}
+  };
+  row.addEventListener("touchstart",start,{passive:true});row.addEventListener("touchmove",move,{passive:false});row.addEventListener("touchend",end);row.addEventListener("touchcancel",end);
+}
+function attachSwipe(row,item){
+  let sx=0,sy=0,dx=0,dy=0,active=false,axis=null;
+
+  row.addEventListener("touchstart",e=>{
+    const t=e.touches[0];
+    sx=t.clientX; sy=t.clientY;
+    dx=0; dy=0; axis=null; active=true;
+  },{passive:true});
+
+  row.addEventListener("touchmove",e=>{
+    if(!active||row.classList.contains("dragging"))return;
+
+    const t=e.touches[0];
+    dx=t.clientX-sx;
+    dy=t.clientY-sy;
+
+    if(!axis){
+      if(Math.abs(dx)<10 && Math.abs(dy)<10)return;
+
+      // Klare vertikale Bewegung = Scrollen.
+      if(Math.abs(dy) > Math.abs(dx)*1.15){
+        axis="vertical";
+        row.style.transform="";
+        return;
+      }
+
+      // Klare horizontale Bewegung = Wischen.
+      if(Math.abs(dx) > Math.abs(dy)*1.35 && Math.abs(dx)>=18){
+        axis="horizontal";
+      }else{
+        return; // noch nicht eindeutig – weiter beobachten
+      }
+    }
+
+    if(axis!=="horizontal")return;
+
+    row.style.transform=`translateX(${Math.max(-92,Math.min(92,dx))}px)`;
+  },{passive:true});
+
+  row.addEventListener("touchend",()=>{
+    if(row.classList.contains("dragging"))return;
+
+    active=false;
+    row.style.transform="";
+    row.classList.remove("swiped","swipedRight");
+
+    if(axis==="horizontal"){
+      if(dx < -72) row.classList.add("swiped");
+      else if(dx > 76) row.classList.add("swipedRight");
+    }
+
+    axis=null;
+  });
+
+  row.addEventListener("touchcancel",()=>{
+    active=false; axis=null; dx=0; dy=0;
+    row.style.transform="";
+  });
+}
+function renderCategoryTabs(items){
+  const tabs=el("categoryTabs");tabs.innerHTML="";
+  const cats=grouped(items);
+  if(!cats.length){activeCategory="__ALL__";return}
+  if(!activeCategory || (activeCategory!=="__ALL__" && !cats.some(c=>c.name===activeCategory))) activeCategory="__ALL__";
+
+  const all=document.createElement("button");
+  all.className="categoryTab"+(activeCategory==="__ALL__"?" active":"");
+  all.dataset.category="__ALL__";
+  all.innerHTML='<span class="tabIcon">📋</span><span>Alle</span>';
+  tabs.appendChild(all);
+  cats.forEach(cat=>{
+    const b=document.createElement("button");
+    b.className="categoryTab"+(cat.name===activeCategory?" active":"");
+    b.dataset.category=cat.name;
+    b.innerHTML=`<span class="tabIcon">${cat.icon}</span><span>${cat.name}</span>`;
+    tabs.appendChild(b);
+  });
+
+  // Kategorien wechseln nur bei einem bewussten Tippen; Scrollbewegungen lösen nichts aus.
+  let touchStart=null;
+  tabs.addEventListener("touchstart",e=>{
+    const x=e.touches[0],button=e.target.closest(".categoryTab");
+    touchStart=button?{button,x:x.clientX,y:x.clientY,moved:false}:null;
+  },{passive:true});
+  tabs.addEventListener("touchmove",e=>{
+    if(!touchStart)return;const x=e.touches[0];
+    if(Math.hypot(x.clientX-touchStart.x,x.clientY-touchStart.y)>12)touchStart.moved=true;
+  },{passive:true});
+  tabs.addEventListener("touchend",e=>{
+    if(!touchStart)return;
+    const x=touchStart;touchStart=null;
+    if(x.moved)return;
+    activeCategory=x.button.dataset.category;render();
+  });
+  tabs.onclick=e=>{
+    if("ontouchstart" in window)return;
+    const b=e.target.closest(".categoryTab");if(!b)return;
+    activeCategory=b.dataset.category;render();
+  };
+}
+async function setAllSelected(selected){
+  if(!currentTrip)return;
+  const targets=packViewMode==="plan"?planningItems():currentItems().filter(i=>state(i.id).selected);
+  if(!targets.length)return;
+  setSync("Speichert …");
+  const rows=targets.map(item=>{
+    const s=state(item.id);
+    return {
+      trip_id:currentTrip.id,item_id:item.id,
+      selected:selected,
+      seen:selected?s.seen:false,
+      in_box:selected?s.in_box:false,
+      in_car:selected?s.in_car:false,
+      need:s.need,
+      updated_at:new Date().toISOString()
+    };
+  });
+  rows.forEach(r=>states.set(r.item_id,r));
+  render();
+  const {error}=await sb.from("camping_trip_items").upsert(rows,{onConflict:"trip_id,item_id"});
+  if(error){console.error(error);toast("Gesamtauswahl konnte nicht gespeichert werden");setSync("Fehler");await loadStates();render()}
+  else setSync("Synchronisiert");
+}
+
+async function setCategorySelected(category,selected){
+  if(!currentTrip)return;
+  const targets=(packViewMode==="plan"?planningItems():currentItems()).filter(i=>i.category===category);
+  if(!targets.length)return;
+  setSync("Speichert …");
+  const rows=targets.map(item=>{
+    const s=state(item.id);
+    return {
+      trip_id:currentTrip.id,item_id:item.id,
+      selected:selected,
+      seen:selected?s.seen:false,
+      in_box:selected?s.in_box:false,
+      in_car:selected?s.in_car:false,
+      need:s.need,
+      updated_at:new Date().toISOString()
+    };
+  });
+  rows.forEach(r=>states.set(r.item_id,r));
+  render();
+  const {error}=await sb.from("camping_trip_items").upsert(rows,{onConflict:"trip_id,item_id"});
+  if(error){console.error(error);toast("Auswahl konnte nicht gespeichert werden");setSync("Fehler");await loadStates();render()}
+  else setSync("Synchronisiert");
+}
+function openNoteViewer(item){
+  noteViewingItem=item;
+  const tripNote=state(item.id).note||"";
+  const permanent=item.note||"";
+  el("noteTitle").textContent=item.name||"Notiz";
+  let parts=[];
+  if(tripNote)parts.push("🕓 "+(currentTrip?.name||"Dieser Urlaub")+":\n"+tripNote);
+  if(permanent)parts.push("📌 Dauerhafte Artikelnotiz:\n"+permanent);
+  el("noteViewText").textContent=parts.join("\n\n")||"Keine Notiz vorhanden.";
+  el("noteModal").classList.add("open");
+}
+function openItemEditor(item){
+  editingItem=item;
+  el("editName").value=item.name||"";
+  renderCats();
+  el("editCat").value=item.category||"";
+  el("editNote").value=state(item.id).note||"";
+  el("notePermanent").checked=false;
+  el("permanentNoteHint").textContent=item.note ? "Aktuell dauerhaft gespeichert: "+item.note : "Noch keine dauerhafte Artikelnotiz.";
+  el("editModal").classList.add("open");
+}
+async function loadTripReviews(){
+  tripReviews=new Map();
+  if(!currentTrip?.id){
+    console.warn("Bewertungen: kein aktueller Urlaub mit ID verfügbar");
+    return;
+  }
+  const tripId=currentTrip.id;
+  const {data,error}=await sb.from("camping_trip_item_reviews").select("*").eq("trip_id",tripId);
+  if(error){console.warn("Bewertungen konnten nicht geladen werden",error);return}
+  for(const x of data||[])tripReviews.set(x.item_id,x);
+}
+async function loadReviewTrips(){
+  const {data,error}=await sb.from("camping_trip_item_reviews").select("trip_id");
+  if(error){console.warn("Bewertungsurlaube konnten nicht geladen werden",error);reviewTrips=[];return}
+  const ids=[...new Set((data||[]).map(x=>x.trip_id))];
+  reviewTrips=[...trips,...archivedTrips].filter(x=>ids.includes(x.id));
+}
+async function loadComparisonReviews(tripId){
+  comparisonReviews=new Map();comparisonTripId=tripId||null;
+  if(!tripId)return;
+  const {data,error}=await sb.from("camping_trip_item_reviews").select("*").eq("trip_id",tripId);
+  if(error){console.warn("Vergleichsbewertungen konnten nicht geladen werden",error);return}
+  for(const x of data||[])comparisonReviews.set(x.item_id,x);
+  if(currentTrip)localStorage.setItem("camping-review-source-"+currentTrip.id,tripId);
+}
+function activeReviewMap(){
+  return comparisonTripId?comparisonReviews:tripReviews;
+}
+function reviewCandidates(){return masterItems.filter(i=>i.is_master&&state(i.id).selected)}
+function openTripReview(){if(!currentTrip)return;reviewItems=reviewCandidates();reviewIndex=0;if(!reviewItems.length){toast("Noch keine ausgewählten Masterartikel zum Bewerten");return}const first=reviewItems.findIndex(i=>!tripReviews.has(i.id));if(first>=0)reviewIndex=first;el("editTripModal")?.classList.remove("open");el("reviewModal").classList.add("open");renderReviewItem()}
+function renderReviewItem(){if(!reviewItems.length||reviewIndex>=reviewItems.length){el("reviewModal").classList.remove("open");toast("Bewertung abgeschlossen 🚦⭐");render();return}const item=reviewItems[reviewIndex],old=tripReviews.get(item.id);reviewRating=old?.rating||null;reviewOriginal={rating:reviewRating,deluxe:!!old?.deluxe,note:old?.note||""};el("reviewProgress").textContent=`${reviewIndex+1} von ${reviewItems.length}`;el("reviewItemName").textContent=item.name;el("reviewItemMeta").textContent=item.category||"";el("reviewDeluxe").checked=reviewOriginal.deluxe;el("reviewNote").value=reviewOriginal.note;document.querySelectorAll("[data-review-rating]").forEach(b=>b.classList.toggle("on",b.dataset.reviewRating===reviewRating));el("reviewBack").disabled=reviewIndex===0}
+async function saveCurrentReview(){
+  const item=reviewItems[reviewIndex];if(!item)return false;
+  const current={rating:reviewRating||null,deluxe:el("reviewDeluxe").checked,note:el("reviewNote").value.trim()};
+  const original=reviewOriginal||{rating:null,deluxe:false,note:""};
+  const changed=current.rating!==original.rating || current.deluxe!==original.deluxe || current.note!==original.note.trim();
+  if(!changed)return true;
+  const row={trip_id:currentTrip.id,item_id:item.id,rating:current.rating,deluxe:current.deluxe,note:current.note||null,updated_at:new Date().toISOString()};
+  beginBackgroundSave("Bewertung speichert …");
+  const {data,error}=await sb.from("camping_trip_item_reviews").upsert(row,{onConflict:"trip_id,item_id"}).select().single();
+  if(error){console.error(error);finishBackgroundSave("Fehler");return false}
+  tripReviews.set(item.id,data);
+  reviewOriginal={rating:data.rating||null,deluxe:!!data.deluxe,note:data.note||""};
+  finishBackgroundSave("Bewertung gespeichert");
+  return true;
+}
+async function saveReviewAndNext(){if(await saveCurrentReview()){reviewIndex++;renderReviewItem()}}
+async function reviewBack(){if(reviewIndex<=0){toast("Du bist schon beim ersten Artikel");return}if(await saveCurrentReview()){reviewIndex--;renderReviewItem()}}
+function reviewBadgeHtml(item){
+  if(!showReviews)return "";
+  const r=activeReviewMap().get(item.id);if(!r||(!r.deluxe&&!r.note))return "";
+  return `<span class="reviewExtras" title="Frühere Bewertung">${r.deluxe?'<span class="reviewDeluxeStar">⭐</span>':""}${r.note?`<button class="reviewNoteMini" type="button" data-review-note="${item.id}" title="Bewertungsnotiz anzeigen">📝</button>`:""}</span>`;
+}
+function reviewRowClass(item){
+  if(!showReviews)return "";
+  const r=activeReviewMap().get(item.id);
+  if(!r)return "";
+  const selected=state(item.id).selected;
+  const normallySuggested=itemFitsCurrentTrip(item);
+  // Grau nur, wenn der Artikel ausschließlich wegen des Bewertungsvergleichs sichtbar ist.
+  const comparisonOnly=!selected&&!normallySuggested;
+  return (r.rating?` review-${r.rating}`:"")+(comparisonOnly?" review-unselected":"");
+}
+function render(){
+  renderPersonControlPanels();
+  renderPackModeUI();
+  const items=modeItems();
+  renderCategoryTabs(items);
+  el("list").innerHTML="";
+
+  if(activeCategory==="__ALL__"){
+    const allBulk=document.createElement("div");
+    allBulk.className="allBulk";
+    allBulk.innerHTML='<button>✓ Wirklich alle auswählen</button><button>Alle abwählen</button>';
+    const allButtons=allBulk.querySelectorAll("button");
+    allButtons[0].onclick=()=>setAllSelected(true);
+    allButtons[1].onclick=()=>setAllSelected(false);
+    el("list").appendChild(allBulk);
+  }
+
+  const allGroups=grouped(items.filter(visible));
+  const groupsToShow=activeCategory==="__ALL__" ? allGroups : allGroups.filter(c=>c.name===activeCategory);
+
+  if(groupsToShow.length){
+    for(const cat of groupsToShow){
+    const sec=document.createElement("section");
+    sec.className="category";
+    sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;
+    const body=sec.querySelector(".catbody");
+
+    for(const item of cat.items){
+      const s=state(item.id),wrap=document.createElement("div"),del=document.createElement("button"),edit=document.createElement("button"),row=document.createElement("div");
+      wrap.className="swipeWrap";wrap.dataset.itemId=item.id;
+      const ownerItem=personItems.find(pi=>pi.linked_master_item_id===item.id);
+      const owner=ownerItem?people.find(p=>p.id===ownerItem.person_id):null;
+      if(owner){wrap.style.borderLeft=`4px solid ${owner.color}`;wrap.style.borderRadius="8px"}wrap.dataset.category=item.category;
+      del.className="swipeDelete";del.textContent="🗑 Entfernen";
+      edit.className="swipeEdit";edit.textContent="✏️ Bearbeiten";
+      row.className="row"+(s.selected?" selected":"")+reviewRowClass(item);
+      row.innerHTML=`<div class="nameLine"><input class="take" type="checkbox" ${s.selected?"checked":""}><div class="name">${item.name}${reviewBadgeHtml(item)}</div>${(item.note||s.note)?'<button class="noteIcon" type="button" title="Notiz">✉️</button>':""}${item.is_master?"":'<span class="tripOnly">nur Urlaub</span>'}<span class="dragHint">↕ halten</span></div>
+      <div class="actions"><button class="stage ${s.seen?"on":""}" data-stage="seen">${currentPackProfile().seen}</button><button class="stage ${s.in_box?"on":""}" data-stage="box">${currentPackProfile().box}</button><button class="stage ${s.in_car?"on":""}" data-stage="car">${currentPackProfile().car}</button><button class="stage ${s.need?"on":""}" data-stage="need">🔎 Suchen</button></div>`;
+
+      row.querySelector(".take").onchange=e=>dbUpsert(item.id,{selected:e.target.checked,...(!e.target.checked?{seen:false,in_box:false,in_car:false}:{})});
+      row.querySelectorAll(".stage").forEach(b=>b.onclick=()=>{
+        const k=b.dataset.stage,ss=state(item.id);
+        const key=k==="box"?"in_box":k==="car"?"in_car":k;
+        dbUpsert(item.id,{[key]:!ss[key],...(key!=="need"&&!ss[key]?{selected:true}:{})});
+      });
+
+      del.onclick=async()=>{
+        lastRemoved={itemId:item.id,old:{...state(item.id)}};
+        await dbUpsert(item.id,{selected:false,seen:false,in_box:false,in_car:false});
+        toast(item.name+" entfernt",true)
+      };
+
+      edit.onclick=()=>{
+        openItemEditor(item);
+        row.classList.remove("swipedRight");
+      };
+      const noteBtn=row.querySelector(".noteIcon");
+      if(noteBtn)noteBtn.onclick=e=>{
+        e.stopPropagation();
+        openNoteViewer(item);
+      };
+      const reviewNoteBtn=row.querySelector("[data-review-note]");
+      if(reviewNoteBtn)reviewNoteBtn.onclick=e=>{
+        e.stopPropagation();
+        const r=activeReviewMap().get(item.id);
+        if(!r?.note)return;
+        const source=reviewTrips.find(x=>x.id===comparisonTripId);
+        el("noteTitle").textContent=item.name+" – Bewertungsnotiz";
+        el("noteViewText").textContent=(source?`🚦 ${source.name}:\n`:"🚦 Bewertungsnotiz:\n")+r.note;
+        el("noteModal").classList.add("open");
+      };
+
+      wrap.appendChild(edit);wrap.appendChild(del);wrap.appendChild(row);body.appendChild(wrap);
+      attachSwipe(row,item);enableLongPressDrag(wrap,row,item);
+    }
+
+    const bulk=document.createElement("div");
+    bulk.className="categoryBulk";
+    bulk.innerHTML='<button>✓ Alle auswählen</button><button>Alle abwählen</button>';
+    const bulkButtons=bulk.querySelectorAll("button");
+    bulkButtons[0].onclick=()=>setCategorySelected(cat.name,true);
+    bulkButtons[1].onclick=()=>setCategorySelected(cat.name,false);
+    body.appendChild(bulk);
+
+    el("list").appendChild(sec);
+    }
+  }else{
+    el("list").innerHTML=packViewMode==="pack"
+      ?'<div class="empty">Noch nichts zum Packen ausgewählt. Wechsel zu „Planen“, um Dinge hinzuzufügen.</div>'
+      :'<div class="empty">Für diese Urlaubsart sind hier gerade keine passenden Artikel sichtbar.</div>';
+  }
+
+  updateStats();renderNeed();renderMaster();renderCats();
+}
+function updateStats(){
+  const ss=currentItems().map(i=>state(i.id)),cnt=k=>ss.filter(s=>s[k]).length;
+  el("sTake").textContent=cnt("selected");el("sSeen").textContent=cnt("seen");el("sBox").textContent=cnt("in_box");el("sCar").textContent=cnt("in_car");el("sNeed").textContent=cnt("need");
+}
+async function signedMemoryPhoto(path){
+  if(!path)return null;
+  const {data,error}=await sb.storage.from("camping-memory-photos").createSignedUrl(path,3600);
+  if(error){console.warn("Foto konnte nicht geladen werden",error);return null}
+  return data?.signedUrl||null;
+}
+async function uploadMemoryPhoto(tripId,file,oldPath=null){
+  if(!file)return oldPath||null;
+  const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+  const path=`${tripId}/cover-${Date.now()}.${ext}`;
+  const {error}=await sb.storage.from("camping-memory-photos").upload(path,file,{contentType:file.type||"image/jpeg"});
+  if(error)throw error;
+  if(oldPath)await sb.storage.from("camping-memory-photos").remove([oldPath]);
+  return path;
+}
+
+const PERSON_COLORS=["#C96F5B","#D79A3B","#7E9B55","#4F8B82","#5B83B4","#7767A8","#B76D92","#9A6B4F","#68757D","#A96D55"];
+
+const PERSON_MODULES=[
+  {key:"clothes",label:"👕 Kleidung",items:[
+    ["Unterhosen","Kleidung",1,"underwear"],["T-Shirts","Kleidung",1,"tshirts"],["Kurze Hosen","Kleidung",1,"shorts"],["Socken","Kleidung",4,"socks"],
+    ["Lange Hose dünn","Kleidung",1,"fixed"],["Lange Hose dick","Kleidung",1,"fixed"],["Pullover","Kleidung",2,"fixed"],
+    ["Langarmshirts","Kleidung",2,"fixed"],["Fleecejacke","Kleidung",1,"fixed"],["Schlafsachen","Kleidung",1,"sleep"],["Rock/Kleid","Kleidung",1,"fixed"]
+  ]},
+  {key:"shoes",label:"👟 Schuhe",items:[["Sandalen","Schuhe",1,"fixed"],["Crocs","Schuhe",1,"fixed"],["Halbschuhe","Schuhe",1,"fixed"]]},
+  {key:"swim",label:"🏖️ Baden & Strand",items:[["Badebekleidung","Baden & Strand",2,"fixed"],["UV-Shirt","Baden & Strand",1,"fixed"]]},
+  {key:"hygiene",label:"🪥 Hygiene",items:[["Zahnbürste","Hygiene",1,"fixed"],["Zahnpasta","Hygiene",1,"fixed"],["Duschgel/Shampoo","Hygiene",1,"fixed"],["Haarbürste/Kamm","Hygiene",1,"fixed"]]},
+  {key:"tech",label:"📱 Technik",items:[["Handy","Technik",1,"fixed"],["Handyladekabel","Technik",1,"fixed"],["Kopfhörer","Technik",1,"fixed"],["Tablet","Technik",1,"fixed"],["Tablet-Ladekabel","Technik",1,"fixed"]]},
+  {key:"personal",label:"🎒 Persönliches",items:[["Bauchtasche","Persönliches",1,"fixed"],["Portemonnaie","Persönliches",1,"fixed"]]},
+  {key:"bike",label:"🚲 Fahrrad",items:[["Fahrrad","Fahrrad",1,"fixed"],["Fahrradschloss","Fahrrad",1,"fixed"],["Fahrradhelm","Fahrrad",1,"fixed"]]},
+  {key:"sport",label:"🏃 Sport/Laufen",items:[["Sportkleidung","Sport/Laufen",1,"fixed"],["Sportschuhe","Sport/Laufen",1,"fixed"]]},
+  {key:"reading",label:"📚 Lesen & Freizeit",items:[["Buch","Lesen & Freizeit",1,"fixed"]]},
+  {key:"cosmetics",label:"💄 Kosmetik",items:[["Kosmetik","Kosmetik",1,"fixed"]]},
+  {key:"meds",label:"💊 Medikamente",items:[["Persönliche Medikamente","Medikamente",1,"fixed"]]}
+];
+
+function tripLengthDays(){
+  if(!currentTrip?.start_date||!currentTrip?.end_date)return 1;
+  const a=new Date(currentTrip.start_date+"T00:00:00"),b=new Date(currentTrip.end_date+"T00:00:00");
+  return Math.max(1,Math.round((b-a)/86400000)+1);
+}
+function suggestedQuantity(item){
+  const d=tripLengthDays(),r=item.quantity_rule||"fixed";
+  let q=item.default_quantity??1;
+  if(r==="underwear")q=Math.min(d+1,10);
+  else if(r==="tshirts")q=Math.min(Math.ceil(d/3)*2,8);
+  else if(r==="shorts")q=Math.min(Math.ceil(d/5),4);
+  else if(r==="socks")q=4;
+  else if(r==="sleep")q=d>=7?2:1;
+  return Math.max(0,q+(item.quantity_offset||0));
+}
+function quantityRuleLabel(item){
+  const r=item.quantity_rule||"fixed";
+  if(r==="underwear")return "Tage + 1 · max. 10";
+  if(r==="tshirts")return "2 je 3 Tage · max. 8";
+  if(r==="shorts")return "1 je 5 Tage · max. 4";
+  if(r==="socks")return "Sommerstandard 4";
+  if(r==="sleep")return "ab 7 Tagen: 2";
+  return item.default_quantity>1?`fest ${item.default_quantity}`:"";
+}
+
+
+function participantPeople(){
+  if(!currentTrip)return people;
+  if(!currentTripPeople.size)return people;
+  return people.filter(p=>currentTripPeople.has(p.id));
+}
+function isParticipant(personId){return !currentTripPeople.size || currentTripPeople.has(personId)}
+function renderTripPeoplePicker(hostId,selectedIds=null){
+  const host=el(hostId);if(!host)return;host.innerHTML="";
+  const sel=selectedIds||new Set(people.map(p=>p.id));
+  for(const p of people){const lab=document.createElement("label");lab.className="tripPersonChoice";lab.innerHTML=`<input type="checkbox" value="${p.id}" ${sel.has(p.id)?"checked":""}><span class="personDot" style="background:${p.color}"></span>${p.name}`;host.appendChild(lab)}
+}
+function selectedTripPeople(hostId){return new Set([...el(hostId).querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value))}
+async function loadTripPeople(){currentTripPeople=new Set();if(!currentTrip)return;const {data,error}=await sb.from("camping_trip_people").select("person_id").eq("trip_id",currentTrip.id);if(error)throw error;for(const r of data||[])currentTripPeople.add(r.person_id)}
+async function saveTripPeople(tripId,ids){const {error:delError}=await sb.from("camping_trip_people").delete().eq("trip_id",tripId);if(delError)throw delError;const rows=[...ids].map(person_id=>({trip_id:tripId,person_id}));if(rows.length){const {error}=await sb.from("camping_trip_people").insert(rows);if(error)throw error}}
+const TRIP_PRESETS={
+  camping:{includeCategories:["Zelt & Aufbau","Campingmöbel","Schlafen","Küche & Gas","Wasser & Spülen","Sanitär","Haushalt & Ordnung","Werkzeug","Baden & Wassersport","Fahrräder","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah","Technik","Strom & Licht"],excludeNames:["Mehrfachsteckdosen","Verlängerungskabel","E-Bike-Ladegeräte","Kühlschrank"]},
+  camping_power:{includeCategories:["Zelt & Aufbau","Campingmöbel","Schlafen","Küche & Gas","Wasser & Spülen","Sanitär","Haushalt & Ordnung","Werkzeug","Baden & Wassersport","Fahrräder","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah","Technik","Strom & Licht"]},
+  holiday_home:{includeCategories:["Technik","Freizeit & Spiele","Kreativ & Basteln","Hygiene & Gesundheit","Sarah"],includeNames:["Geschirrtücher","Lappen","Tupperdosen","Zip-Beutel","Verschlussklemmen","Weinöffner","Bieröffner"]},
+  city:{includeCategories:["Technik","Hygiene & Gesundheit","Sarah"],includeNames:["Picknickdecke"]}
+};
+function presetSelects(item,type){const tt=Array.isArray(item.trip_types)?item.trip_types:[];if(tt.length)return tt.includes("all")||tt.includes(type);const p=TRIP_PRESETS[type]||TRIP_PRESETS.camping;let on=(p.includeCategories||[]).includes(item.category)||(p.includeNames||[]).includes(item.name);if((p.excludeNames||[]).includes(item.name))on=false;return on}
+async function applyTripPreset(trip,type){
+  // Reiseprofil bestimmt nur, welche Masterartikel vorgeschlagen/angezeigt werden.
+  // "Mitnehmen" wird ausschließlich durch eine bewusste Auswahl gesetzt.
+  const targets=masterItems.filter(i=>i.is_master);
+  const rows=targets.map(item=>({
+    trip_id:trip.id,item_id:item.id,selected:false,seen:false,in_box:false,in_car:false,need:false,note:null,updated_at:new Date().toISOString()
+  }));
+  if(rows.length){
+    const {error}=await sb.from("camping_trip_items").upsert(rows,{onConflict:"trip_id,item_id"});
+    if(error)throw error;
+  }
+}
+async function reconcilePersonBasics(personId){
+  const mine=personItems.filter(i=>i.person_id===personId),byKey=new Map(mine.map(i=>[`${i.category.toLowerCase()}|${i.name.toLowerCase()}`,i]));let n=0;
+  for(const m of PERSON_MODULES){for(const [name,category,default_quantity,quantity_rule] of m.items){const existing=byKey.get(`${category.toLowerCase()}|${name.toLowerCase()}`);if(!existing)continue;if((existing.quantity_rule||"fixed")!==quantity_rule||existing.default_quantity!==default_quantity||existing.module_key!==m.key){const {data,error}=await sb.from("camping_person_items").update({default_quantity,quantity_rule,module_key:m.key}).eq("id",existing.id).select().single();if(error)throw error;const idx=personItems.findIndex(i=>i.id===existing.id);if(idx>=0)personItems[idx]=data;n++}}}
+  return n;
+}
+async function loadPeople(){
+  const {data,error}=await sb.from("camping_people").select("*").eq("is_active",true).order("sort_order",{ascending:true}).order("created_at",{ascending:true});
+  if(error)throw error;
+  people=data||[];saveCache();
+  const saved=localStorage.getItem("camping-person-id");
+  currentPerson=people.find(p=>p.id===saved)||people[0]||null;
+}
+async function loadPersonItems(){
+  const {data,error}=await sb.from("camping_person_items").select("*").eq("is_active",true).order("sort_order",{ascending:true}).order("created_at",{ascending:true});
+  if(error)throw error;
+  personItems=data||[];
+  const {data:links,error:linkError}=await sb.from("camping_item_people").select("*");
+  if(linkError)throw linkError;
+  itemPeople=links||[];saveCache();
+}
+async function loadPersonStates(){
+  personStates=new Map();
+  if(!currentTrip)return;
+  const {data,error}=await sb.from("camping_trip_person_items").select("*").eq("trip_id",currentTrip.id);
+  if(error)throw error;
+  for(const x of data||[])personStates.set(x.person_item_id,x);
+}
+async function loadMasterPersonStates(){
+  masterPersonStates=new Map();if(!currentTrip)return;
+  const {data,error}=await sb.from("camping_trip_item_people").select("*").eq("trip_id",currentTrip.id);
+  if(error)throw error;
+  for(const x of data||[])masterPersonStates.set(`${x.item_id}:${x.person_id}`,x);
+}
+function masterPersonState(item){return masterPersonStates.get(`${item.master_item_id}:${item.person_id}`)||{selected:false,packed:false,needs_purchase:false,final_checked:false}}
+async function saveMasterPersonState(item,patch){
+  const old=masterPersonState(item);
+  const row={trip_id:currentTrip.id,item_id:item.master_item_id,person_id:item.person_id,selected:!!old.selected,packed:!!old.packed,needs_purchase:!!old.needs_purchase,final_checked:!!old.final_checked,...patch,updated_at:new Date().toISOString()};
+  if(row.packed)row.selected=true;if(!row.selected)row.packed=false;
+  const {data,error}=await sb.from("camping_trip_item_people").upsert(row,{onConflict:"trip_id,item_id,person_id"}).select().single();
+  if(error){console.error(error);return toast("Änderung konnte nicht gespeichert werden")}
+  masterPersonStates.set(`${item.master_item_id}:${item.person_id}`,data);renderPeople();renderNeed();
+}
+function personState(item){
+  if(item.is_master_assignment)return {...masterPersonState(item),quantity:1,note:null,quantity_manual:false};
+  const saved=personStates.get(item.id);
+  if(!saved)return {selected:false,quantity:suggestedQuantity(item),packed:false,note:null,needs_purchase:false,final_checked:false,quantity_manual:false};
+  return saved;
+}
+async function savePersonState(item,patch){
+  if(!currentTrip)return;
+  if(item.is_master_assignment)return saveMasterPersonState(item,patch);
+  const old=personState(item);
+  const row={trip_id:currentTrip.id,person_item_id:item.id,selected:old.selected,quantity:old.quantity,packed:old.packed,note:old.note,
+    needs_purchase:old.needs_purchase||false,final_checked:old.final_checked||false,quantity_manual:old.quantity_manual||false,...patch,updated_at:new Date().toISOString()};
+  const {error}=await sb.from("camping_trip_person_items").upsert(row,{onConflict:"trip_id,person_item_id"});
+  if(error){console.error(error);toast("Änderung konnte nicht gespeichert werden");return}
+  personStates.set(item.id,row);
+  renderPeople();renderPersonControlPanels();renderNeed();
+}
+function renderPeople(){
+  const tabs=el("personTabs"),list=el("personList"),theme=el("personTheme");if(!tabs||!list)return;
+  el("personPlanBtn")?.classList.toggle("active",personViewMode==="plan");el("personPackBtn")?.classList.toggle("active",false);el("personPackBtn")?.classList.toggle("packActive",personViewMode==="pack");
+  if(el("personModeHint")){el("personModeHint").classList.toggle("personModePack",personViewMode==="pack");el("personModeHint").textContent=personViewMode==="plan"?"Planen: Was soll für diesen Urlaub mit?":"Packen: Nur ausgewählte Dinge – Häkchen bedeutet eingepackt.";}
+  tabs.innerHTML="";list.innerHTML="";const visiblePeople=participantPeople();
+  if(currentPerson&&!visiblePeople.some(p=>p.id===currentPerson.id))currentPerson=visiblePeople[0]||null;
+  for(const p of visiblePeople){const b=document.createElement("button");b.className="personTab"+(currentPerson?.id===p.id?" active":"");b.textContent=p.name;b.style.borderColor=p.color;if(currentPerson?.id===p.id)b.style.background=p.color;b.onclick=()=>{currentPerson=p;localStorage.setItem("camping-person-id",p.id);renderPeople()};tabs.appendChild(b)}
+  if(!currentPerson){theme.style.display="none";list.innerHTML='<div class="personEmpty">Für diesen Urlaub ist noch keine Person ausgewählt.</div>';return}
+  theme.style.display="block";theme.style.background=currentPerson.color;theme.innerHTML=`${currentPerson.name}s Packliste<small>${currentTrip?.name||""}</small>`;list.classList.add("personTint");list.style.background=`color-mix(in srgb, ${currentPerson.color} 8%, white)`;
+  const masterMine=assignedMasterItemsForPerson(currentPerson.id).map(mi=>({id:"master:"+mi.id,master_item_id:mi.id,person_id:currentPerson.id,name:mi.name,category:masterPersonCategory(mi.id,currentPerson.id),default_quantity:1,quantity_rule:"fixed",quantity_offset:0,must_not_forget:false,is_master_assignment:true}));
+  const masterNames=new Set(masterMine.map(i=>(i.name||"").trim().toLocaleLowerCase("de")));
+  const baseMine=personItems.filter(i=>i.person_id===currentPerson.id&&!i.linked_master_item_id).filter(i=>!masterNames.has((i.name||"").trim().toLocaleLowerCase("de")));
+  const mineAll=[...baseMine,...masterMine],mine=personViewMode==="pack"?mineAll.filter(i=>personState(i).selected):mineAll;
+  if(!mine.length){list.innerHTML=personViewMode==="pack"?`<div class="personEmpty">Für ${currentPerson.name} ist noch nichts ausgewählt. Wechsel zu „Planen“.</div>`:`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel.</div>`;return}
+  const groups=new Map();for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
+  for(const [cat,items] of groups){const sec=document.createElement("section");sec.className="personCategory";sec.innerHTML=`<div class="personCatHead" style="background:color-mix(in srgb, ${currentPerson.color} 18%, white);border-left:7px solid ${currentPerson.color}"><span class="pcTitle">${cat}</span><span class="pcCount">${items.length}</span><span>▾</span></div><div class="personCatBody"></div>`;const head=sec.querySelector(".personCatHead"),body=sec.querySelector(".personCatBody");head.onclick=()=>sec.classList.toggle("closed");
+    for(const item of items){const s=personState(item),linked=masterItems.find(m=>m.id===item.linked_master_item_id),row=document.createElement("div");row.className="personItem"+(personViewMode==="pack"&&s.packed?" personPackDone":"");row.style.borderLeftColor=currentPerson.color;row.innerHTML=`<input class="pselect" type="checkbox" ${(personViewMode==="plan"?s.selected:s.packed)?"checked":""}><div><b>${item.name}</b>${item.must_not_forget?'<span class="starBadge">⭐ Darf nicht fehlen</span>':""}${item.is_master_assignment?`<span class="linkBadge" style="color:${currentPerson.color}">Masterartikel · ${currentPerson.name}</span>`:(linked?`<span class="linkBadge" style="color:${currentPerson.color}">${currentPerson.name} · Familienliste</span>`:"")}${item.note?`<div class="personNote">📝 ${item.note}</div>`:""}<div class="ruleHint">${quantityRuleLabel(item)}${item.quantity_offset?` · persönlich ${item.quantity_offset>0?"+":""}${item.quantity_offset}`:""}${s.quantity_manual?" · manuell":""}</div><div class="personMiniActions"><button class="needp ${s.needs_purchase?"on":""}">🔎 ${s.needs_purchase?"Suchen/Kaufen":"fehlt?"}</button>${s.quantity_manual?'<button class="resetq">↺ Vorschlag</button>':""}${item.is_master_assignment?'<button class="pcategory">Kategorie ändern</button>':'<button class="pedit">Bearbeiten</button><button class="pdelete">Löschen</button>'}</div></div><div class="qtyBox"><button class="minus" style="border-color:${currentPerson.color}">−</button><span class="qty">${s.quantity}</span><button class="plus" style="border-color:${currentPerson.color}">＋</button></div>`;
+      row.querySelector(".pselect").onchange=e=>personViewMode==="plan"?savePersonState(item,{selected:e.target.checked}):savePersonState(item,{packed:e.target.checked});row.querySelector(".minus").onclick=()=>savePersonState(item,{quantity:Math.max(0,s.quantity-1),quantity_manual:true});row.querySelector(".plus").onclick=()=>savePersonState(item,{quantity:s.quantity+1,quantity_manual:true});row.querySelector(".needp").onclick=()=>savePersonState(item,{needs_purchase:!s.needs_purchase});const reset=row.querySelector(".resetq");if(reset)reset.onclick=()=>savePersonState(item,{quantity:suggestedQuantity(item),quantity_manual:false});const catBtn=row.querySelector(".pcategory");if(catBtn)catBtn.onclick=()=>changeMasterPersonalCategory(item);const editBtn=row.querySelector(".pedit");if(editBtn)editBtn.onclick=()=>openEditPersonItem(item);const delBtn=row.querySelector(".pdelete");if(delBtn)delBtn.onclick=()=>deletePersonItem(item);body.appendChild(row)}
+    list.appendChild(sec)}
+}
+function renderPersonControlPanels(){
+  const host=el("personControlPanels");if(!host)return;host.innerHTML="";
+  if(!currentTrip)return;
+  const critical=personItems.filter(i=>isParticipant(i.person_id)&&i.must_not_forget&&personState(i).selected);
+  const needs=personItems.filter(i=>isParticipant(i.person_id)&&personState(i).needs_purchase);
+  if(critical.length){
+    const box=document.createElement("div");box.className="personControlPanel";
+    box.innerHTML="<h3>⭐ Darf nicht fehlen – Endkontrolle</h3>";
+    for(const item of critical){
+      const p=people.find(x=>x.id===item.person_id),s=personState(item),d=document.createElement("div");d.className="controlItem";
+      d.innerHTML=`<div><span class="personDot" style="background:${p?.color||"#888"}"></span><b>${p?.name||""}</b> · ${item.name}</div><label class="checkLine"><input type="checkbox" ${s.final_checked?"checked":""}> kontrolliert</label>`;
+      d.querySelector("input").onchange=e=>savePersonState(item,{final_checked:e.target.checked});
+      box.appendChild(d);
+    }
+    host.appendChild(box);
+  }
+  if(needs.length){
+    const box=document.createElement("div");box.className="personControlPanel";
+    box.innerHTML="<h3>🔎 Persönlich suchen / kaufen</h3>";
+    for(const item of needs){
+      const p=people.find(x=>x.id===item.person_id),d=document.createElement("div");d.className="controlItem";
+      d.innerHTML=`<div><span class="personDot" style="background:${p?.color||"#888"}"></span><b>${p?.name||""}</b> · ${item.name}</div><button class="stage on">✓ erledigt</button>`;
+      d.querySelector("button").onclick=()=>savePersonState(item,{needs_purchase:false});
+      box.appendChild(d);
+    }
+    host.appendChild(box);
+  }
+}
+function renderPersonColors(){
+  const host=el("personColors");host.innerHTML="";
+  for(const c of PERSON_COLORS){
+    const b=document.createElement("button");b.type="button";b.className="colorChoice"+(c===chosenPersonColor?" active":"");b.style.background=c;
+    b.onclick=()=>{chosenPersonColor=c;renderPersonColors()};
+    host.appendChild(b);
+  }
+}
+function renderEditPersonColors(){
+ const host=el("editPersonColors");host.innerHTML="";
+ for(const c of PERSON_COLORS){const b=document.createElement("button");b.type="button";b.className="colorChoice"+(c===editPersonColor?" active":"");b.style.background=c;b.onclick=()=>{editPersonColor=c;renderEditPersonColors()};host.appendChild(b)}
+}
+function openModulesModal(){
+  if(!currentPerson)return toast("Bitte zuerst eine Person auswählen");
+  el("modulesPersonName").textContent=currentPerson.name;
+  const grid=el("moduleGrid");grid.innerHTML="";
+  for(const m of PERSON_MODULES){
+    const l=document.createElement("label");l.className="moduleChoice";
+    l.innerHTML=`<input type="checkbox" value="${m.key}"> ${m.label}`;
+    grid.appendChild(l);
+  }
+  el("modulesModal").classList.add("open");
+}
+async function addSelectedModules(){
+  if(!currentPerson)return;
+  const keys=[...el("moduleGrid").querySelectorAll("input:checked")].map(x=>x.value);
+  if(!keys.length)return toast("Bitte mindestens einen Baustein auswählen");
+  const existing=new Set(personItems.filter(i=>i.person_id===currentPerson.id).map(i=>`${i.category.toLowerCase()}|${i.name.toLowerCase()}`));
+  const rows=[];let n=personItems.filter(i=>i.person_id===currentPerson.id).length;
+  for(const m of PERSON_MODULES.filter(x=>keys.includes(x.key))){
+    for(const [name,category,default_quantity,quantity_rule] of m.items){
+      const k=`${category.toLowerCase()}|${name.toLowerCase()}`;if(existing.has(k))continue;
+      existing.add(k);rows.push({person_id:currentPerson.id,name,category,default_quantity,quantity_rule,module_key:m.key,sort_order:n++});
+    }
+  }
+  let added=0;
+  if(rows.length){const {data,error}=await sb.from("camping_person_items").insert(rows).select();if(error){console.error(error);return toast("Grundausstattung konnte nicht angelegt werden")}personItems.push(...(data||[]));added=rows.length}
+  let updated=0;try{updated=await reconcilePersonBasics(currentPerson.id)}catch(e){console.error(e)}
+  el("modulesModal").classList.remove("open");renderPeople();toast(`${added} neu · ${updated} Standardartikel aktualisiert`);
+}
+
+function personalCategories(){
+  const moduleCats=PERSON_MODULES.flatMap(m=>m.items.map(i=>i[1]));
+  return [...new Set([...moduleCats,...personItems.map(i=>i.category).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,"de"));
+}
+function fillPersonalCategorySelect(selectId,newInputId,selected=""){
+  const s=el(selectId),n=el(newInputId);if(!s)return;
+  const cats=personalCategories();s.innerHTML="";
+  for(const c of cats){const o=document.createElement("option");o.value=o.textContent=c;s.appendChild(o)}
+  const add=document.createElement("option");add.value="__new__";add.textContent="＋ Neue Kategorie anlegen";s.appendChild(add);
+  if(selected&&cats.includes(selected))s.value=selected;else if(selected){s.value="__new__";if(n){n.value=selected;n.classList.add("show")}}else if(cats.length)s.value=cats[0];
+  s.onchange=()=>{if(!n)return;n.classList.toggle("show",s.value==="__new__");if(s.value!=="__new__")n.value=""};
+  if(n&&!selected)n.classList.remove("show");
+}
+function resolvedPersonalCategory(selectId,newInputId){
+  const s=el(selectId);if(!s)return "Sonstiges";
+  if(s.value==="__new__")return el(newInputId)?.value.trim()||"";
+  return s.value.trim();
+}
+function defaultPersonalCategory(c){return {"Hygiene & Gesundheit":"Hygiene","Baden & Wassersport":"Baden & Strand","Strand":"Baden & Strand","Fahrräder":"Fahrrad","Freizeit & Spiele":"Lesen/Freizeit","Technik":"Technik"}[c]||"Persönliches"}
+function renderMasterPersonTiles(hostId,selectedIds=[]){const host=el(hostId);if(!host)return;host.innerHTML="";const selected=new Set(selectedIds||[]);for(const p of people){const b=document.createElement("button");b.type="button";b.className="personAssignTile"+(selected.has(p.id)?" selected":"");b.dataset.personId=p.id;b.style.setProperty("--person-color",p.color||"#6b7");b.textContent=p.name;b.onclick=()=>b.classList.toggle("selected");host.appendChild(b)}}
+function selectedMasterPeople(hostId){const host=el(hostId);return host?[...host.querySelectorAll(".personAssignTile.selected")].map(b=>b.dataset.personId):[]}
+async function syncMasterPeople(masterItem,selectedIds,{addOnly=false}={}){if(!masterItem?.id)return;const selected=new Set(selectedIds||[]),existing=itemPeople.filter(x=>x.item_id===masterItem.id),old=new Set(existing.map(x=>x.person_id));const add=[...selected].filter(id=>!old.has(id)).map(person_id=>({item_id:masterItem.id,person_id,personal_category:defaultPersonalCategory(masterItem.category)}));if(add.length){const {data,error}=await sb.from("camping_item_people").insert(add).select();if(error)throw error;itemPeople.push(...(data||[]))}if(!addOnly){for(const x of existing.filter(x=>!selected.has(x.person_id))){const {error}=await sb.from("camping_item_people").delete().eq("item_id",x.item_id).eq("person_id",x.person_id);if(error)throw error}itemPeople=itemPeople.filter(x=>x.item_id!==masterItem.id||selected.has(x.person_id))}}
+function assignedMasterItemsForPerson(pid){const ids=new Set(itemPeople.filter(x=>x.person_id===pid).map(x=>x.item_id));return masterItems.filter(i=>ids.has(i.id))}
+function personalCategoryFromMaster(c){return {"Hygiene & Gesundheit":"Hygiene","Baden & Wassersport":"Baden & Strand","Fahrräder & Mobilität":"Fahrrad","Fahrräder":"Fahrrad","Freizeit & Spiele":"Lesen & Freizeit"}[c]||c||"Persönliches"}
+function masterPersonCategory(itemId,pid){
+  const link=itemPeople.find(x=>x.item_id===itemId&&x.person_id===pid), mi=masterItems.find(x=>x.id===itemId);
+  return link?.personal_category||personalCategoryFromMaster(mi?.category);
+}
+let categoryEditingMasterItem=null;
+function changeMasterPersonalCategory(item){
+ const link=itemPeople.find(x=>x.item_id===item.master_item_id&&x.person_id===currentPerson.id);if(!link)return;
+ categoryEditingMasterItem=item;
+ const existing=[...new Set(personItems.filter(x=>x.person_id===currentPerson.id&&!x.linked_master_item_id).map(x=>x.category).filter(Boolean))];
+ const defaults=["Kleidung","Schuhe","Baden & Strand","Hygiene","Technik","Persönliches","Fahrrad","Sport/Laufen","Lesen & Freizeit","Kosmetik","Medikamente","Schlafen"];
+ const choices=[...new Set([...defaults,...existing])],sel=el("personCategorySelect");sel.innerHTML="";
+ for(const c of choices){const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)}
+ sel.value=masterPersonCategory(item.master_item_id,currentPerson.id);
+ el("personCategoryTitle").textContent=`Masterartikel bei ${currentPerson.name} bearbeiten`;
+ el("personCategoryItemHint").textContent=item.name;
+ el("personCategoryModal").classList.add("open");
+}
+async function saveMasterPersonalCategory(){
+ const item=categoryEditingMasterItem;if(!item)return;const link=itemPeople.find(x=>x.item_id===item.master_item_id&&x.person_id===currentPerson.id);if(!link)return;
+ const category=el("personCategorySelect").value;if(!category)return;el("personCategoryModal").classList.remove("open");
+ const {error}=await sb.from("camping_item_people").update({personal_category:category}).eq("item_id",item.master_item_id).eq("person_id",currentPerson.id);
+ if(error){console.error(error);toast("Kategorie konnte nicht gespeichert werden");return}
+ link.personal_category=category;categoryEditingMasterItem=null;saveCache();renderPersonList();toast(`✓ ${item.name} → ${category}`);
+}
+function fillPersonMasterLinks(){
+  const s=el("personItemLink");s.innerHTML='<option value="">Nicht verknüpfen</option>';
+  for(const i of masterItems.filter(x=>x.is_master)){
+    const o=document.createElement("option");o.value=i.id;o.textContent=`${i.category} · ${i.name}`;s.appendChild(o);
+  }
+}
+function openEditPersonItem(item){
+  editingPersonItem=item;
+  fillPersonMasterLinks();
+  el("personItemModal").querySelector("h3").textContent="Persönlichen Artikel bearbeiten";
+  el("personItemName").value=item.name||"";
+  fillPersonalCategorySelect("personItemCategory","personItemNewCategory",item.category||"");
+  el("personItemNote").value=item.note||"";
+  el("personItemQty").value=item.default_quantity??1;
+  el("personItemRule").value=item.quantity_rule||"fixed";
+  el("personItemOffset").value=item.quantity_offset||0;
+  el("personItemStar").checked=!!item.must_not_forget;
+  el("personItemLink").value=item.linked_master_item_id||"";
+  el("personItemSave").textContent="Speichern";
+  el("personItemModal").classList.add("open");
+}
+async function deletePersonItem(item){
+  if(!confirm(`„${item.name}“ wirklich löschen?`))return;
+  const {error}=await sb.from("camping_person_items").delete().eq("id",item.id);
+  if(error){console.error(error);return toast("Artikel konnte nicht gelöscht werden")}
+  personItems=personItems.filter(i=>i.id!==item.id);
+  personStates.delete(item.id);
+  renderPeople();
+  render();
+  toast("Artikel gelöscht");
+}
+function printCurrentPerson(){
+  if(!currentPerson)return;
+  const mine=personItems.filter(i=>i.person_id===currentPerson.id&&personState(i).selected);
+  const groups=new Map();for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
+  const area=el("printArea");
+  let html=`<h1 style="border-bottom:4px solid ${currentPerson.color};padding-bottom:3mm">${currentPerson.name} – Packliste</h1><div>${currentTrip?.name||""}${currentTrip?.start_date?" · "+fmtDate(currentTrip.start_date):""}${currentTrip?.end_date?" – "+fmtDate(currentTrip.end_date):""}</div>`;
+  for(const [cat,items] of groups){
+    html+=`<h2 style="border-color:${currentPerson.color}">${cat}</h2>`;
+    for(const i of items)html+=`<div class="printRow"><span class="printCheck"></span><span>${i.name}${i.must_not_forget?" ⭐":""}${i.note?`<small style="display:block;font-weight:400">📝 ${i.note}</small>`:""}</span><span class="printQty">${personState(i).quantity}×</span></div>`;
+  }
+  const critical=mine.filter(i=>i.must_not_forget);
+  if(critical.length){
+    html+=`<div class="criticalPrint"><h2>⭐ DARF NICHT FEHLEN – NOCHMAL KONTROLLIEREN</h2>`;
+    for(const i of critical)html+=`<div class="printRow"><span class="printCheck"></span><span>${i.name}</span><span></span></div>`;
+    html+="</div>";
+  }
+  area.innerHTML=html;area.style.display="block";window.print();setTimeout(()=>area.style.display="none",500);
+}
+function fmtDate(d){
+  if(!d)return "";
+  return new Date(d+"T00:00:00").toLocaleDateString("de-DE");
+}
+async function openArchivedTrip(trip){
+  setSync("Archiv wird geladen …");
+  const {data,error}=await sb.from("camping_trip_items").select("*").eq("trip_id",trip.id);
+  if(error){console.error(error);toast("Archiv konnte nicht geladen werden");return}
+  const hist=new Map((data||[]).map(x=>[x.item_id,x]));
+  const card=document.createElement("div");card.className="archiveCard";
+  const place=places.find(p=>p.id===trip.place_id);
+  card.innerHTML=`<h3>${trip.name}</h3><div class="archiveMeta">${place?.name||""}${trip.start_date?" · "+fmtDate(trip.start_date):""}${trip.end_date?" – "+fmtDate(trip.end_date):""}</div>
+    ${trip.photo_path?'<img class="memoryPhoto archivePhoto" alt="Urlaubserinnerung">':""}
+    ${trip.memory_text?`<div class="memoryBox">${trip.memory_text}</div>`:""}
+    <div class="archiveActions"><button class="restore">↩️ Wieder aktivieren</button><button class="close">Schließen</button></div>
+    <h4 style="margin:16px 0 8px">Damals in der Packliste</h4><div class="historyList"></div>`;
+  if(trip.photo_path){
+    signedMemoryPhoto(trip.photo_path).then(url=>{const img=card.querySelector(".archivePhoto");if(img&&url)img.src=url});
+  }
+  const list=card.querySelector(".historyList");
+  for(const group of grouped(masterItems)){
+    const h=document.createElement("div");h.style.cssText="padding:10px 12px 5px;font-weight:900;color:var(--navy);background:var(--cream2)";
+    h.textContent=group.icon+" "+group.name;list.appendChild(h);
+    for(const item of group.items){
+      const s=hist.get(item.id)||{selected:false,note:null};
+      const r=document.createElement("div");r.className="historyRow";
+      r.innerHTML=`<div class="historyTop"><span class="historyStatus ${s.selected?"yes":"no"}">${s.selected?"✓ MIT":"— NICHT MIT"}</span><span class="historyName">${item.name}</span></div>
+        ${s.note?`<div class="historyNote">🕓 Damals: ${s.note}</div>`:""}
+        ${item.note?`<div class="historyNote">📌 Aktuell: ${item.note}</div>`:""}`;
+      list.appendChild(r);
+    }
+  }
+  const host=el("archiveList");host.innerHTML="";host.appendChild(card);
+  card.querySelector(".close").onclick=()=>renderArchive();
+  card.querySelector(".restore").onclick=async()=>{
+    const {error}=await sb.from("camping_trips").update({archived:false}).eq("id",trip.id);
+    if(error){console.error(error);toast("Wiederherstellen fehlgeschlagen");return}
+    await loadArchivedTrips();await loadTrips();renderArchive();toast("Urlaub wieder aktiviert");
+  };
+  setSync("Synchronisiert");
+}
+async function openArchivedNotes(trip){
+  setSync("Notizen werden geladen …");
+  const [{data:itemsData,error:itemsError},{data:reviewsData,error:reviewsError}]=await Promise.all([
+    sb.from("camping_trip_items").select("item_id,note").eq("trip_id",trip.id),
+    sb.from("camping_trip_item_reviews").select("item_id,note,rating,deluxe").eq("trip_id",trip.id)
+  ]);
+  if(itemsError||reviewsError){console.error(itemsError||reviewsError);toast("Notizen konnten nicht geladen werden");return}
+  const byId=new Map();
+  for(const x of itemsData||[])if(x.note)byId.set(x.item_id,{tripNote:x.note});
+  for(const x of reviewsData||[])if(x.note){const v=byId.get(x.item_id)||{};v.reviewNote=x.note;v.rating=x.rating;v.deluxe=x.deluxe;byId.set(x.item_id,v)}
+  const host=el("archiveList");host.innerHTML="";
+  const card=document.createElement("div");card.className="archiveCard";
+  const entries=[...byId.entries()].map(([id,v])=>({item:masterItems.find(i=>i.id===id),...v})).filter(x=>x.item);
+  card.innerHTML=`<h3>📝 ${trip.name} – Notizen</h3><div class="archiveMeta">${entries.length} Artikel mit Notizen</div><div class="archiveNotesList">${entries.length?entries.map(x=>`<div class="archiveNoteItem"><b>${x.item.name}${x.deluxe?" ⭐":""}</b>${x.tripNote?`<div>🕓 ${x.tripNote}</div>`:""}${x.reviewNote?`<div>🚦 ${x.reviewNote}</div>`:""}</div>`).join(""):'<div class="empty">Keine Artikelnotizen gespeichert.</div>'}</div><div class="archiveActions"><button class="close">Zurück</button></div>`;
+  host.appendChild(card);card.querySelector(".close").onclick=()=>renderArchive();setSync("Synchronisiert");
+}
+function renderArchive(){
+  const host=el("archiveList");if(!host)return;host.innerHTML="";
+  if(!archivedTrips.length){host.innerHTML='<div class="personCard">Noch keine archivierten Urlaube.</div>';return}
+  for(const trip of archivedTrips){
+    const place=places.find(p=>p.id===trip.place_id);
+    const c=document.createElement("div");c.className="archiveCard";
+    c.innerHTML=`<h3>${trip.name}</h3><div class="archiveMeta">${place?.name||""}${trip.start_date?" · "+fmtDate(trip.start_date):""}${trip.end_date?" – "+fmtDate(trip.end_date):""}</div>${trip.photo_path?'<img class="memoryPhoto archiveThumb" alt="Urlaubserinnerung">':""}${trip.memory_text?`<div class="memoryBox">${trip.memory_text}</div>`:""}<div class="archiveActions"><button class="viewTrip">Urlaub ansehen</button><button class="viewNotes">📝 Notizen</button></div>`;
+    if(trip.photo_path)signedMemoryPhoto(trip.photo_path).then(url=>{const img=c.querySelector(".archiveThumb");if(img&&url)img.src=url});
+    c.querySelector(".viewTrip").onclick=()=>openArchivedTrip(trip);
+    c.querySelector(".viewNotes").onclick=()=>openArchivedNotes(trip);
+    host.appendChild(c);
+  }
+}
+function renderNeed(){
+  const root=el("needList");root.innerHTML="";
+  const items=currentItems().filter(i=>state(i.id).need);
+  const personal=personItems.filter(i=>isParticipant(i.person_id)&&personState(i).needs_purchase);
+  if(!items.length&&!personal.length){root.innerHTML='<div class="empty">Noch nichts auf der Such-/Kaufliste 🎉</div>';return}
+  const card=document.createElement("div");card.className="needCard";
+  items.forEach(i=>{const d=document.createElement("div");d.className="needItem";d.innerHTML=`<b>${i.name}</b><span class="badge">${i.category}</span><button class="stage on">✓ erledigt</button>`;d.querySelector("button").onclick=()=>dbUpsert(i.id,{need:false});card.appendChild(d)});
+  personal.forEach(i=>{const p=people.find(x=>x.id===i.person_id),d=document.createElement("div");d.className="needItem";d.innerHTML=`<b><span class="personDot" style="background:${p?.color||"#888"}"></span>${p?.name||""}: ${i.name}</b><span class="badge">persönlich</span><button class="stage on">✓ erledigt</button>`;d.querySelector("button").onclick=()=>savePersonState(i,{needs_purchase:false});card.appendChild(d)});
+  root.appendChild(card);
+}
+const TRIP_TYPE_GROUPS={
+all:{label:"Alle",items:{all:"🌍 Alle Reisen"}},
+accommodation:{label:"🏠 Unterkunft",items:{camping:"🏕️ Camping",camping_power:"⚡ Camping + Strom",camper:"🚐 Camper",holiday_home:"🏡 Ferienhaus",hotel:"🏨 Hotel"}},
+transport:{label:"🧭 Anreise",items:{car:"🚗 Auto",plane:"✈️ Flugzeug",train:"🚆 Bahn"}},
+activity:{label:"🎯 Aktivitäten",items:{city:"🏙️ Städtetrip",beach:"🏖️ Strand",swim:"🏊 Schwimmen",bike:"🚲 Fahrrad",hiking:"🥾 Wandern",mountain:"⛰️ Bergwandern",sport:"🏃 Sport",ski:"🎿 Ski / Wintersport"}}
+};
+const TRIP_TYPE_LABELS=Object.assign({},...Object.values(TRIP_TYPE_GROUPS).map(g=>g.items));
+function typeChecks(hostId,selected=["all"]){
+ const host=el(hostId);host.innerHTML="";const chosen=new Set(selected||[]);
+ for(const [gk,g] of Object.entries(TRIP_TYPE_GROUPS)){
+  const wrap=document.createElement("div");wrap.className="typeGroup";
+  if(gk!=="all"){const h=document.createElement("div");h.className="typeGroupTitle";h.textContent=g.label;wrap.appendChild(h)}
+  const grid=document.createElement("div");grid.className="typeTileGrid";
+  for(const [k,label] of Object.entries(g.items)){
+   const btn=document.createElement("button");btn.type="button";btn.className="typeTile"+(chosen.has(k)?" selected":"");btn.dataset.value=k;btn.textContent=label;
+   btn.onclick=()=>{if(k==="all"){host.querySelectorAll(".typeTile").forEach(x=>x.classList.remove("selected"));btn.classList.add("selected")}else{host.querySelector('.typeTile[data-value="all"]')?.classList.remove("selected");btn.classList.toggle("selected")}};
+   grid.appendChild(btn)
+  }wrap.appendChild(grid);host.appendChild(wrap)
+ }
+}
+function checkedTypes(hostId){const a=[...el(hostId).querySelectorAll(".typeTile.selected")].map(x=>x.dataset.value);return a.length?a:["all"]}
+function renderMasterTypeFilters(){const h=el("masterTypeFilters");if(!h)return;h.innerHTML="";for(const [k,label] of Object.entries(TRIP_TYPE_LABELS)){const b=document.createElement("button");b.textContent=label;b.className=masterTypeFilter===k?"active":"";b.onclick=()=>{masterTypeFilter=k;renderMaster()};h.appendChild(b)}}
+function updateMasterBatchBar(){
+  const bar=el("masterBatchBar"),count=el("masterBatchCount");if(!bar||!count)return;
+  count.textContent=`${masterSelectedIds.size} markiert`;bar.classList.toggle("show",masterSelectedIds.size>0);
+}
+function renderMaster(){
+  renderMasterTypeFilters();const root=el("masterList");root.innerHTML="";let items=masterItems.filter(i=>i.is_master);
+  if(masterFilter==="in")items=items.filter(i=>state(i.id).selected);if(masterFilter==="out")items=items.filter(i=>!state(i.id).selected);
+  if(masterTypeFilter!=="all")items=items.filter(i=>{const tt=i.trip_types||["all"];return tt.includes("all")||tt.includes(masterTypeFilter)});
+  for(const cat of grouped(items)){
+    const sec=document.createElement("section");sec.className="category"+(masterOpenCategory===cat.name?"":" closed");
+    sec.innerHTML=`<button class="cathead"><span class="emoji">${cat.icon}</span><strong>${cat.name}</strong><small>${cat.items.length}</small></button><div class="catbody"></div>`;
+    sec.querySelector(".cathead").onclick=()=>{const opening=sec.classList.contains("closed");document.querySelectorAll("#masterList .category").forEach(x=>x.classList.add("closed"));if(opening){sec.classList.remove("closed");masterOpenCategory=cat.name}else masterOpenCategory=null};
+    const body=sec.querySelector(".catbody");
+    cat.items.forEach(i=>{
+      const on=state(i.id).selected,r=document.createElement("div");r.className="masterRow"+(masterSelectedIds.has(i.id)?" selecting":"");
+      const types=(i.trip_types||["all"]).map(t=>`<span class="masterTypeBadge">${TRIP_TYPE_LABELS[t]||t}</span>`).join("");
+      r.innerHTML=`<div class="masterName">${i.name}<div>${types}</div></div><div class="masterActions"><button class="medit">✏️</button><button class="${on?"":"addBack"}">${on?"✓ Dabei":"＋ Mitnehmen"}</button></div>`;
+      r.onclick=e=>{if(e.target.closest("button"))return;if(masterSelectedIds.has(i.id))masterSelectedIds.delete(i.id);else masterSelectedIds.add(i.id);r.classList.toggle("selecting",masterSelectedIds.has(i.id));updateMasterBatchBar()};
+      const bs=r.querySelectorAll("button");bs[0].onclick=e=>{e.stopPropagation();masterOpenCategory=cat.name;openMasterItem(i)};bs[1].onclick=e=>{e.stopPropagation();dbUpsert(i.id,{selected:!on,...(on?{seen:false,in_box:false,in_car:false}:{})})};body.appendChild(r)
+    });root.appendChild(sec)
+  }
+  updateMasterBatchBar();
+}
+async function migrateMasterCategories(){
+  const legacy=masterItems.filter(i=>i.is_master&&i.category==="Strand");
+  if(!legacy.length)return;
+  const ids=legacy.map(i=>i.id);
+  const {error}=await sb.from("camping_items").update({category:"Baden & Wassersport"}).in("id",ids);
+  if(error){console.warn("Kategorie Strand konnte noch nicht umbenannt werden",error);return}
+  legacy.forEach(i=>i.category="Baden & Wassersport");
+}
+function masterCategories(){
+  const fixed=["Baden & Wassersport","Vorräte","Dokumente & Tickets"];
+  return [...new Set([...masterItems.filter(i=>i.is_master).map(i=>i.category).filter(Boolean),...fixed])]
+    .filter(c=>c!=="Strand"&&c!=="Sarah")
+    .sort((a,b)=>a.localeCompare(b,"de"));
+}
+function fillMasterCategorySelect(id,{blank=false,selected=""}={}){
+  const s=el(id);if(!s)return;const cats=masterCategories();s.innerHTML="";
+  if(blank){const o=document.createElement("option");o.value="";o.textContent="— Kategorie unverändert —";s.appendChild(o)}
+  for(const c of cats){const o=document.createElement("option");o.value=o.textContent=c;s.appendChild(o)}
+  if(selected&&cats.includes(selected))s.value=selected;else if(blank)s.value="";
+}
+function fillCategorySuggestions(){const pc=[...new Set(personItems.map(i=>i.category).filter(Boolean))].sort();const p=el("personCategoryOptions");if(p)p.innerHTML=pc.map(x=>`<option value="${x}">`).join("");fillMasterCategorySelect("masterItemCategory",{selected:el("masterItemCategory")?.value||""});fillMasterCategorySelect("bulkMasterCategory",{selected:el("bulkMasterCategory")?.value||""})}
+function openMasterItem(item=null){editingMasterItem=item;if(item?.category)masterOpenCategory=item.category;fillMasterCategorySelect("masterItemCategory",{selected:item?.category||masterOpenCategory||masterCategories()[0]||""});el("masterItemName").value=item?.name||"";typeChecks("masterItemTypes",item?.trip_types||["all"]);const assigned=item?itemPeople.filter(x=>x.item_id===item.id).map(x=>x.person_id):[];renderMasterPersonTiles("masterItemPeople",assigned);el("masterItemModal").classList.add("open")}
+function renderCats(){
+  fillCategorySuggestions();
+  const cats=[...new Set(masterItems.filter(i=>i.is_master).map(i=>i.category))];
+  [el("quickCat"),el("addCat"),el("editCat")].filter(Boolean).forEach(sel=>{const old=sel.value;sel.innerHTML="";cats.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;sel.appendChild(o)});if(cats.includes(old))sel.value=old});
+}
+el("undoBtn").onclick=async()=>{if(!lastRemoved)return;const x=lastRemoved;lastRemoved=null;await dbUpsert(x.itemId,x.old);el("undoToast").classList.remove("show")};
+el("personCategoryCancel").onclick=()=>{el("personCategoryModal").classList.remove("open");categoryEditingMasterItem=null};
+el("personCategorySave").onclick=saveMasterPersonalCategory;
+el("personCategoryOpenMaster").onclick=()=>{
+  const item=categoryEditingMasterItem;if(!item)return;
+  const master=masterItems.find(x=>x.id===item.master_item_id);if(!master)return;
+  el("personCategoryModal").classList.remove("open");
+  categoryEditingMasterItem=null;
+  openMasterItem(master);
+};
+el("reviewTripBtn").onclick=openTripReview;
+document.querySelectorAll("[data-review-rating]").forEach(b=>b.onclick=()=>{reviewRating=b.dataset.reviewRating;document.querySelectorAll("[data-review-rating]").forEach(x=>x.classList.toggle("on",x===b))});
+el("reviewSaveNext").onclick=saveReviewAndNext;el("reviewBack").onclick=reviewBack;el("reviewSkip").onclick=()=>{reviewIndex++;renderReviewItem()};el("reviewClose").onclick=()=>el("reviewModal").classList.remove("open");
+el("showReviewsToggle").onchange=async e=>{
+  showReviews=e.target.checked;
+  if(showReviews){
+    await loadReviewTrips();
+    const saved=currentTrip?localStorage.getItem("camping-review-source-"+currentTrip.id):null;
+    const source=reviewTrips.some(x=>x.id===saved)?saved:(reviewTrips.find(x=>x.id!==currentTrip?.id)?.id||reviewTrips[0]?.id||null);
+    await loadComparisonReviews(source);
+  }else{comparisonTripId=null;comparisonReviews=new Map()}
+  activeCategory="__ALL__";render();
+};
+el("reviewSourceTrip").onchange=async e=>{await loadComparisonReviews(e.target.value);activeCategory="__ALL__";render()};
+el("planModeBtn").onclick=()=>setPackViewMode("plan");
+el("packModeBtn").onclick=()=>setPackViewMode("pack");
+el("toggleOtherItemsBtn").onclick=()=>{showOtherPlanning=!showOtherPlanning;activeCategory=null;render()};
+document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;render()});
+el("addMasterItemBtn").onclick=()=>openMasterItem();el("masterItemCancel").onclick=()=>el("masterItemModal").classList.remove("open");
+el("masterItemSave").onclick=async()=>{
+  const name=el("masterItemName").value.trim(),category=el("masterItemCategory").value.trim(),trip_types=checkedTypes("masterItemTypes");
+  const assignedPeople=selectedMasterPeople("masterItemPeople");
+  if(!name||!category)return toast("Bitte Artikel und Kategorie eingeben");
+  masterOpenCategory=category;
+  const original=editingMasterItem?{...editingMasterItem}:null;
+  const editingId=editingMasterItem?.id||null;
+  const patch={name,category,trip_types};
+  editingMasterItem=null;
+  el("masterItemModal").classList.remove("open");
+  if(editingId){const local=masterItems.find(i=>i.id===editingId);if(local)Object.assign(local,patch);renderMaster()}
+  beginBackgroundSave("Masterartikel wird gespeichert …");
+  try{
+    let data,error;
+    if(editingId)({data,error}=await sb.from("camping_items").update(patch).eq("id",editingId).select().single());
+    else ({data,error}=await sb.from("camping_items").insert({...patch,icon:iconForCategory(category),is_master:true}).select().single());
+    if(error)throw error;
+    await syncMasterPeople(data,assignedPeople);
+    await loadItems();render();renderPeople();saveCache();
+    finishBackgroundSave("Masterartikel gespeichert");
+  }catch(error){
+    console.error(error);
+    if(original){const local=masterItems.find(i=>i.id===original.id);if(local)Object.assign(local,original);renderMaster()}
+    failBackgroundSave("Masterartikel nicht gespeichert");
+  }
+};
+function parseBulkMaster(){return (el("bulkMasterItems").value||"").replace(/\r\n?/g,"\n").split(/\n+|;+/).map(x=>x.replace(/^[\s•·▪▫◦‣⁃\-–—*✓✔☐☑]+/,"").trim()).filter(Boolean)}
+el("bulkMasterItemBtn").onclick=()=>{fillMasterCategorySelect("bulkMasterCategory",{selected:masterOpenCategory||masterCategories()[0]||""});el("bulkMasterItems").value="";el("bulkMasterCount").textContent="0 Artikel erkannt";typeChecks("bulkMasterTypes",["all"]);el("bulkMasterModal").classList.add("open")};el("bulkMasterItems").oninput=()=>el("bulkMasterCount").textContent=`${parseBulkMaster().length} Artikel erkannt`;el("bulkMasterCancel").onclick=()=>el("bulkMasterModal").classList.remove("open");el("bulkMasterSave").onclick=async()=>{
+  const category=el("bulkMasterCategory").value.trim(),names=parseBulkMaster(),trip_types=checkedTypes("bulkMasterTypes");
+  if(!category||!names.length)return toast("Kategorie und Artikel eingeben");
+  masterOpenCategory=category;
+  const existing=new Set(masterItems.filter(i=>i.is_master).map(i=>`${i.category.toLowerCase()}|${i.name.toLowerCase()}`));
+  const rows=names.filter(n=>!existing.has(`${category.toLowerCase()}|${n.toLowerCase()}`)).map((name,n)=>({name,category,icon:iconForCategory(category),is_master:true,trip_types,item_order:n+1}));
+  if(!rows.length)return toast("Diese Artikel gibt es schon");
+  el("bulkMasterModal").classList.remove("open");
+  beginBackgroundSave(`${rows.length} Artikel werden gespeichert …`);
+  try{
+    const {error}=await sb.from("camping_items").insert(rows);
+    if(error)throw error;
+    await loadItems();render();
+    finishBackgroundSave(`${rows.length} Artikel gespeichert`);
+  }catch(error){
+    console.error(error);
+    failBackgroundSave("Artikel konnten nicht gespeichert werden");
+  }
+};
+el("masterBatchClearBtn").onclick=()=>{masterSelectedIds.clear();renderMaster()};
+el("masterBatchEditBtn").onclick=()=>{
+  if(!masterSelectedIds.size)return;
+  el("batchMasterTitle").textContent=`${masterSelectedIds.size} Masterartikel gemeinsam bearbeiten`;
+  fillMasterCategorySelect("batchMasterCategory",{blank:true});
+  typeChecks("batchMasterTypes",[]);
+  renderMasterPersonTiles("batchMasterPeople",[]);
+  // Für Sammelbearbeitung startet bewusst nichts vorausgewählt: Auswahl = neue gemeinsame Zuordnung.
+  el("batchMasterModal").classList.add("open");
+};
+el("batchMasterCancel").onclick=()=>el("batchMasterModal").classList.remove("open");
+el("batchMasterSave").onclick=async()=>{
+  if(!masterSelectedIds.size)return;
+  const category=el("batchMasterCategory").value;
+  const trip_types=checkedTypes("batchMasterTypes");
+  const ids=[...masterSelectedIds];
+  const addPeople=selectedMasterPeople("batchMasterPeople");
+  const originals=new Map(ids.map(id=>[id,{...masterItems.find(i=>i.id===id)}]));
+  const patch={trip_types};if(category)patch.category=category;
+  if(category)masterOpenCategory=category;
+  ids.forEach(id=>{const local=masterItems.find(i=>i.id===id);if(local)Object.assign(local,patch)});
+  masterSelectedIds.clear();
+  el("batchMasterModal").classList.remove("open");
+  renderMaster();
+  beginBackgroundSave(`${ids.length} Artikel werden gespeichert …`);
+  try{
+    const {error}=await sb.from("camping_items").update(patch).in("id",ids);
+    if(error)throw error;
+    if(addPeople.length){
+      for(const id of ids){
+        const item=masterItems.find(i=>i.id===id);
+        if(item)await syncMasterPeople(item,addPeople,{addOnly:true});
+      }
+    }
+    await loadItems();render();renderPeople();saveCache();
+    finishBackgroundSave(`${ids.length} Artikel gespeichert`);
+  }catch(error){
+    console.error(error);
+    originals.forEach((original,id)=>{const local=masterItems.find(i=>i.id===id);if(local&&original)Object.assign(local,original)});
+    renderMaster();
+    failBackgroundSave("Sammelbearbeitung nicht gespeichert");
+  }
+};
+document.querySelectorAll(".masterToolbar button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".masterToolbar button").forEach(x=>x.classList.remove("active"));b.classList.add("active");masterFilter=b.dataset.mf;renderMaster()});
+
+el("editPersonBtn").onclick=()=>{
+ if(!currentPerson)return toast("Bitte zuerst eine Person auswählen");
+ el("editPersonName").value=currentPerson.name;editPersonColor=currentPerson.color||PERSON_COLORS[0];renderEditPersonColors();el("editPersonModal").classList.add("open");
+};
+el("editPersonCancel").onclick=()=>el("editPersonModal").classList.remove("open");
+el("editPersonSave").onclick=async()=>{
+ if(!currentPerson)return;const name=el("editPersonName").value.trim();if(!name)return toast("Bitte einen Namen eingeben");
+ const {data,error}=await sb.from("camping_people").update({name,color:editPersonColor}).eq("id",currentPerson.id).select().single();
+ if(error){console.error(error);return toast("Person konnte nicht geändert werden")}
+ const idx=people.findIndex(p=>p.id===currentPerson.id);if(idx>=0)people[idx]=data;currentPerson=data;
+ el("editPersonModal").classList.remove("open");renderPeople();render();toast("Person gespeichert");
+};
+el("deletePersonBtn").onclick=async()=>{
+ if(!currentPerson)return;const doomed=currentPerson;
+ if(!confirm(`${doomed.name} wirklich löschen?\n\nDie persönliche Packliste dieser Person wird ebenfalls gelöscht.`))return;
+ const {error}=await sb.from("camping_people").delete().eq("id",doomed.id);
+ if(error){console.error(error);return toast("Person konnte nicht gelöscht werden")}
+ people=people.filter(p=>p.id!==doomed.id);personItems=personItems.filter(i=>i.person_id!==doomed.id);currentPerson=people[0]||null;
+ if(currentPerson)localStorage.setItem("camping-person-id",currentPerson.id);else localStorage.removeItem("camping-person-id");
+ el("editPersonModal").classList.remove("open");renderPeople();render();toast(`${doomed.name} gelöscht`);
+};
+el("modulesBtn").onclick=openModulesModal;
+el("modulesCancel").onclick=()=>el("modulesModal").classList.remove("open");
+el("modulesSave").onclick=addSelectedModules;
+el("personPlanBtn").onclick=()=>{personViewMode="plan";renderPeople()};
+el("personPackBtn").onclick=()=>{personViewMode="pack";renderPeople()};
+el("addPersonBtn").onclick=()=>{el("personName").value="";chosenPersonColor=PERSON_COLORS[people.length%PERSON_COLORS.length];renderPersonColors();el("personModal").classList.add("open")};
+el("personCancel").onclick=()=>el("personModal").classList.remove("open");
+el("personSave").onclick=async()=>{
+  const name=el("personName").value.trim();if(!name)return toast("Bitte einen Namen eingeben");
+  const {data,error}=await sb.from("camping_people").insert({name,color:chosenPersonColor,sort_order:people.length}).select().single();
+  if(error){console.error(error);return toast("Person konnte nicht angelegt werden")}
+  people.push(data);currentPerson=data;localStorage.setItem("camping-person-id",data.id);el("personModal").classList.remove("open");renderPeople();toast(name+" angelegt");
+  setTimeout(openModulesModal,150);
+};
+function parseBulkPersonNames(){
+  const raw=(el("bulkPersonItems").value||"")
+    .replace(/\r\n?/g,"\n")
+    .replace(/[\u2028\u2029\u0085]/g,"\n")
+    .replace(/<br\s*\/?>/gi,"\n");
+  return raw.split(/\n+|;+/)
+    .map(x=>x.replace(/^[\s•·▪▫◦‣⁃\-–—*✓✔☐☑]+/,"").trim())
+    .filter(Boolean);
+}
+el("bulkPersonItems").addEventListener("input",()=>{
+  const n=parseBulkPersonNames().length;
+  el("bulkCount").textContent=`${n} Artikel erkannt`;
+});
+el("bulkPersonItemBtn").onclick=()=>{
+  if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
+  fillPersonalCategorySelect("bulkPersonCategory","bulkPersonNewCategory","");
+  el("bulkPersonItems").value="";
+  el("bulkCount").textContent="0 Artikel erkannt";
+  el("bulkPersonItemModal").classList.add("open");
+};
+el("bulkPersonCancel").onclick=()=>el("bulkPersonItemModal").classList.remove("open");
+el("bulkPersonSave").onclick=async()=>{
+  if(!currentPerson)return;
+  const category=resolvedPersonalCategory("bulkPersonCategory","bulkPersonNewCategory")||"Sonstiges";
+  const names=parseBulkPersonNames();
+  if(!names.length)return toast("Bitte mindestens einen Artikel eingeben");
+  const base=personItems.filter(i=>i.person_id===currentPerson.id).length;
+  const rows=names.map((name,n)=>({person_id:currentPerson.id,name,category,default_quantity:1,sort_order:base+n}));
+  const {data,error}=await sb.from("camping_person_items").insert(rows).select();
+  if(error){console.error(error);return toast("Artikel konnten nicht angelegt werden")}
+  personItems.push(...(data||[]));
+  el("bulkPersonItemModal").classList.remove("open");
+  renderPeople();
+  toast(`${names.length} Artikel angelegt`);
+};
+
+el("copyPersonListBtn").onclick=()=>{
+  if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
+  const targets=people.filter(p=>p.id!==currentPerson.id);
+  if(!targets.length)return toast("Es gibt noch keine andere Person");
+  el("copyPersonInfo").textContent=`Liste von ${currentPerson.name} kopieren`;
+  const s=el("copyPersonTarget");s.innerHTML="";
+  for(const p of targets){const o=document.createElement("option");o.value=p.id;o.textContent=p.name;s.appendChild(o)}
+  el("copyPersonModal").classList.add("open");
+};
+el("copyPersonCancel").onclick=()=>el("copyPersonModal").classList.remove("open");
+el("copyPersonSave").onclick=async()=>{
+  if(!currentPerson)return;
+  const targetId=el("copyPersonTarget").value;
+  const source=personItems.filter(i=>i.person_id===currentPerson.id);
+  if(!source.length)return toast("Diese Liste ist noch leer");
+  const existing=new Set(personItems.filter(i=>i.person_id===targetId).map(i=>`${i.category.toLowerCase()}|${i.name.toLowerCase()}`));
+  const targetBase=personItems.filter(x=>x.person_id===targetId).length;
+  const rows=source.filter(i=>!existing.has(`${i.category.toLowerCase()}|${i.name.toLowerCase()}`)).map((i,n)=>({
+    person_id:targetId,name:i.name,category:i.category,icon:i.icon,default_quantity:i.default_quantity,
+    quantity_rule:i.quantity_rule||"fixed",quantity_offset:i.quantity_offset||0,must_not_forget:i.must_not_forget||false,module_key:i.module_key||null,
+    linked_master_item_id:null,sort_order:targetBase+n
+  }));
+  if(!rows.length){el("copyPersonModal").classList.remove("open");return toast("Alle Artikel sind dort schon vorhanden")}
+  const {data,error}=await sb.from("camping_person_items").insert(rows).select();
+  if(error){console.error(error);return toast("Liste konnte nicht kopiert werden")}
+  personItems.push(...(data||[]));
+  el("copyPersonModal").classList.remove("open");
+  renderPeople();
+  toast(`${rows.length} Artikel kopiert`);
+};
+
+el("addPersonItemBtn").onclick=()=>{
+  if(!currentPerson)return toast("Bitte zuerst eine Person anlegen");
+  editingPersonItem=null;
+  el("personItemModal").querySelector("h3").textContent="Persönlichen Artikel anlegen";
+  el("personItemSave").textContent="Anlegen";
+  el("personItemName").value="";fillPersonalCategorySelect("personItemCategory","personItemNewCategory","");el("personItemNote").value="";el("personItemQty").value="1";el("personItemRule").value="fixed";el("personItemOffset").value="0";el("personItemStar").checked=false;fillPersonMasterLinks();el("personItemModal").classList.add("open");
+};
+el("personItemCancel").onclick=()=>{editingPersonItem=null;el("personItemModal").classList.remove("open")};
+el("personItemSave").onclick=async()=>{
+  if(!currentPerson)return;
+  const personId=currentPerson.id;
+  const name=el("personItemName").value.trim(),category=resolvedPersonalCategory("personItemCategory","personItemNewCategory"),
+    note=el("personItemNote").value.trim()||null,
+    default_quantity=Math.max(0,parseInt(el("personItemQty").value||"1")),quantity_rule=el("personItemRule").value||"fixed",
+    quantity_offset=parseInt(el("personItemOffset").value||"0"),must_not_forget=el("personItemStar").checked,
+    linked_master_item_id=el("personItemLink").value||null;
+  if(!name)return toast("Bitte einen Artikelnamen eingeben");
+  if(!category)return toast("Bitte eine Kategorie auswählen oder eingeben");
+  const patch={name,category,note,default_quantity,quantity_rule,quantity_offset,must_not_forget,linked_master_item_id};
+  const editingId=editingPersonItem?.id||null;
+  const original=editingPersonItem?{...editingPersonItem}:null;
+  editingPersonItem=null;el("personItemModal").classList.remove("open");
+  if(editingId){const idx=personItems.findIndex(i=>i.id===editingId);if(idx>=0)personItems[idx]={...personItems[idx],...patch};renderPeople();render()}
+  beginBackgroundSave("Persönlicher Artikel wird gespeichert …");
+  try{
+    let data,error;
+    if(editingId)({data,error}=await sb.from("camping_person_items").update(patch).eq("id",editingId).select().single());
+    else ({data,error}=await sb.from("camping_person_items").insert({...patch,person_id:personId,sort_order:personItems.filter(i=>i.person_id===personId).length}).select().single());
+    if(error)throw error;
+    if(editingId){const idx=personItems.findIndex(i=>i.id===editingId);if(idx>=0)personItems[idx]=data}else personItems.push(data);
+    renderPeople();render();saveCache();finishBackgroundSave(editingId?"Artikel gespeichert":"Artikel angelegt");
+  }catch(error){
+    console.error(error);
+    if(original){const idx=personItems.findIndex(i=>i.id===original.id);if(idx>=0)personItems[idx]=original}
+    renderPeople();render();failBackgroundSave("Persönlicher Artikel nicht gespeichert");
+  }
+};
+el("printPersonBtn").onclick=printCurrentPerson;
+
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
+document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));el("view-"+b.dataset.view).classList.add("active")});
+el("tripSelect").onchange=e=>switchTrip(e.target.value);
+el("editTripBtn").onclick=()=>{
+  if(!currentTrip)return;
+  el("editTripPlace").value=currentTrip.place_id||"";
+  el("editTripName").value=currentTrip.name||"";
+  const prof=normalizedTripProfile(currentTrip);
+  el("editTripAccommodation").value=prof.accommodation;
+  el("editTripTransport").value=prof.transport;
+  renderActivityPicker("tripActivitiesEdit",prof.activities);
+  renderTripPeoplePicker("tripPeopleEdit",new Set(participantPeople().map(p=>p.id)));
+  el("editTripStart").value=currentTrip.start_date||"";
+  el("editTripEnd").value=currentTrip.end_date||"";
+  el("editTripMemory").value=currentTrip.memory_text||"";
+  el("editTripPhoto").value="";
+  el("removeTripPhoto").checked=false;
+  pendingTripPhoto=null;
+  const preview=el("editTripPhotoPreview");
+  preview.style.display="none";preview.removeAttribute("src");
+  el("removeTripPhotoLine").style.display=currentTrip.photo_path?"flex":"none";
+  if(currentTrip.photo_path)signedMemoryPhoto(currentTrip.photo_path).then(url=>{if(url){preview.src=url;preview.style.display="block"}});
+  el("editTripModal").classList.add("open");
+};
+el("applyTripTypeBtn").onclick=async()=>{
+  if(!currentTrip)return;
+  const accommodation=el("editTripAccommodation").value||"tent";
+  const transport=el("editTripTransport").value||"car";
+  const activities=selectedActivities("tripActivitiesEdit");
+  const type=legacyTripTypeForProfile({accommodation,transport,activities});
+  if(!confirm("Planungsvorschlag neu anwenden? Deine aktuelle Auswahl in der Familienliste wird entsprechend neu gesetzt."))return;
+  try{
+    await applyTripPreset(currentTrip,type);
+    await loadStates();
+    render();
+    toast("Planungsvorschlag angewendet");
+  }catch(e){console.error(e);toast("Vorschlag konnte nicht angewendet werden")}
+};
+el("editTripCancel").onclick=()=>el("editTripModal").classList.remove("open");
+el("editTripSave").onclick=async()=>{
+  if(!currentTrip)return;
+  const name=el("editTripName").value.trim();
+  const place_id=el("editTripPlace").value;
+  const start_date=el("editTripStart").value||null;
+  const end_date=el("editTripEnd").value||null;
+  const accommodation_type=el("editTripAccommodation").value||"tent";
+  const transport_type=el("editTripTransport").value||"car";
+  const activities=selectedActivities("tripActivitiesEdit");
+  const trip_type=legacyTripTypeForProfile({accommodation:accommodation_type,transport:transport_type,activities});
+  const trip_people=selectedTripPeople("tripPeopleEdit");
+  const memory_text=el("editTripMemory").value.trim()||null;
+
+  if(!name)return toast("Bitte einen Urlaubsnamen eingeben");
+  if(start_date && end_date && end_date<start_date)return toast("Das Abreisedatum liegt vor der Anreise");
+
+  el("editTripSave").disabled=true;
+  setSync("Urlaub wird gespeichert …");
+  try{
+    let photo_path=currentTrip.photo_path||null;
+    if(el("removeTripPhoto").checked && photo_path){
+      await sb.storage.from("camping-memory-photos").remove([photo_path]);
+      photo_path=null;
+    }
+    if(pendingTripPhoto)photo_path=await uploadMemoryPhoto(currentTrip.id,pendingTripPhoto,photo_path);
+    const {data,error}=await sb.from("camping_trips")
+      .update({name,place_id,start_date,end_date,trip_type,accommodation_type,transport_type,activities,memory_text,photo_path})
+      .eq("id",currentTrip.id)
+      .select()
+      .single();
+    if(error)throw error;
+
+    currentTrip=data;
+    currentPlace=places.find(p=>p.id===data.place_id)||null;
+    await saveTripPeople(data.id,trip_people);
+    currentTripPeople=new Set(trip_people);
+
+    const local=trips.findIndex(t=>t.id===data.id);
+    if(local>=0)trips[local]=data;
+
+    el("tripSelect").innerHTML="";
+    for(const t of trips){
+      const o=document.createElement("option");
+      o.value=t.id;o.textContent=t.name||"Urlaub";
+      el("tripSelect").appendChild(o);
+    }
+    el("tripSelect").value=currentTrip.id;
+
+    updateTripInfo();
+    el("editTripModal").classList.remove("open");
+    setSync("Synchronisiert");
+    toast("Urlaub geändert");
+  }catch(error){
+    console.error(error);
+    toast("Urlaub konnte nicht gespeichert werden");
+    setSync("Fehler");
+  }finally{
+    el("editTripSave").disabled=false;
+  }
+};
+el("archiveTripBtn").onclick=async()=>{
+  if(!currentTrip)return;
+  if(reviewCandidates().length&&!tripReviews.size){if(confirm("Für diesen Urlaub gibt es noch keine Artikelbewertungen. Jetzt zuerst bewerten?")){openTripReview();return}}
+  if(!confirm(`„${currentTrip.name}“ wirklich archivieren? Die Packliste und Bewertungen bleiben erhalten.`))return;
+  setSync("Archiviert …");
+  const {error}=await sb.from("camping_trips").update({archived:true,memory_text:el("editTripMemory").value.trim()||null}).eq("id",currentTrip.id);
+  if(error){console.error(error);toast("Archivieren fehlgeschlagen");setSync("Fehler");return}
+  el("editTripModal").classList.remove("open");
+  localStorage.removeItem("camping-trip-id");
+  await loadTrips();await loadArchivedTrips();
+  if(currentTrip)await switchTrip(currentTrip.id);else{states=new Map();updateTripInfo();render()}
+  toast("Urlaub archiviert 🗂️");
+};
+el("deleteTripBtn").onclick=async()=>{
+  if(!currentTrip)return;
+  const typed=prompt(`Zum endgültigen Löschen bitte den Urlaubsnamen eingeben:\n${currentTrip.name}`);
+  if(typed!==currentTrip.name)return typed!==null&&toast("Name stimmt nicht – nichts gelöscht");
+  setSync("Löscht …");
+  const id=currentTrip.id;
+  const {error:e1}=await sb.from("camping_trip_items").delete().eq("trip_id",id);
+  if(e1){console.error(e1);toast("Löschen fehlgeschlagen");setSync("Fehler");return}
+  const {error:e2}=await sb.from("camping_trips").delete().eq("id",id);
+  if(e2){console.error(e2);toast("Löschen fehlgeschlagen");setSync("Fehler");return}
+  el("editTripModal").classList.remove("open");
+  localStorage.removeItem("camping-trip-id");
+  await loadTrips();
+  if(currentTrip)await switchTrip(currentTrip.id);else{states=new Map();updateTripInfo();render()}
+  toast("Urlaub gelöscht");
+};
+el("newTripBtn").onclick=()=>{
+  if(currentPlace)el("tripPlace").value=currentPlace.id;
+  el("tripNewPlace").value="";
+  const place=places.find(p=>p.id===el("tripPlace").value)||currentPlace;
+  el("tripNameInput").value=(place?.name||"Urlaub")+" "+new Date().getFullYear();
+  const prof=normalizedTripProfile(currentTrip);
+  el("tripAccommodation").value=prof.accommodation;
+  el("tripTransport").value=prof.transport;
+  renderActivityPicker("tripActivitiesNew",prof.activities);
+  renderTripPeoplePicker("tripPeopleNew",new Set(participantPeople().map(p=>p.id)));
+  el("tripStart").value="";
+  el("tripEnd").value="";
+  el("tripModal").classList.add("open");
+};
+el("tripPlace").onchange=()=>{
+  if(el("tripNewPlace").value.trim())return;
+  const p=places.find(x=>x.id===el("tripPlace").value);
+  if(p)el("tripNameInput").value=p.name+" "+new Date().getFullYear();
+};
+el("tripNewPlace").oninput=()=>{
+  const n=el("tripNewPlace").value.trim();
+  if(n)el("tripNameInput").value=n+" "+new Date().getFullYear();
+};
+el("tripCancel").onclick=()=>el("tripModal").classList.remove("open");
+el("tripSave").onclick=async()=>{
+  const name=el("tripNameInput").value.trim();
+  const start=el("tripStart").value,end=el("tripEnd").value;
+  const accommodation_type=el("tripAccommodation").value||"tent";
+  const transport_type=el("tripTransport").value||"car";
+  const activities=selectedActivities("tripActivitiesNew");
+  const trip_type=legacyTripTypeForProfile({accommodation:accommodation_type,transport:transport_type,activities});
+  const trip_people=selectedTripPeople("tripPeopleNew");
+  if(!name)return toast("Bitte einen Urlaubsnamen eingeben");
+  if(start&&end&&end<start)return toast("Das Abreisedatum liegt vor der Anreise");
+  el("tripSave").disabled=true;setSync("Urlaub wird angelegt …");
+  try{
+    let place=null;
+    const newPlaceName=el("tripNewPlace").value.trim();
+    if(newPlaceName){
+      const existing=places.find(p=>p.name.toLowerCase()===newPlaceName.toLowerCase());
+      if(existing)place=existing;
+      else{
+        const {data,error}=await sb.from("camping_places").insert({name:newPlaceName}).select().single();
+        if(error)throw error;place=data;
+      }
+    }else place=places.find(p=>p.id===el("tripPlace").value);
+    if(!place)throw new Error("Kein Ziel gewählt");
+
+    const {data,error}=await sb.from("camping_trips").insert({
+      name,place_id:place.id,start_date:start||null,end_date:end||null,trip_type,accommodation_type,transport_type,activities,archived:false
+    }).select().single();
+    if(error)throw error;
+
+    currentPlace=place;currentTrip=data;
+    packViewMode="plan";showOtherPlanning=false;localStorage.setItem("camping-pack-mode-"+data.id,"plan");
+    await saveTripPeople(data.id,trip_people);
+    currentTripPeople=new Set(trip_people);
+    await applyTripPreset(data,trip_type);
+    localStorage.setItem("camping-trip-id",data.id);
+    await loadPlaces();
+    await loadTrips();
+    currentTrip=trips.find(t=>t.id===data.id)||data;
+    currentPlace=places.find(p=>p.id===currentTrip.place_id)||place;
+    el("tripSelect").value=currentTrip.id;
+    await loadStates();await loadTripReviews();subscribeTrip();updateTripInfo();render();
+    el("tripModal").classList.remove("open");
+    setSync("Synchronisiert");toast("Urlaub angelegt 🏕️");
+  }catch(error){
+    console.error(error);toast("Urlaub konnte nicht angelegt werden");setSync("Fehler");
+  }finally{el("tripSave").disabled=false}
+};
+el("quickAdd").onclick=()=>{const n=el("quickName").value.trim();if(!n)return;el("addName").value=n;el("addCat").value=el("quickCat").value;addScope="trip";document.querySelectorAll(".addChoice button").forEach(b=>b.classList.toggle("active",b.dataset.scope==="trip"));el("addModal").classList.add("open")};
+el("quickName").onkeydown=e=>{if(e.key==="Enter")el("quickAdd").click()};
+document.querySelectorAll(".addChoice button").forEach(b=>b.onclick=()=>{addScope=b.dataset.scope;document.querySelectorAll(".addChoice button").forEach(x=>x.classList.toggle("active",x===b))});
+el("addCancel").onclick=()=>el("addModal").classList.remove("open");
+el("addSave").onclick=async()=>{
+  if(addingItem)return;
+  const name=el("addName").value.trim(),category=el("addCat").value;
+  if(!name||!category)return;
+  addingItem=true;el("addSave").disabled=true;setSync("Speichert …");
+  try{
+    let item=null;
+
+    // Existiert der Artikel bereits, wird er für diesen Urlaub aktiviert
+    // statt einen doppelten Datensatz anzulegen.
+    const {data:existing,error:findError}=await sb
+      .from("camping_items")
+      .select("*")
+      .eq("name",name)
+      .eq("category",category)
+      .maybeSingle();
+    if(findError)throw findError;
+
+    if(existing){
+      item=existing;
+      // Ein bisher nur urlaubsspezifischer Artikel kann später zur Masterliste werden.
+      if(addScope==="master" && !existing.is_master){
+        const {data:promoted,error:promoteError}=await sb
+          .from("camping_items")
+          .update({is_master:true})
+          .eq("id",existing.id)
+          .select("*")
+          .single();
+        if(promoteError)throw promoteError;
+        item=promoted;
+      }
+    }else{
+      const {data:created,error:createError}=await sb
+        .from("camping_items")
+        .insert({name,category,icon:iconForCategory(category),is_master:addScope==="master"})
+        .select("*")
+        .single();
+      if(createError)throw createError;
+      item=created;
+    }
+
+    await dbUpsert(item.id,{selected:true});
+    await loadItems();
+    el("quickName").value="";
+    el("addName").value="";
+    el("addModal").classList.remove("open");
+    render();
+    toast(existing
+      ? (addScope==="master" ? "Artikel ist jetzt in der Masterliste" : "Artikel für diesen Urlaub hinzugefügt")
+      : (addScope==="master" ? "Zur Masterliste hinzugefügt" : "Für diesen Urlaub hinzugefügt"));
+    setSync("Synchronisiert");
+  }catch(error){
+    console.error(error);
+    toast("Artikel konnte nicht gespeichert werden");
+    setSync("Fehler");
+  }finally{
+    addingItem=false;el("addSave").disabled=false;
+  }
+};
+el("noteClose").onclick=()=>{noteViewingItem=null;el("noteModal").classList.remove("open")};
+el("noteEdit").onclick=()=>{
+  if(!noteViewingItem)return;
+  const item=noteViewingItem;
+  noteViewingItem=null;
+  el("noteModal").classList.remove("open");
+  openItemEditor(item);
+};
+el("editCancel").onclick=()=>{editingItem=null;el("editModal").classList.remove("open")};
+el("editSave").onclick=async()=>{
+  if(!editingItem)return;
+  const name=el("editName").value.trim(),category=el("editCat").value,tripNote=el("editNote").value.trim();if(!name||!category)return;
+  el("editSave").disabled=true;setSync("Speichert …");
+  try{
+    const patch={name,category};
+    if(el("notePermanent").checked && tripNote)patch.note=tripNote;
+    if(category!==editingItem.category){patch.category_order=null;patch.item_order=null}
+    const {error}=await sb.from("camping_items").update(patch).eq("id",editingItem.id);
+    if(error)throw error;
+    await dbUpsert(editingItem.id,{note:tripNote||null});
+    editingItem=null;el("editModal").classList.remove("open");await loadItems();render();setSync("Synchronisiert");toast("Artikel geändert");
+  }catch(error){console.error(error);toast("Änderung konnte nicht gespeichert werden");setSync("Fehler")}
+  finally{el("editSave").disabled=false}
+};
+el("loginBtn").onclick=async()=>{
+  el("loginErr").textContent="";el("loginBtn").disabled=true;
+  const {data,error}=await sb.auth.signInWithPassword({email:el("loginEmail").value.trim(),password:el("loginPassword").value});
+  el("loginBtn").disabled=false;
+  if(error){
+    el("loginErr").textContent="Anmeldung fehlgeschlagen: "+error.message;
+  }else if(data?.session){
+    el("login").classList.add("hidden");
+    setTimeout(()=>boot(),0);
+  }
+};
+async function boot(){
+  if(booting)return;
+  booting=true;
+
+  // Sofort die zuletzt bekannte Ansicht zeigen, noch bevor Supabase antwortet.
+  const hadCache=restoreCache();
+
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){el("login").classList.remove("hidden");return}
+    el("login").classList.add("hidden");
+
+    setSync(hadCache?"Aktualisiert im Hintergrund …":"Lädt Artikel …");
+    await loadItems();await migrateMasterCategories();
+
+    if(!hadCache)setSync("Lädt Ziele …");
+    await loadPlaces();
+
+    if(!hadCache)setSync("Lädt Urlaube …");
+    await loadTrips();
+    await loadArchivedTrips();
+    await loadPeople();
+    await loadPersonItems();
+
+    if(currentTrip){
+      el("tripSelect").value=currentTrip.id;
+      currentPlace=places.find(p=>p.id===currentTrip.place_id)||null;
+
+      if(!hadCache)setSync("Lädt Packliste …");
+      await loadStates();
+      await loadTripReviews();
+      await loadReviewTrips();
+      comparisonTripId=null;comparisonReviews=new Map();
+      await loadPersonStates();await loadMasterPersonStates();
+      await loadTripPeople();
+
+      updateTripInfo();
+      render();
+      renderPeople();
+      saveCache();
+
+      try{subscribeTrip()}catch(e){console.warn("Realtime konnte nicht gestartet werden",e)}
+      setSync("Synchronisiert");
+    }else{
+      states=new Map();personStates=new Map();currentTripPeople=new Set();
+      updateTripInfo();
+      render();renderPeople();
+      saveCache();
+      setSync("Kein Urlaub vorhanden");
+    }
+  }catch(e){
+    console.error("BOOT ERROR",e);
+    if(hadCache){
+      setSync(navigator.onLine?"Gespeicherte Daten · Sync später":"Offline · gespeicherte Daten");
+      toast("Gespeicherte Packliste wird angezeigt");
+    }else{
+      toast("Daten konnten nicht geladen werden");
+      setSync(navigator.onLine?"Fehler: "+(e?.message||"unbekannt"):"Offline");
+    }
+  }finally{
+    booting=false;
+  }
+}
+window.addEventListener("online",()=>{setSync("Wieder online · synchronisiert …");if(!booting)boot()});
+window.addEventListener("offline",()=>setSync("Offline · gespeicherte Daten"));
+sb.auth.onAuthStateChange((_event,session)=>{
+  if(session){
+    el("login").classList.add("hidden");
+    if(!booting)setTimeout(()=>boot(),0);
+  }else{
+    el("login").classList.remove("hidden");
+  }
+});
+boot();
+</script>
+</body></html>
