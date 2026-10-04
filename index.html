@@ -410,7 +410,7 @@ button{cursor:pointer}
 .row.review-red.review-unselected{background:#ecebe6!important;border-left:5px solid #b85c5c}
 .row.review-unselected .name{color:#6f736f}
 .reviewNoteMini{border:0;background:transparent;padding:0 2px;margin:0;font:inherit;line-height:1;cursor:pointer}
-.personModeSwitch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 12px 8px}.personModeSwitch button{padding:11px;border-radius:12px;border:1px solid #ddd3c1;background:white;font-weight:900;color:var(--navy)}.personModeSwitch button.active{background:var(--olive);color:white;border-color:var(--olive)}.personModeHint{margin:0 16px 10px;color:var(--muted);font-size:12px}.personPackDone{opacity:.55;text-decoration:line-through}
+.personModeSwitch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 12px 8px}.personModeSwitch button{padding:11px;border-radius:12px;border:1px solid #ddd3c1;background:white;font-weight:900;color:var(--navy)}.personModeSwitch button.active{background:var(--olive);color:white;border-color:var(--olive)}.personModeSwitch button.packActive{background:#3979a8;color:white;border-color:#3979a8}.personModePack{background:#eaf4fb;border:1px solid #c5dfee;border-radius:12px;padding:7px 10px;margin:0 12px 10px}.personModeHint{margin:0 16px 10px;color:var(--muted);font-size:12px}.personPackDone{opacity:.55;text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -1671,15 +1671,16 @@ async function savePersonState(item,patch){
 }
 function renderPeople(){
   const tabs=el("personTabs"),list=el("personList"),theme=el("personTheme");if(!tabs||!list)return;
-  el("personPlanBtn")?.classList.toggle("active",personViewMode==="plan");el("personPackBtn")?.classList.toggle("active",personViewMode==="pack");
-  if(el("personModeHint"))el("personModeHint").textContent=personViewMode==="plan"?"Planen: Was soll für diesen Urlaub mit?":"Packen: Nur ausgewählte Dinge – Häkchen bedeutet eingepackt.";
+  el("personPlanBtn")?.classList.toggle("active",personViewMode==="plan");el("personPackBtn")?.classList.toggle("active",false);el("personPackBtn")?.classList.toggle("packActive",personViewMode==="pack");
+  if(el("personModeHint")){el("personModeHint").classList.toggle("personModePack",personViewMode==="pack");el("personModeHint").textContent=personViewMode==="plan"?"Planen: Was soll für diesen Urlaub mit?":"Packen: Nur ausgewählte Dinge – Häkchen bedeutet eingepackt.";}
   tabs.innerHTML="";list.innerHTML="";const visiblePeople=participantPeople();
   if(currentPerson&&!visiblePeople.some(p=>p.id===currentPerson.id))currentPerson=visiblePeople[0]||null;
   for(const p of visiblePeople){const b=document.createElement("button");b.className="personTab"+(currentPerson?.id===p.id?" active":"");b.textContent=p.name;b.style.borderColor=p.color;if(currentPerson?.id===p.id)b.style.background=p.color;b.onclick=()=>{currentPerson=p;localStorage.setItem("camping-person-id",p.id);renderPeople()};tabs.appendChild(b)}
   if(!currentPerson){theme.style.display="none";list.innerHTML='<div class="personEmpty">Für diesen Urlaub ist noch keine Person ausgewählt.</div>';return}
   theme.style.display="block";theme.style.background=currentPerson.color;theme.innerHTML=`${currentPerson.name}s Packliste<small>${currentTrip?.name||""}</small>`;list.classList.add("personTint");list.style.background=`color-mix(in srgb, ${currentPerson.color} 8%, white)`;
-  const baseMine=personItems.filter(i=>i.person_id===currentPerson.id&&!i.linked_master_item_id);
   const masterMine=assignedMasterItemsForPerson(currentPerson.id).map(mi=>({id:"master:"+mi.id,master_item_id:mi.id,person_id:currentPerson.id,name:mi.name,category:masterPersonCategory(mi.id,currentPerson.id),default_quantity:1,quantity_rule:"fixed",quantity_offset:0,must_not_forget:false,is_master_assignment:true}));
+  const masterNames=new Set(masterMine.map(i=>(i.name||"").trim().toLocaleLowerCase("de")));
+  const baseMine=personItems.filter(i=>i.person_id===currentPerson.id&&!i.linked_master_item_id).filter(i=>!masterNames.has((i.name||"").trim().toLocaleLowerCase("de")));
   const mineAll=[...baseMine,...masterMine],mine=personViewMode==="pack"?mineAll.filter(i=>personState(i).selected):mineAll;
   if(!mine.length){list.innerHTML=personViewMode==="pack"?`<div class="personEmpty">Für ${currentPerson.name} ist noch nichts ausgewählt. Wechsel zu „Planen“.</div>`:`<div class="personEmpty">Für ${currentPerson.name} gibt es noch keine Artikel.</div>`;return}
   const groups=new Map();for(const i of mine){if(!groups.has(i.category))groups.set(i.category,[]);groups.get(i.category).push(i)}
