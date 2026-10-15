@@ -2288,6 +2288,18 @@ el("printPersonBtn").onclick=printCurrentPerson;
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
 document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));el("view-"+b.dataset.view).classList.add("active")});
 el("tripSelect").onchange=e=>switchTrip(e.target.value);
+let pendingTripPhoto=null;
+el("editTripPhoto").addEventListener("change",()=>{
+  const file=el("editTripPhoto").files?.[0]||null;
+  pendingTripPhoto=file;
+  const preview=el("editTripPhotoPreview");
+  if(!file){preview.style.display="none";preview.removeAttribute("src");return;}
+  const url=URL.createObjectURL(file);
+  preview.onload=()=>URL.revokeObjectURL(url);
+  preview.src=url;
+  preview.style.display="block";
+  el("removeTripPhoto").checked=false;
+});
 el("editTripBtn").onclick=()=>{
   if(!currentTrip)return;
   el("editTripPlace").value=currentTrip.place_id||"";
@@ -2386,6 +2398,7 @@ el("editTripSave").onclick=async()=>{
 };
 el("archiveTripBtn").onclick=async()=>{
   if(!currentTrip)return;
+  if(pendingTripPhoto){toast("Bitte zuerst „Urlaub speichern“, damit das Erinnerungsfoto hochgeladen wird.");return;}
   if(reviewCandidates().length&&!tripReviews.size){if(confirm("Für diesen Urlaub gibt es noch keine Artikelbewertungen. Jetzt zuerst bewerten?")){openTripReview();return}}
   if(!confirm(`„${currentTrip.name}“ wirklich archivieren? Die Packliste und Bewertungen bleiben erhalten.`))return;
   setSync("Archiviert …");
