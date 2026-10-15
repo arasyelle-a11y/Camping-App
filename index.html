@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="de">
 <head>
+<link rel="apple-touch-icon" sizes="180x180" href="camping-icon-180.png">
+<link rel="icon" type="image/png" sizes="512x512" href="camping-icon-512.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
@@ -1517,7 +1519,18 @@ function render(){
 }
 function updateStats(){
   const ss=currentItems().map(i=>state(i.id)),cnt=k=>ss.filter(s=>s[k]).length;
-  el("sTake").textContent=cnt("selected");el("sSeen").textContent=cnt("seen");el("sBox").textContent=cnt("in_box");el("sCar").textContent=cnt("in_car");el("sNeed").textContent=cnt("need");
+  const selected=ss.filter(s=>s.selected),profile=normalizedTripProfile(currentTrip);
+  el("sTake").textContent=selected.length;
+  el("sNeed").textContent=cnt("need");
+  const stats=el("sTake")?.closest(".stats");
+  if(profile.transport==="plane"){
+    const packed=selected.filter(s=>s.in_box||s.in_car).length;
+    const left=Math.max(0,selected.length-packed);
+    if(stats)stats.innerHTML=`<div class="stat"><b id="sTake">${selected.length}</b><span>Mitnehmen</span></div><div class="stat"><b id="sPacked">${packed}</b><span>Gepackt</span></div><div class="stat"><b id="sLeft">${left}</b><span>Noch zu packen</span></div><div class="stat"><b id="sNeed">${cnt("need")}</b><span>Suchen</span></div>`;
+  }else{
+    if(stats&&!el("sSeen"))stats.innerHTML='<div class="stat"><b id="sTake">0</b><span>Mitnehmen</span></div><div class="stat"><b id="sSeen">0</b><span>Gesichtet</span></div><div class="stat"><b id="sBox">0</b><span>In Kiste</span></div><div class="stat"><b id="sCar">0</b><span>Im Auto</span></div><div class="stat"><b id="sNeed">0</b><span>Suchen</span></div>';
+    el("sTake").textContent=selected.length;el("sSeen").textContent=cnt("seen");el("sBox").textContent=cnt("in_box");el("sCar").textContent=cnt("in_car");el("sNeed").textContent=cnt("need");
+  }
 }
 async function signedMemoryPhoto(path){
   if(!path)return null;
